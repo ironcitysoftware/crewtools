@@ -1,0 +1,79 @@
+/**
+ * Copyright 2018 Iron City Software LLC
+ *
+ * This file is part of CrewTools.
+ *
+ * CrewTools is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * CrewTools is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with CrewTools.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package crewtools.flica.bid;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.joda.time.Duration;
+
+import crewtools.flica.FlicaService;
+import crewtools.flica.parser.OpentimeRequestParser;
+import crewtools.flica.parser.ParseException;
+import crewtools.flica.pojo.OpentimeRequest;
+
+public class OpentimeRequestLoaderThread extends PeriodicDaemonThread {
+  private final Logger logger = Logger.getLogger(OpentimeRequestLoaderThread.class.getName());
+  
+  private final FlicaService service;
+  private final ScheduleWrapperTree tree;
+  private final AutoBidderConfig config;
+
+  public OpentimeRequestLoaderThread(Duration initialDelay, Duration interval, 
+      AutoBidderConfig config,
+      FlicaService service, ScheduleWrapperTree tree) {
+    super(initialDelay, interval);
+    this.service = service;
+    this.tree = tree;
+    this.config = config;
+    setName("OpentimeRequestLoader");
+    setDaemon(true);
+  }
+  
+  @Override
+  public void doPeriodicWork() {
+    logger.info("Refreshing opentime requests");
+    try {
+      String raw = service.getOpentimeRequests(config.getRound(), config.getYearMonth());
+      //Files.write(raw, new File("/tmp/or.txt"), StandardCharsets.UTF_8);
+      List<OpentimeRequest> requests = new OpentimeRequestParser(raw).parse();
+      for (OpentimeRequest request : requests) {
+        switch (request.getStatus()) {
+          case OpentimeRequest.APPROVED:
+            tree.markApproved(request.getTransition());
+            break;
+          case OpentimeRequest.DENIED:
+            tree.markDenied(request.getTransition());
+            break;
+          case OpentimeRequest.PENDING:
+          case OpentimeRequest.PROCESSING:
+            break;
+          default:
+            logger.info("FIXME: handle request status " + request.getStatus());
+        }
+      }
+    } catch (URISyntaxException | IOException | ParseException e) {
+      logger.log(Level.SEVERE, "Error refreshing opentime requests", e);
+    }
+  }
+}

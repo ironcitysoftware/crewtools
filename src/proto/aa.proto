@@ -1,0 +1,41 @@
+// Copyright 2018 Iron City Software LLC
+//
+// This file is part of CrewTools.
+//
+// CrewTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// CrewTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with CrewTools.  If not, see <http://www.gnu.org/licenses/>.
+
+syntax = "proto2";
+
+package flica2;
+
+option java_package = "crewtools.aa";
+option java_outer_classname = "Proto";
+
+message FlightStatus {
+  optional int32 flight_number = 1;
+  optional string operated_by = 2;
+  optional string operated_as = 3;
+  optional string status = 4;
+  optional Location departure = 5;
+  optional Location arrival = 6;
+}
+
+message Location {
+  optional string actual_time = 1;
+  optional string scheduled_time = 2;
+  optional string airport_code = 3;
+  optional string terminal = 4;
+  optional string gate = 5;
+  optional string baggage = 6;
+}

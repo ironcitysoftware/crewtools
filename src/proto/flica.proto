@@ -1,0 +1,312 @@
+// Copyright 2018 Iron City Software LLC
+//
+// This file is part of CrewTools.
+//
+// CrewTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// CrewTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with CrewTools.  If not, see <http://www.gnu.org/licenses/>.
+
+syntax = "proto2";
+
+package flica2;
+
+option java_package = "crewtools.flica";
+option java_outer_classname = "Proto";
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.EnumValueOptions {
+  optional string flica_name = 50000;
+}
+
+message Pilots {
+  repeated Pilot pilot = 1;
+}
+
+message Pilot {
+  optional string first_middle_name = 1;
+  optional string last_name_suffix = 2;
+  optional int32 seniority = 3;
+  optional int32 employee_id = 4;
+  optional string hire_date = 5;
+  optional string domicile = 6;
+  optional Rank rank = 7;
+  optional Status status = 8;
+  optional bool check_airman = 9;
+}
+
+enum Status {
+  ACTIVE = 1 [(flica_name)="ACT"];
+  MEDICAL_LEAVE_STATUS = 2 [(flica_name)="MED"];
+  FAMILY_MEDICAL_LEAVE_STATUS = 3 [(flica_name)="FML"];
+  PERSONAL_LEAVE_STATUS = 4 [(flica_name)="PER"];
+  MILITARY_DUTY = 5 [(flica_name)="MIL"];;
+  MANAGEMENT = 6 [(flica_name)="MGT"];
+  GIP = 7;
+  SIP = 8;
+  TRAINING_STATUS = 9 [(flica_name)="TRN"];
+  SUSPENDED = 10 [(flica_name)="SUS"];
+  WC = 11;
+  ADMINISTRATIVE_LEAVE = 12 [(flica_name)="ADM"];  // ?
+  TER = 13 [(flica_name)="TER"]; // ?
+}
+
+message Award {
+  optional string line = 1;
+  optional Pilot pilot = 2;
+}
+
+enum Rank {
+  CAPTAIN = 1;
+  FIRST_OFFICER = 2;
+} 
+
+message DomicileAward {
+  optional string domicile = 1;
+  optional Rank rank = 2;
+  optional string timestamp = 3;
+  repeated Award award = 4;
+  optional int32 round = 5;
+}
+
+message DomicileAwards {
+  repeated DomicileAward domicile_award = 1;
+}
+
+enum DayOfWeek {
+  SUNDAY = 1;
+  MONDAY = 2;
+  TUESDAY = 3;
+  WEDNESDAY = 4;
+  THURSDAY = 5;
+  FRIDAY = 6;
+  SATURDAY = 7;
+}
+
+enum Equipment {
+  RJ2 = 1;
+  RJ7 = 2;
+  RJ9 = 3;
+  CRJ = 4;
+}
+
+enum CrewPosition {
+  CA = 1;
+  FO = 2;
+  FA = 3;
+}
+
+message CrewMember {
+  optional int32 employee_id = 1;
+  optional CrewPosition crew_position = 2;
+  optional string name = 3;
+  
+  optional int32 seniority_id = 4;
+  optional string hire_date = 5;
+  optional Domicile domicile = 6;
+  optional Status status = 7;  
+}
+
+enum Domicile {
+  CLT = 1;
+  CVG = 2;
+  DAY = 3;
+  DCA = 4;
+  TYS = 5;
+  TRAINING_DOMICILE = 6;
+  NHF = 7;  // new hire
+  NH1 = 8;  // new hire after ca. Oct 2017
+  Z = 9;  // new hire June 2017?
+}
+
+enum ScheduleType {
+  SHORT_CALL_RESERVE = 1 [(flica_name)="SCR"];
+  LONG_CALL_RESERVE = 2 [(flica_name)="LCR"];
+  READY_RESERVE = 3 [(flica_name)="HRV"];
+  RELOCATION_DAY = 4 [(flica_name)="RLD"];
+  USIC = 5;  // ?
+  BEREAVEMENT_LEAVE_OF_ABSENCE = 6 [(flica_name)="BLOA"];
+  PHONE_CALL = 7 [(flica_name)="CALL"];
+  EXTENSION = 8 [(flica_name)="EXT"];
+  JUNION_MAN = 9 [(flica_name)="JRM"];
+  COULD_NOT_COMMUTE = 10 [(flica_name)="CNC"];
+  EXCUSED_MISSED_COMMUTE = 11 [(flica_name)="COM"];
+
+  ADMINISTRATION_LEAVE = 12 [(flica_name)="ADM"];
+  ADMINISTRATION_LEAVE_2 = 13 [(flica_name)="SPD"];
+
+  FA_UNION_BUSINESS = 14 [(flica_name)="AFA"];
+  PILOT_UNION_BUSINESS = 15 [(flica_name)="ALP"];
+
+  DID_NOT_CALL = 16 [(flica_name)="DNC"];
+  FATIGUE = 17 [(flica_name)="FAT"];
+
+  ENHANCED_PERSONAL_LEAVE = 18 [(flica_name)="ELA"];
+  FAMILY_MEDICAL_LEAVE = 19 [(flica_name)="FML"];
+  FAMILY_MEDICAL_LEAVE_2 = 20 [(flica_name)="FMU"];
+  MEDICAL_LEAVE = 21 [(flica_name)="MED"];
+  LEAVE_NO_GAURANTEE = 22 [(flica_name)="LNG"];
+  FURLOUGH = 23 [(flica_name)="FUR"];
+
+  UNPAID_PERSONAL_DAY = 24 [(flica_name)="PUD"];
+  PERSONAL_LEAVE = 25 [(flica_name)="PER"];
+  UNAVAILABLE = 26 [(flica_name)="UNA"];
+
+  VACATION_START = 27 [(flica_name)="VAX"];
+  VACATION = 28 [(flica_name)="VAC"];
+  VACATION_END = 29 [(flica_name)="VAS"];
+}
+
+enum LegType {
+  FAKE = 1;
+  SELF_COMMUTE = 2 [(flica_name)="SELF"];
+  COMPANY_BUSINESS = 3 [(flica_name)="COB"];
+  TRAINING_LEG = 4 [(flica_name)="LFT"];
+  GROUND_SCHOOL = 5 [(flica_name)="GRS"];
+  GROUND_TRANSPORT = 6 [(flica_name)="LIMO"];
+  TAXI = 7 [(flica_name)="TAX"];
+  TEST = 8 [(flica_name)="TST"];
+  
+  // Pairing gems.
+  DPA = 9 [(flica_name)="DPA"];  // Only pairings?
+  HOT_RESERVE = 10 [(flica_name)="HRV"];  // Hot reserve as part of a pairing?
+  STANDBY = 11 [(flica_name)="STBY"];
+  STANDBY_2 = 12 [(flica_name)="STB"];
+  PCR = 13 [(flica_name)="PCR"];
+  THS = 14 [(flica_name)="THS"];  // training of some sort
+  HTL = 15 [(flica_name)="HTL"];  // hotel?
+}
+
+message Leg {
+  optional DayOfWeek day_of_week = 1;
+  optional int32 day_of_month = 2;
+  optional bool is_deadhead = 3;
+  optional bool is_equipment_swap_upon_completion = 4;
+  optional LegType leg_type = 5;
+  optional int32 flight_number = 6;
+  optional string departure_airport_code = 7;
+  optional string arrival_airport_code = 8;
+
+  // If the flight is in the future, these are scheduled times.
+  // If the flight is in the past, these are actual times.
+  optional string departure_local_time = 9;
+  optional string arrival_local_time = 10;
+
+  optional string block_duration = 11;
+  optional string ground_duration = 12;
+  optional string other_airline = 13;
+  optional Equipment equipment = 14;
+}
+
+// Section is a Day.
+message Section {
+  optional int32 day_of_month = 1;
+  optional string local_duty_start_date = 14;
+  optional string local_duty_start_time = 2;  // "Base Report time" = first departure - 45
+  optional string local_duty_end_time = 3;  // D-END = last arrival + 15
+  optional string block_duration = 4;
+  optional string deadhead_duration = 5;
+  optional string credit_duration = 6;
+  optional string duty_duration = 7;
+  optional string flight_duty_duration = 8;
+  optional string layover_airport_code = 9;
+  optional string layover_duration = 10;
+  optional string hotel_name = 11;
+  optional string hotel_phone_number = 12;
+  repeated Leg leg = 13;
+}
+
+// or "Pairing"
+message Trip {
+  optional string pairing_name = 1;
+  repeated DayOfWeek day_of_week = 2;  // ONLY ON THU
+  optional Domicile base = 3;
+  optional Equipment equipment = 4;
+  optional string operates = 5;   // Mar 2 only
+  
+  // from L1234 : 22DEC.
+  // Note, the trip can start the previous day if the show time is before
+  // midnight and the departure time is after midnight.  In that case,
+  // FLICA shows a start_date of the after-midnight date.
+  optional string start_date = 6;  
+  optional string end_date = 7;
+  repeated CrewMember crew = 8;
+
+  // deprecated
+  optional CrewPosition my_position = 9;  // FO01
+  optional int32 my_position_number = 10; // FO01
+
+  optional string time_away_from_base_duration = 11;
+  optional string deadhead_duration = 12;
+  optional string block_duration = 13;
+  optional string credit_duration = 14;
+  optional string duty_duration = 15;
+  optional string flight_duty_duration = 16;
+  optional string trip_rig_duration = 22;
+
+  // Non-Trip fields (Reserve, Leave)
+  optional ScheduleType schedule_type = 17;
+  optional string start_time = 18;
+  optional string end_time = 19;
+
+  // Trip fields
+  repeated Section section = 20;
+  optional string operates_except = 21;  // Oct 24, Oct 25
+}
+
+// "Schedule" or “Line” means the grouping of sections and/or reserve days and days off.
+//
+// "Trip" means a series of sections separated by RON(s) beginning and ending at a pilot's
+// domicile.
+//
+// "Section" means a grouping of legs, including deadhead legs, and known taxi and
+// repositioning assignments beginning at the time a pilot reports for duty and ending when
+// the pilot is released for rest.
+//
+message Schedule {
+  optional int64 retrieved_utc_ms = 1;
+  repeated Trip trip = 2;
+  optional string bid_name = 3;  // 206, R143, etc.
+  optional string year_month = 4;  // 2017-04
+}
+
+// Full list of pairings for a given base, round, and month.
+message PairingList {
+  repeated Trip trip = 1;
+  optional string year_month = 2;  // 2017-04
+}
+
+// Abbreviated list of lines
+message ThinPairing {
+  optional string date = 1;
+  optional string pairing_name = 2;
+  repeated string overnight_airport_code = 3;
+}
+
+message ThinLine {
+  optional string line_name = 1;
+  repeated ThinPairing thin_pairing = 2;
+  repeated string carry_in_day = 3;
+}
+
+message ThinLineList {
+  repeated ThinLine thin_line = 1;
+  optional string year_month = 2;  // 2017-04
+}
+
+// Seniority list
+
+message SeniorityList {
+  optional string label_date = 1;  // 2017-11
+  optional string print_date = 2;  // 11/10/2017
+  repeated CrewMember crew_member = 3;
+}
