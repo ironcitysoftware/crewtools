@@ -55,9 +55,10 @@ public class SubmitSapBid {
   }
   
   private static final int FO_SAP_ROUND = 10;
+  private static final int FO_SBB_ROUND = 4;
 
   public void run(String args[]) throws Exception {
-    YearMonth yearMonth = YearMonth.parse("2018-2");
+    YearMonth yearMonth = YearMonth.parse("2018-3");
 
     FlicaConnection connection = new FlicaConnection(new FlicaConfig());
     FlicaService service = new FlicaService(connection);
@@ -106,12 +107,12 @@ public class SubmitSapBid {
     logger.info("ADD : " + addTrips);
     logger.info("DROP: " + dropTrips);
     String result = service.submitSwap(
-        FO_SAP_ROUND,
+        FO_SBB_ROUND,
         yearMonth, 
         firstDayOfMonth, 
     	addTrips, 
     	dropTrips);
-    logger.info(result);
+    System.out.println(result);
   }
   
   private List<PairingKey> getOpenTimeTrips(FlicaService service, YearMonth yearMonth) throws Exception {

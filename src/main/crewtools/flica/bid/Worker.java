@@ -31,6 +31,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import crewtools.flica.FlicaService;
+import crewtools.flica.parser.SwapResponseParser;
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Trip;
 import crewtools.util.Clock;
@@ -124,12 +125,14 @@ public class Worker extends Thread {
           Transition transition = new Transition(adds, drops);
           
           try {
-            String result = service.submitSwap(round, yearMonth, clock.today(), adds, drops);
-            logger.info("Result from SWAP " + numSwaps + ": " + result);
+            String html = service.submitSwap(round, yearMonth, clock.today(), adds, drops);
+            logger.info("Result from SWAP " + numSwaps + ": " + html);
+            SwapResponseParser swapResponseParser = new SwapResponseParser(html);
+            if (swapResponseParser.parse() == SwapResponseParser.Status.DUPLICATE) {
+              logger.info("Ignoring duplicate swap request");
+              return;
+            }
             stats.recordSwap(transition.toString());
-
-            // TODO(NEXT) detect failed swaps and do not add a transition.
-            
             add(wrapper, transition, wrapper.mutate(ImmutableList.of(trip), drops));
             numSwaps++;
           } catch (Throwable e) {
