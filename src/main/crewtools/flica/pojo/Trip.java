@@ -20,27 +20,20 @@
 package crewtools.flica.pojo;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.logging.Logger;
 
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import crewtools.flica.Proto;
 import crewtools.flica.Proto.CrewPosition;
 import crewtools.flica.Proto.ScheduleType;
-import crewtools.flica.adapters.ProtoTimeHelper;
 import crewtools.flica.parser.ParseUtils;
 import crewtools.util.Period;
-import crewtools.util.TimeUtils;
 
 /**
  * A trip is a pairing associated with a particular date.

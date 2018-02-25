@@ -26,7 +26,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.subethamail.smtp.server.SMTPServer;
 
@@ -47,10 +46,6 @@ public class AutoBidder {
 
   private final int SMTP_PORT = 25000;
 
-  private static final Duration OPENTIME_REFRESH_INTERVAL = Duration.standardMinutes(45);
-  private static final Duration OPENTIME_REQUEST_REFRESH_INTERVAL = Duration.standardMinutes(10);
-  private static final Duration SCHEDULE_REFRESH_INTERVAL = Duration.standardMinutes(15);
-  
   private static final List<PairingKey> BAGGAGE_TRIPS = ImmutableList.of();
 //      new PairingKey(LocalDate.parse("2018-3-11"), "L2003"),
 //      new PairingKey(LocalDate.parse("2018-3-28"), "L2095"));
@@ -84,44 +79,44 @@ public class AutoBidder {
     }));
 
     Clock clock = new SystemClock();
+    RuntimeStats stats = new RuntimeStats(clock);
+
+    StatusService statusService = new StatusService(stats);
+    statusService.start();
+
     ScheduleWrapperTree tree = new ScheduleWrapperTree();
     TripDatabase trips = new TripDatabase(service, config.getYearMonth());
     ScheduleLoaderThread scheduleLoaderThread = new ScheduleLoaderThread(
-        SCHEDULE_REFRESH_INTERVAL, config.getYearMonth(), 
+        config.getScheduleRefreshInterval(), config.getYearMonth(), 
         tree, trips, service, BAGGAGE_TRIPS);
     scheduleLoaderThread.start();
     scheduleLoaderThread.blockCurrentThreadUntilInitialRunIsComplete();
 
     BlockingQueue<Trip> queue = new LinkedBlockingQueue<Trip>();
     Worker worker = new Worker(queue, service, tree, 
-        config.getYearMonth(), config.getRound(), clock);
+        config.getYearMonth(), config.getRound(), clock, stats);
     worker.start();
     
     SMTPServer smtpServer = new SMTPServer(
-        (context) -> { return new FlicaMessageHandler(context, config.getYearMonth(), queue); });
+        (context) -> {
+          return new FlicaMessageHandler(context, config.getYearMonth(), queue, stats);
+        });
     smtpServer.setPort(SMTP_PORT);
     logger.info("Listening for SMTP on " + SMTP_PORT);
     smtpServer.start();
 
-    Duration initialDelay = Duration.ZERO;
-    if (config.getRound() == AutoBidderConfig.FO_SAP) {
-      DateTime sapOpens = new DateTime().withTimeAtStartOfDay()
-          .withDayOfMonth(16).withHourOfDay(19);
-      initialDelay = new Duration(clock.now(), sapOpens);
-    }
+    Duration initialDelay = config.getInitialDelay(clock);
     
     OpentimeLoaderThread opentimeLoader = new OpentimeLoaderThread(
         initialDelay,
-        OPENTIME_REFRESH_INTERVAL, /* interval to reload */
         config,
         service,
         trips,
-        queue);
+        queue, stats);
     opentimeLoader.start();
     
     OpentimeRequestLoaderThread opentimeRequestLoader = new OpentimeRequestLoaderThread(
         initialDelay,
-        OPENTIME_REQUEST_REFRESH_INTERVAL,
         config,
         service,
         tree);

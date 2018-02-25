@@ -28,11 +28,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.http.client.ClientProtocolException;
-import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.YearMonth;
-
-import com.google.common.io.Files;
 
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.FlicaService;
@@ -50,15 +47,17 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
   private final FlicaService service;
   private final TripDatabase tripDatabase;
   private final BlockingQueue<Trip> queue;
+  private final RuntimeStats stats;
   
-  public OpentimeLoaderThread(Duration initialDelay, Duration interval, 
+  public OpentimeLoaderThread(Duration initialDelay,
       AutoBidderConfig config, FlicaService service,
-      TripDatabase tripDatabase, BlockingQueue<Trip> queue) {
-    super(initialDelay, interval);
+      TripDatabase tripDatabase, BlockingQueue<Trip> queue, RuntimeStats stats) {
+    super(initialDelay, config.getOpentimeRefreshInterval());
     this.config = config;
     this.service = service;
     this.tripDatabase = tripDatabase;
     this.queue = queue;
+    this.stats = stats;
     this.setName("OpenTimeLoader");
     this.setDaemon(true);
   }
@@ -71,6 +70,7 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
       for (PairingKey tripKey : trips) {
         Trip trip = tripDatabase.getTrip(tripKey);
         logger.info("Adding " + tripKey + " from opentime refresh");
+        stats.incrementOpentimeTrip();
         queue.add(trip);
       }
     } catch (URISyntaxException | IOException | ParseException e) {

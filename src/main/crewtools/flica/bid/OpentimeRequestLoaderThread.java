@@ -39,10 +39,10 @@ public class OpentimeRequestLoaderThread extends PeriodicDaemonThread {
   private final ScheduleWrapperTree tree;
   private final AutoBidderConfig config;
 
-  public OpentimeRequestLoaderThread(Duration initialDelay, Duration interval, 
+  public OpentimeRequestLoaderThread(Duration initialDelay,
       AutoBidderConfig config,
       FlicaService service, ScheduleWrapperTree tree) {
-    super(initialDelay, interval);
+    super(initialDelay, config.getOpentimeRequestRefreshInterval());
     this.service = service;
     this.tree = tree;
     this.config = config;

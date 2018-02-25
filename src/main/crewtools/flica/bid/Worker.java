@@ -45,17 +45,19 @@ public class Worker extends Thread {
   private final YearMonth yearMonth;
   private final int round;
   private final Clock clock;
+  private final RuntimeStats stats;
   private int numSwaps;
   
   public Worker(BlockingQueue<Trip> queue, FlicaService service,
       ScheduleWrapperTree tree, YearMonth yearMonth,
-      int round, Clock clock) {
+      int round, Clock clock, RuntimeStats stats) {
     this.queue = queue;
     this.service = service;
     this.tree = tree;
     this.yearMonth = yearMonth;
     this.round = round;
     this.clock = clock;
+    this.stats = stats;
     this.numSwaps = 0;
     this.setName("autobidder worker");
     this.setDaemon(false);
@@ -124,7 +126,8 @@ public class Worker extends Thread {
           try {
             String result = service.submitSwap(round, yearMonth, clock.today(), adds, drops);
             logger.info("Result from SWAP " + numSwaps + ": " + result);
-            
+            stats.recordSwap(transition.toString());
+
             // TODO(NEXT) detect failed swaps and do not add a transition.
             
             add(wrapper, transition, wrapper.mutate(ImmutableList.of(trip), drops));

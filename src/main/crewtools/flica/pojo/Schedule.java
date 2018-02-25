@@ -23,21 +23,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.logging.Logger;
 
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
-import org.joda.time.PeriodType;
 import org.joda.time.YearMonth;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 
 import crewtools.flica.Proto;
-import crewtools.flica.bid.ScheduleWrapper;
 import crewtools.util.Period;
-import crewtools.util.TimeUtils;
 
 // Represents a month and blend.
 // TODO combine Schedule and ScheduleWrapper

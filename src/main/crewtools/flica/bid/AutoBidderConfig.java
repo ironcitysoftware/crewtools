@@ -23,9 +23,13 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import org.joda.time.DateTime;
+import org.joda.time.Duration;
 import org.joda.time.YearMonth;
 
 import com.google.common.base.Splitter;
+
+import crewtools.util.Clock;
 
 public class AutoBidderConfig {
   public static final int OPENTIME = 5;
@@ -74,6 +78,60 @@ public class AutoBidderConfig {
     this.yearMonth = yearMonth;
     this.round = round;
     this.cache = cache;
+  }
+
+  public Duration getScheduleRefreshInterval() {
+    switch (getRound()) {
+    case AutoBidderConfig.FO_SAP:
+      return Duration.standardMinutes(15);
+    case AutoBidderConfig.FO_SBB:
+      return Duration.standardHours(12);
+    case AutoBidderConfig.OPENTIME:
+      return Duration.standardHours(1);
+    default:
+      throw new IllegalStateException("Define opentime refresh interval for round " + getRound());
+    }
+  }
+
+  public Duration getOpentimeRequestRefreshInterval() {
+    switch (getRound()) {
+    case AutoBidderConfig.FO_SAP:
+      return Duration.standardMinutes(6);
+    case AutoBidderConfig.FO_SBB:
+      return Duration.standardHours(12);
+    case AutoBidderConfig.OPENTIME:
+      return Duration.standardHours(1);
+    default:
+      throw new IllegalStateException("Define opentime refresh interval for round " + getRound());
+    }
+  }
+
+  public Duration getOpentimeRefreshInterval() {
+    switch (getRound()) {
+    case AutoBidderConfig.FO_SAP:
+      return Duration.standardMinutes(45);
+    case AutoBidderConfig.FO_SBB:
+    case AutoBidderConfig.OPENTIME:
+      return Duration.standardHours(3);
+    default:
+      throw new IllegalStateException("Define opentime refresh interval for round " + getRound());
+    }
+  }
+
+  public Duration getInitialDelay(Clock clock) {
+    switch (getRound()) {
+    case AutoBidderConfig.FO_SAP:
+      DateTime sapOpens = new DateTime().withTimeAtStartOfDay().withDayOfMonth(16).withHourOfDay(19);
+      return new Duration(clock.now(), sapOpens);
+    case AutoBidderConfig.FO_SBB:
+      DateTime sbbOpens = new DateTime().withTimeAtStartOfDay().withDayOfMonth(24).withHourOfDay(17);
+      return new Duration(clock.now(), sbbOpens);
+    case AutoBidderConfig.OPENTIME:
+      DateTime otOpens = new DateTime().withTimeAtStartOfDay().withDayOfMonth(28).withHourOfDay(17);
+      return new Duration(clock.now(), otOpens);
+    default:
+      return Duration.ZERO;
+    }
   }
   
   public YearMonth getYearMonth() {

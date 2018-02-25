@@ -56,14 +56,17 @@ public class FlicaMessageHandler implements MessageHandler {
   private final AlertEmailParser parser;  
   private final BlockingQueue<Trip> queue;
   private final PairingAdapter pairingAdapter;
+  private final RuntimeStats stats;
 
   private static final String TEXT_HTML_MIME_TYPE = "text/html";
 
-  public FlicaMessageHandler(MessageContext context, YearMonth yearMonth, BlockingQueue<Trip> queue) {
+  public FlicaMessageHandler(MessageContext context, YearMonth yearMonth, BlockingQueue<Trip> queue,
+      RuntimeStats stats) {
     this.context = context;
     this.parser = new AlertEmailParser(yearMonth);
     this.queue = queue;
     this.pairingAdapter = new PairingAdapter();
+    this.stats = stats;
   }
   
   @Override
@@ -78,6 +81,7 @@ public class FlicaMessageHandler implements MessageHandler {
       for (Proto.Trip tripProto : parser.parse(text)) {
         Trip trip = pairingAdapter.adaptTrip(tripProto);
         logger.info("Adding " + trip.getPairingKey() + " from email");
+        stats.incrementEmailTrip();
         queue.put(trip);
       }
     } catch (Exception e) {

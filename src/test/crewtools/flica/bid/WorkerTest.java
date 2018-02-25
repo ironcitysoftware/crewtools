@@ -53,6 +53,7 @@ public class WorkerTest {
   private final ScheduleWrapperTree tree;
   private final ScheduleWrapper wrapper;
   private final Worker worker;
+  private final RuntimeStats stats;
 
   private static final int ROUND = 10;
   
@@ -82,13 +83,14 @@ public class WorkerTest {
     queue = new ArrayBlockingQueue<>(5);
     service = Mockito.mock(FlicaService.class);
     tree = new ScheduleWrapperTree();
+    stats = new RuntimeStats(FAKE_CLOCK);
     wrapper = new ScheduleWrapper(
         ImmutableList.of(), /* baggage trips */
         schedule,
         TripBuilder.DEFAULT_YEAR_MONTH,
         FAKE_CLOCK);
     tree.setRootScheduleWrapper(wrapper);
-    worker = new Worker(queue, service, tree, TripBuilder.DEFAULT_YEAR_MONTH, ROUND, FAKE_CLOCK);
+    worker = new Worker(queue, service, tree, TripBuilder.DEFAULT_YEAR_MONTH, ROUND, FAKE_CLOCK, stats);
   }
   
   @Test
