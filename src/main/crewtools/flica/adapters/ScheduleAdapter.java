@@ -43,20 +43,12 @@ public class ScheduleAdapter extends PairingAdapter {
     Period tripBlock = Period.ZERO;
     Period tripCredit = Period.ZERO;
     
-    List<Proto.Trip> newTrips = new ArrayList<>();; 
     for (Proto.Trip protoTrip : protoSchedule.getTripList()) {
-      // KRW TODO.  Schedule trips should not have multiple pairing keys.
-      protoTrip = Proto.Trip.newBuilder(protoTrip).clearOperates().build();
-      newTrips.add(protoTrip);
-      
       Trip trip = adaptTrip(protoTrip);
-      Preconditions.checkState(trip.getPairingKey() != null, "unexpected multiple pairing keys");
       trips.add(trip);
       tripBlock = tripBlock.plus(trip.block);
       tripCredit = tripCredit.plus(trip.credit);
     }
-    // KRW
-    protoSchedule = Proto.Schedule.newBuilder(protoSchedule).clearTrip().addAllTrip(newTrips).build();
     
     return new Schedule(
         trips,
