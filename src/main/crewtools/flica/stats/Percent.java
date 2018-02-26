@@ -65,19 +65,21 @@ public class Percent {
   }
   
   static class Columns {
-    int employeeId;
-
     public Columns(int employeeId) {
-      this.employeeId = employeeId;
+      this.totalActiveCaptains = new Column<>("Active CAs");
+      this.totalActiveFirstOfficers = new Column<>("Active FOs");
+      this.captainSeniorityInBase = new Column<>(employeeId + " (CA)");
+      this.firstOfficerSeniorityInBase = new Column<>(employeeId + " (FO)");
+      this.numRoundOneLines = new Column<>("Round One");
     }
 
-    Column<Integer> totalActiveCaptains = new Column<>("Active CAs");
-    Column<Integer> totalActiveFirstOfficers = new Column<>("Active FOs");
-    Column<Integer> captainSeniorityInBase = new Column<>(employeeId + " (CA)");
-    Column<Integer> firstOfficerSeniorityInBase = new Column<>(employeeId + " (FO)");
-    Column<Integer> numRoundOneLines = new Column<>("Round One");
+    Column<Integer> totalActiveCaptains;
+    Column<Integer> totalActiveFirstOfficers;
+    Column<Integer> captainSeniorityInBase;
+    Column<Integer> firstOfficerSeniorityInBase;
+    Column<Integer> numRoundOneLines;
     
-    private void addToGraphData(GraphData data) {
+    void addToGraphData(GraphData data) {
       data.add(totalActiveCaptains);
       data.add(totalActiveFirstOfficers);
       data.add(numRoundOneLines);
@@ -98,7 +100,7 @@ public class Percent {
     
     GraphData graphData = getGraphData(Optional.absent(), seniorityLists, numLineLists);
     tokenToDataMap.put("$ALL_SENIORITY_DATA", graphData);
-    
+
     new ChartRenderer(tokenToDataMap, "percent.template", "/tmp/percent.html").render();
   }
   

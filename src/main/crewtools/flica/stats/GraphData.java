@@ -69,4 +69,9 @@ public class GraphData {
     data += "]\n";
     return data;
   }
+
+  @Override
+  public String toString() {
+    return getGraphData();
+  }
 }

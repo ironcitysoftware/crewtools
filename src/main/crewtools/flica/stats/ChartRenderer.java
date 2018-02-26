@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import com.google.common.base.Preconditions;
 import com.google.common.io.Files;
@@ -30,6 +31,8 @@ import com.google.common.io.Files;
 import crewtools.util.FlicaConfig;
 
 public class ChartRenderer {
+  private final Logger logger = Logger.getLogger(ChartRenderer.class.getName());
+
   private final String templateFilename;
   private final String outputFilename;
   private final Map<String, GraphData> data;
@@ -50,5 +53,6 @@ public class ChartRenderer {
       template = template.replace(key, data.get(key).getGraphData());
     }
     Files.write(template, new File(outputFilename), StandardCharsets.UTF_8);
+    logger.info("Wrote " + outputFilename);
   }
 }
