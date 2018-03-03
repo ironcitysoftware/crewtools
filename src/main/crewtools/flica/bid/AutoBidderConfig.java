@@ -127,8 +127,10 @@ public class AutoBidderConfig {
       DateTime sbbOpens = new DateTime().withTimeAtStartOfDay().withDayOfMonth(24).withHourOfDay(17);
       return new Duration(clock.now(), sbbOpens);
     case AutoBidderConfig.OPENTIME:
+      // 28th at 5pm until 1st at 5pm.
       DateTime otOpens = new DateTime().withTimeAtStartOfDay().withDayOfMonth(28).withHourOfDay(17);
-      return new Duration(clock.now(), otOpens);
+      // return new Duration(clock.now(), otOpens);
+      return Duration.ZERO;
     default:
       return Duration.ZERO;
     }
