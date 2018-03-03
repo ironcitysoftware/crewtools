@@ -66,6 +66,7 @@ public class FlicaConnection {
     this.httpclient = HttpClients.custom()
         .setDefaultCookieStore(cookieStore)
         .setUserAgent(CHROME_USER_AGENT)
+        .disableRedirectHandling()
         .build();
   }
 
@@ -96,6 +97,11 @@ public class FlicaConnection {
     HttpGet httpGet = new HttpGet(url);
     CloseableHttpResponse response = httpclient.execute(httpGet);
     try {
+      if (response.getStatusLine().getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY) {
+        logger.fine("(Re)Logging in");
+        connect();
+        response = httpclient.execute(httpGet);
+      }
       return EntityUtils.toString(response.getEntity());
     } finally {
       response.close();
@@ -106,6 +112,7 @@ public class FlicaConnection {
     HttpGet httpGet = new HttpGet(url);
     CloseableHttpResponse response = httpclient.execute(httpGet);
     try {
+      // TODO auto-login on 302
       return EntityUtils.toByteArray(response.getEntity());
     } finally {
       response.close();
@@ -123,6 +130,7 @@ public class FlicaConnection {
     httpPost.setEntity(new UrlEncodedFormEntity(nvps));
     CloseableHttpResponse response = httpclient.execute(httpPost);
     try {
+      // TODO auto-login on 302
       return EntityUtils.toString(response.getEntity());
     } finally {
       response.close();
@@ -141,6 +149,7 @@ public class FlicaConnection {
     httpPost.setHeader("Referer", referer);
     CloseableHttpResponse response = httpclient.execute(httpPost);
     try {
+      // TODO auto-login on 302
       return EntityUtils.toString(response.getEntity());
     } finally {
       response.close();

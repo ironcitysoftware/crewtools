@@ -42,7 +42,7 @@ public class ScheduleRetriever {
   }
 
   public ScheduleRetriever(String args[]) {
-    if (args.length != 3) {
+    if (args.length != 2) {
       System.err.println("ScheduleRetriever month-year schedule.io");
       System.exit(1);
     }
