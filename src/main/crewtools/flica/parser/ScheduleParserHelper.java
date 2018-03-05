@@ -36,7 +36,6 @@ import org.joda.time.LocalDate;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -277,8 +276,17 @@ public class ScheduleParserHelper {
         }
       }
     }
-    Preconditions.checkState(numCaptains == expectedCrewMembers.getOrDefault(CrewPosition.CA, 0));
-    Preconditions.checkState(numFirstOfficers == expectedCrewMembers.getOrDefault(CrewPosition.FO, 0));
-    Preconditions.checkState(numFlightAttendants == expectedCrewMembers.getOrDefault(CrewPosition.FA, 0));
+    // Saw a trip which listed the same FO twice.
+    if (numCaptains != expectedCrewMembers.getOrDefault(CrewPosition.CA, 0)) {
+      logger.warning(trip.getPairingName() + ": expected " + expectedCrewMembers + ", numCaptains was " + numCaptains);
+    }
+    if (numFirstOfficers != expectedCrewMembers.getOrDefault(CrewPosition.FO, 0)) {
+      logger.warning(
+          trip.getPairingName() + ": expected " + expectedCrewMembers + ", numFirstOfficers was " + numFirstOfficers);
+    }
+    if (numFlightAttendants != expectedCrewMembers.getOrDefault(CrewPosition.FA, 0)) {
+      logger.warning(trip.getPairingName() + ": expected " + expectedCrewMembers + ", numFlightAttendants was "
+          + numFirstOfficers);
+    }
   }
 }
