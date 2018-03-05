@@ -31,8 +31,6 @@ import crewtools.flica.Proto;
 import crewtools.flica.Proto.Equipment;
 import crewtools.flica.Proto.Leg;
 import crewtools.flica.Proto.LegType;
-import crewtools.flica.Proto.ScheduleType;
-import crewtools.flica.adapters.ProtoTimeHelper;
 import crewtools.util.Period;
 
 public class Section implements Comparable<Section> {
@@ -55,8 +53,8 @@ public class Section implements Comparable<Section> {
   public LocalDate date;
   public Period block;
   public Period credit;
-  public DateTime startDuty;
-  public DateTime endDuty;
+  private DateTime startDuty;
+  private DateTime endDuty;
 
   // TODO: define this list.
   private static final Set<LegType> UNDROPPABLE_LEG_TYPES = ImmutableSet.of(
@@ -91,6 +89,14 @@ public class Section implements Comparable<Section> {
     return date;
   }
   
+  public DateTime getStart() {
+    return startDuty;
+  }
+
+  public DateTime getEnd() {
+    return endDuty;
+  }
+
   public boolean hasLayoverAirportCode() {
     return protoSection.hasLayoverAirportCode();
   }

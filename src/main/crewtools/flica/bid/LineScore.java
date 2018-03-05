@@ -118,14 +118,12 @@ public class LineScore {
     boolean hasEquipmentTwoHundredSegments = false;
     
     for (Trip trip : threeTripsThatMeetMinCredit.keySet()) {
-      Section firstSection = trip.getFirstSection();
-      LocalTime reportTime = firstSection.startDuty.toLocalTime();
+      LocalTime reportTime = trip.getDutyStart().toLocalTime();
       if (reportTime.getHourOfDay() > 9 && reportTime.getHourOfDay() <= 20) {
         startTimePoints++;
       }
       
-      Section lastSection = trip.getLastSection();
-      LocalTime endTime = lastSection.endDuty.toLocalTime();
+      LocalTime endTime = trip.getDutyEnd().toLocalTime();
       if (endTime.getHourOfDay() <= 18) {
         endTimePoints++;
       }

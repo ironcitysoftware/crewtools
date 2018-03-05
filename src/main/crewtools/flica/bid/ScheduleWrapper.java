@@ -29,11 +29,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import org.joda.time.Interval;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Ordering;
 
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Schedule;
@@ -44,12 +46,17 @@ import crewtools.util.Period;
 public class ScheduleWrapper {
   private final Logger logger = Logger.getLogger(ScheduleWrapper.class.getName());
   private final Map<PairingKey, Trip> schedule;
-  private final Map<PairingKey, Trip> droppableSchedule;  // subset of schedule
+
+  // subset of schedule
+  // only contains future, droppable trips.
+  private final Map<PairingKey, Trip> droppableSchedule;
+
   private final Collection<PairingKey> baggageTrips;
   private final Schedule schedulePojo;
   private final YearMonth yearMonth;
   private final Clock clock;
   
+  private Set<Interval> nonTripIntervals;
   private Map<PairingKey, Period> creditInMonth;  // least first
   private Period totalCreditInMonth;
   private Period minRequiredCredit;
@@ -60,8 +67,9 @@ public class ScheduleWrapper {
       Schedule schedulePojo,
       YearMonth yearMonth,
       Clock clock) {
-    this.schedule = new HashMap<>();
+    this.schedule = new HashMap<>();  // Trips (not vacation or training)
     this.droppableSchedule = new HashMap<>();
+    this.nonTripIntervals = new HashSet<>();
     this.creditInMonth = new HashMap<>();
     this.totalCreditInMonth = Period.ZERO;
     this.minRequiredCredit = Period.hours(65);
@@ -74,15 +82,22 @@ public class ScheduleWrapper {
 
   private void populate(Schedule schedulePojo, YearMonth yearMonth) {
     for (Trip trip : schedulePojo.trips) {
-      logger.info("Scheduled trip " + trip.getPairingKey());
-      if (!baggageTrips.contains(trip.getPairingKey())) {
-        schedule.put(trip.getPairingKey(), trip);
-        if (trip.isDroppable()) {
-          droppableSchedule.put(trip.getPairingKey(), trip);
-        }
+      if (trip.hasScheduleType()) {
+        // Vacation, training, etc.
         Period creditInMonth = trip.getCreditInMonth(yearMonth);
         totalCreditInMonth = totalCreditInMonth.plus(creditInMonth);
-        this.creditInMonth.put(trip.getPairingKey(), creditInMonth);
+        mergeNonTripInterval(trip.getInterval());
+      } else {
+        logger.info("Scheduled trip " + trip.getPairingKey());
+        if (!baggageTrips.contains(trip.getPairingKey())) {
+          schedule.put(trip.getPairingKey(), trip);
+          if (trip.isDroppable() && trip.getDutyStart().isAfter(clock.now())) {
+            droppableSchedule.put(trip.getPairingKey(), trip);
+          }
+          Period creditInMonth = trip.getCreditInMonth(yearMonth);
+          totalCreditInMonth = totalCreditInMonth.plus(creditInMonth);
+          this.creditInMonth.put(trip.getPairingKey(), creditInMonth);
+        }
       }
     }
     this.creditInMonth = crewtools.util.Collections.sortByValue(creditInMonth);
@@ -99,16 +114,10 @@ public class ScheduleWrapper {
   
   // Credits should be ordered from smallest to largest period.
   private Period getSmallestDroppableCredit(Map<PairingKey, Period> credits) {
-    LocalDate today = clock.today();
     for (Map.Entry<PairingKey, Period> entry : credits.entrySet()) {
       Trip trip = droppableSchedule.get(entry.getKey());
       if (trip == null) {
         logger.finest(entry.getKey() + " is not droppable");
-        continue;
-      }
-      if (trip.getLastSection().getDepartureDate().isBefore(today)
-          || trip.getDepartureDates().contains(today)) {
-        logger.finest(entry.getKey() + " in past");
         continue;
       }
       return entry.getValue();
@@ -136,40 +145,62 @@ public class ScheduleWrapper {
     return result;
   }
   
-  public Collection<Trip> getOverlapOrAllDroppable(Trip trip) {
-    Set<Trip> result = new HashSet<>();
-    for (Map.Entry<PairingKey, Trip> entry : schedule.entrySet()) {
-      if (overlapsDates(entry.getValue(), trip)) {
-        // The dates overlap.
-        if (!droppableSchedule.containsKey(entry.getKey())) {
-          // overlaps with something not droppable.  Useless.
-          return ImmutableSet.of();
-        } else {
-          result.add(entry.getValue());
+  /**
+   * trip is a potential trip that we want to add to our schedule. If trip
+   * overlaps with one or more existing trips, returns those trips.
+   *
+   * If the trip overlaps with something undroppable (eg vacation or training),
+   * then returns "overlapsUndroppable".
+   */
+  public class OverlapEvaluation {
+    public boolean overlapsUndroppable;
+    public boolean noOverlap;
+    public Collection<Trip> droppable;
+
+    public OverlapEvaluation(Trip trip) {
+      // Vacation or training.
+      if (overlapsNonTrip(trip.getInterval())) {
+        overlapsUndroppable = true;
+        droppable = ImmutableSet.of();
+        return;
+      }
+
+      Set<Trip> result = new HashSet<>();
+      for (Map.Entry<PairingKey, Trip> entry : schedule.entrySet()) {
+        if (overlapsDates(entry.getValue(), trip)) {
+          // The dates overlap.
+          if (!droppableSchedule.containsKey(entry.getKey())) {
+            // overlaps with something not droppable. Useless.
+            overlapsUndroppable = true;
+            droppable = ImmutableSet.of();
+            return;
+          } else {
+            result.add(entry.getValue());
+          }
         }
       }
+      noOverlap = result.isEmpty();
+      droppable = noOverlap ? droppableSchedule.values() : result;
     }
-    return result.isEmpty() ? droppableSchedule.values() : result;
+
+    // TODO use Interval instead.
+    private boolean overlapsDates(Trip scheduledTrip, Trip potentialTrip) {
+      // Add the day before and after a scheduled trip.
+      // We don't want to end up with adjacent trips.
+      Set<LocalDate> scheduledDates = new HashSet<>(scheduledTrip.getDepartureDates());
+      Preconditions.checkState(!scheduledDates.isEmpty());
+      scheduledDates.add(Ordering.natural().min(scheduledDates).minusDays(1));
+      scheduledDates.add(Ordering.natural().max(scheduledDates).plusDays(1));
+      return !Collections.disjoint(scheduledDates, potentialTrip.getDepartureDates());
+    }
   }
 
-  private boolean overlapsDates(Trip scheduledTrip, Trip potentialTrip) {
-    // Add the day before and after a scheduled trip.
-    // We don't want to end up with adjacent trips.
-    Set<LocalDate> scheduledDates = new HashSet<>(scheduledTrip.getDepartureDates());
-    Preconditions.checkState(!scheduledDates.isEmpty());
-    LocalDate random = scheduledDates.iterator().next();
-    LocalDate first = new LocalDate(random);
-    while (scheduledDates.contains(first)) {
-      first = first.minusDays(1);
-    }
-    scheduledDates.add(first);
-    LocalDate last = new LocalDate(random);
-    while (scheduledDates.contains(last)) {
-      last = last.plusDays(1);
-    }
-    scheduledDates.add(last);
+  public OverlapEvaluation evaluateOverlap(Trip trip) {
+    return new OverlapEvaluation(trip);
+  }
 
-    return !Collections.disjoint(scheduledDates, potentialTrip.getDepartureDates());
+  public Collection<Trip> getAllDroppable() {
+    return droppableSchedule.values();
   }
   
   //
@@ -183,7 +214,7 @@ public class ScheduleWrapper {
     List<PairingKey> addKeys = new ArrayList<>();
     adds.forEach(trip -> addKeys.add(trip.getPairingKey()));
     
-    Schedule newSchedule = schedulePojo.mutate(adds, dropKeys);
+    Schedule newSchedule = schedulePojo.copyAndModify(adds, dropKeys);
     ScheduleWrapper newWrapper = new ScheduleWrapper(
         newBaggage, newSchedule, yearMonth, clock);
     return newWrapper;
@@ -192,7 +223,47 @@ public class ScheduleWrapper {
   public Collection<PairingKey> getBaggage() {
     return baggageTrips;
   }
-  
+
+  /**
+   * Vacation shows up as abutting trips (therefore abutting intervals). Combine
+   * these as they are added into the set of nontrip intervals.
+   */
+  private void mergeNonTripInterval(Interval interval) {
+    Interval abut = null;
+    while (true) {
+      abut = findAbuttingNonTripIntervalOrNull(interval);
+      if (abut == null) {
+        break;
+      }
+      nonTripIntervals.remove(abut);
+      if (interval.getStart().equals(abut.getEnd())) {
+        interval = new Interval(abut.getStart(), interval.getEnd());
+      } else {
+        Preconditions.checkState(interval.getEnd().equals(abut.getStart()));
+        interval = new Interval(interval.getStart(), abut.getEnd());
+      }
+    }
+    nonTripIntervals.add(interval);
+  }
+
+  private Interval findAbuttingNonTripIntervalOrNull(Interval interval) {
+    for (Interval existingInterval : nonTripIntervals) {
+      if (existingInterval.abuts(interval)) {
+        return existingInterval;
+      }
+    }
+    return null;
+  }
+
+  private boolean overlapsNonTrip(Interval interval) {
+    for (Interval existingInterval : nonTripIntervals) {
+      if (existingInterval.overlaps(interval)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @Override
   public int hashCode() {
     return schedulePojo.hashCode();

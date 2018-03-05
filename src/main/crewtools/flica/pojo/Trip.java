@@ -24,6 +24,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.Interval;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
@@ -34,11 +37,13 @@ import crewtools.flica.Proto.CrewPosition;
 import crewtools.flica.Proto.ScheduleType;
 import crewtools.flica.parser.ParseUtils;
 import crewtools.util.Period;
+import crewtools.util.TimeUtils;
 
 /**
  * A trip is a pairing associated with a particular date.
  */
 public class Trip implements Comparable<Trip> {
+  private final TimeUtils timeUtils = new TimeUtils();
   private final Logger logger = Logger.getLogger(Trip.class.getName());
   
   public Trip(List<Section> sections, Period block, Period credit, Period tafb,
@@ -108,8 +113,8 @@ public class Trip implements Comparable<Trip> {
     return sections.get(sections.size() - 1);
   }
   
-  public boolean hasPairingKey() {
-    return !proto.hasScheduleType();
+  public boolean hasScheduleType() {
+    return proto.hasScheduleType();
   }
   
   public PairingKey getPairingKey() {
@@ -138,6 +143,40 @@ public class Trip implements Comparable<Trip> {
     return credit.minus(outOfMonthCredit);
   }
   
+  private static final DateTimeZone EASTERN = DateTimeZone.forID("America/New_York");
+
+  public DateTime getDutyStart() {
+    if (!proto.hasScheduleType()) {
+      return getFirstSection().getStart();
+    } else if (proto.getScheduleType() == ScheduleType.VACATION
+        || proto.getScheduleType() == ScheduleType.VACATION_START
+        || proto.getScheduleType() == ScheduleType.VACATION_END) {
+      // TODO Daylight savings?
+      return LocalDate.parse(proto.getStartDate())
+          .toDateTime(timeUtils.parseLocalTimeWithColon(proto.getStartTime()), EASTERN);
+    } else {
+      throw new IllegalStateException("Need to handle nonTrip interval: " + proto);
+    }
+  }
+
+  public DateTime getDutyEnd() {
+    if (!proto.hasScheduleType()) {
+      return getLastSection().getEnd();
+    } else if (proto.getScheduleType() == ScheduleType.VACATION
+        || proto.getScheduleType() == ScheduleType.VACATION_START
+        || proto.getScheduleType() == ScheduleType.VACATION_END) {
+      // TODO Daylight savings?
+      return LocalDate.parse(proto.getEndDate())
+          .toDateTime(timeUtils.parseLocalTimeWithColon(proto.getEndTime()), EASTERN);
+    } else {
+      throw new IllegalStateException("Need to handle nonTrip interval: " + proto);
+    }
+  }
+
+  public Interval getInterval() {
+    return new Interval(getDutyStart(), getDutyEnd());
+  }
+
   @Override
   public String toString() {
     return proto.toString();

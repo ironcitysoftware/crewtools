@@ -20,26 +20,112 @@
 package crewtools.test;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import crewtools.flica.Proto;
+import crewtools.flica.Proto.ScheduleType;
 import crewtools.flica.pojo.Schedule;
 import crewtools.flica.pojo.Trip;
 import crewtools.util.Period;
 
 public class ScheduleBuilder {
-  public Schedule build(Trip... trips) {
-    return build("created by ScheduleBuilder", trips);
+  private List<Trip> trips = new ArrayList<>();
+
+  public ScheduleBuilder withTrips(Trip... trips) {
+    for (Trip trip : trips) {
+      this.trips.add(trip);
+    }
+    return this;
+  }
+
+  // @formatter:off
+  public ScheduleBuilder withVacation(int startDay, int endDay) {
+    LocalDate startDate = TripBuilder.DEFAULT_YEAR_MONTH.toLocalDate(startDay);
+    LocalDate endDate = TripBuilder.DEFAULT_YEAR_MONTH.toLocalDate(endDay);
+
+    Preconditions.checkState(endDate.isAfter(startDate));
+
+    addVacationTrip(
+        startDate,
+        startDate,
+        Period.ZERO,
+        Proto.Trip.newBuilder()
+            .setPairingName("VAX")
+            .setStartDate(startDate.toString())
+            .setEndDate(startDate.plusDays(1).toString())
+            .setCreditDuration("0000")
+            .setScheduleType(ScheduleType.VACATION_START)
+            .setStartTime("17:01")
+            .setEndTime("00:00").build());
+
+    LocalDate date = startDate.plusDays(1);
+    if (date.isBefore(endDate)) {
+      addVacationTrip(
+          date,
+          endDate,
+          Period.hours(21),
+          Proto.Trip.newBuilder()
+              .setPairingName("VAC")
+              .setStartDate(date.toString())
+              .setEndDate(endDate.toString())
+              .setCreditDuration("2100")
+              .setScheduleType(ScheduleType.VACATION)
+              .setStartTime("00:01")
+              .setEndTime("00:00").build());
+    }
+
+    addVacationTrip(
+        endDate,
+        endDate,
+        Period.ZERO,
+        Proto.Trip.newBuilder()
+            .setPairingName("VAS")
+            .setStartDate(endDate.toString())
+            .setEndDate(endDate.toString())
+            .setCreditDuration("0000")
+            .setScheduleType(ScheduleType.VACATION_END)
+            .setStartTime("00:01")
+            .setEndTime("09:59").build());
+    return this;
+  }
+
+  private void addVacationTrip(LocalDate date, LocalDate end,
+      Period credit, Proto.Trip tripProto) {
+    Set<LocalDate> dates = new HashSet<>();
+    dates.add(date);
+    if (!date.equals(end)) {
+      date = date.plusDays(1);
+      while (date.isBefore(end)) {
+        date = date.plusDays(1);
+        dates.add(date);
+      }
+    }
+    trips.add(new Trip(ImmutableList.of() /* sections */,
+        credit,
+        credit,
+        Period.ZERO,
+        ImmutableSet.of() /* days */,
+        tripProto));
+  }
+
+  // @formatter:on
+  public Schedule build() {
+    return build("created by ScheduleBuilder");
   }
   
-  public Schedule build(String bidName, Trip... trips) {
+  public Schedule build(String bidName) {
     YearMonth yearMonth;
-    if (trips.length > 0) {
-      yearMonth = new YearMonth(trips[0].getFirstSection().startDuty);
+    if (!trips.isEmpty() && trips.get(0).isDroppable()) {
+      yearMonth = new YearMonth(trips.get(0).getDutyStart());
     } else {
       yearMonth = TripBuilder.DEFAULT_YEAR_MONTH;
     }
@@ -47,17 +133,15 @@ public class ScheduleBuilder {
     scheduleBuilder.setBidName(bidName);
     scheduleBuilder.setYearMonth(yearMonth.toString());
     scheduleBuilder.setRetrievedUtcMs(0);
-    List<Trip> tripList = new ArrayList<>();
     Period block = Period.ZERO;
     Period credit = Period.ZERO;
     for (Trip trip : trips) {
-      tripList.add(trip);
       scheduleBuilder.addTrip(trip.proto);
       block = block.plus(trip.block);
       credit = credit.plus(trip.credit);
     }
     return new Schedule(
-        tripList,
+        trips,
         block,
         credit,
         yearMonth,

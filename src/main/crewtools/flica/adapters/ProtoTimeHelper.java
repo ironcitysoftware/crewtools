@@ -24,42 +24,30 @@ import java.util.logging.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
-import org.joda.time.Period;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.PeriodFormatter;
-import org.joda.time.format.PeriodFormatterBuilder;
 
 import com.google.common.base.Preconditions;
 
 import crewtools.flica.Proto;
-import crewtools.flica.StationZoneProvider;
+import crewtools.util.TimeUtils;
 
 // Weird to have a wrapper layer, then a pojo layer too.
 // This handles date logic.
 public class ProtoTimeHelper {
 
+  private final TimeUtils timeUtils = new TimeUtils();
   private final Logger logger = Logger.getLogger(ProtoTimeHelper.class.getName());
 
-  public Period getBlockDuration(Proto.Leg leg) {
-    return parseProtoPeriod(leg.getBlockDuration());
-  }
-
-  public Period getCreditDuration(Proto.Section section) {
-    return parseProtoPeriod(section.getCreditDuration());
-  }
-
   public LocalTime getArrivalLocalTime(Proto.Leg leg) {
-    return parseProtoTime(leg.getArrivalLocalTime());
+    return timeUtils.parseLocalTime(leg.getArrivalLocalTime());
   }
 
   public LocalTime getLocalDutyEndTime(Proto.Section section) {
-    return parseProtoTime(section.getLocalDutyEndTime());
+    return timeUtils.parseLocalTime(section.getLocalDutyEndTime());
   }
 
   /** Returns a DateTime relative to the given departureDate */
   public DateTime getDepartureDateTime(Proto.Leg leg, LocalDate legDate) {
-    LocalTime departureTime = parseProtoTime(leg.getDepartureLocalTime());
+    LocalTime departureTime = timeUtils.parseLocalTime(leg.getDepartureLocalTime());
     if (legDate.getDayOfMonth() != leg.getDayOfMonth()
         && legDate.plusDays(1).getDayOfMonth() == leg.getDayOfMonth()) {
       legDate = legDate.plusDays(1);
@@ -68,7 +56,7 @@ public class ProtoTimeHelper {
 
     Preconditions.checkState(legDate.getDayOfMonth() == leg.getDayOfMonth(),
         "legDate.DOM " + legDate.getDayOfMonth() + " != leg.DOM " + leg.getDayOfMonth());
-    return getDateTime(
+    return timeUtils.getDateTime(
         legDate,
         departureTime,
         leg.getDepartureAirportCode());
@@ -82,20 +70,19 @@ public class ProtoTimeHelper {
       legDate = legDate.plusDays(1);
     }
     Preconditions.checkState(legDate.getDayOfMonth() == leg.getDayOfMonth());
-    LocalTime notReally = parseProtoTime(leg.getBlockDuration());
-    LocalTime arrivalTime = parseProtoTime(leg.getArrivalLocalTime());
-    return getDateTime(
+    LocalTime notReally = timeUtils.parseLocalTime(leg.getBlockDuration());
+    LocalTime arrivalTime = timeUtils.parseLocalTime(leg.getArrivalLocalTime());
+    return timeUtils.getDateTime(
         arrivalTime.isBefore(notReally) ? legDate.plusDays(1) : legDate,
         arrivalTime,
         leg.getArrivalAirportCode());
   }
 
   public DateTime getLocalDutyStartDateTime(Proto.Section section, LocalDate legDate) {
-    LocalTime localDutyStartTime = parseProtoTime(section.getLocalDutyStartTime());
+    LocalTime localDutyStartTime = timeUtils.parseLocalTime(section.getLocalDutyStartTime());
     if (section.hasLocalDutyStartDate()) {
       // We know the date, don't guess.
-      return getDateTime(
-          parseProtoDate(section.getLocalDutyStartDate()),
+      return timeUtils.getDateTime(LocalDate.parse(section.getLocalDutyStartDate()),
           localDutyStartTime,
           section.getLeg(0).getDepartureAirportCode());
     }
@@ -108,49 +95,25 @@ public class ProtoTimeHelper {
     }
 
     // L7703
-    LocalTime firstLegStartTime = parseProtoTime(section.getLeg(0).getDepartureLocalTime());
+    LocalTime firstLegStartTime = timeUtils.parseLocalTime(section.getLeg(0).getDepartureLocalTime());
 
     // use isAfter because the localDutyStartTime can == the first leg start time
     // in the event of a cancellation.
-    return getDateTime(
+    return timeUtils.getDateTime(
         localDutyStartTime.isAfter(firstLegStartTime) ? legDate.minusDays(1) : legDate,
         localDutyStartTime,
         section.getLeg(0).getDepartureAirportCode());
   }
 
   public DateTime getLocalDutyEndDateTime(Proto.Section section, LocalDate legDate) {
-    LocalTime startTime = parseProtoTime(section.getLocalDutyStartTime());
-    LocalTime endTime = parseProtoTime(section.getLocalDutyEndTime());
+    LocalTime startTime = timeUtils.parseLocalTime(section.getLocalDutyStartTime());
+    LocalTime endTime = timeUtils.parseLocalTime(section.getLocalDutyEndTime());
 
     // If the local duty start time included a date, leg date is the date
     // of the end time (start time may be 11pm and end time 5pm next day).
-    return getDateTime(
+    return timeUtils.getDateTime(
         section.hasLocalDutyStartDate() || endTime.isAfter(startTime) ? legDate : legDate.plusDays(1),
         endTime,
         section.getLeg(section.getLegCount() - 1).getArrivalAirportCode());
-  }
-
-  private PeriodFormatter HHMM_PERIOD =
-      new PeriodFormatterBuilder().maximumParsedDigits(2).appendHours().appendMinutes().toFormatter();
-
-  public Period parseProtoPeriod(String protoHhMmField) {
-    return HHMM_PERIOD.parsePeriod(protoHhMmField);
-  }
-
-  private DateTimeFormatter HHMM_LOCALTIME =
-      DateTimeFormat.forPattern("HHmm");
-
-  LocalTime parseProtoTime(String protoHhMmField) {
-    return LocalTime.parse(protoHhMmField, HHMM_LOCALTIME);
-  }
-
-  LocalDate parseProtoDate(String protoDateField) {
-    return LocalDate.parse(protoDateField);
-  }
-
-  private StationZoneProvider zoneProvider = new StationZoneProvider();
-
-  private DateTime getDateTime(LocalDate date, LocalTime time, String station) {
-    return date.toDateTime(time, zoneProvider.getDateTimeZone(station));
   }
 }

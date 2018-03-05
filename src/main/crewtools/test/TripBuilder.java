@@ -29,8 +29,6 @@ import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
 import crewtools.flica.Proto;
 import crewtools.flica.Proto.Leg;
@@ -51,6 +49,7 @@ public class TripBuilder {
       LEG,
       LAYOVER,
       DAY_OF_MONTH,
+      HOUR_OF_DAY,
       NAME;
     }
     EventType eventType;
@@ -58,6 +57,7 @@ public class TripBuilder {
     String toAirportCode;
     Period period;
     int dayOfMonth;
+    int hourOfDay;
     String name;
   }
   
@@ -69,7 +69,14 @@ public class TripBuilder {
     events.add(dom);
     return this;
   }
-  
+
+  public TripBuilder withHourOfDay(int hourOfDay) {
+    Event dom = new Event(Event.EventType.HOUR_OF_DAY);
+    dom.hourOfDay = hourOfDay;
+    events.add(dom);
+    return this;
+  }
+
   public TripBuilder withName(String name) {
     Event event = new Event(Event.EventType.NAME);
     event.name = name;
@@ -111,6 +118,9 @@ public class TripBuilder {
       switch (event.eventType) {
       case DAY_OF_MONTH:
         currentDate = DEFAULT_YEAR_MONTH.toLocalDate(event.dayOfMonth);
+        continue;
+      case HOUR_OF_DAY:
+        currentHourOfDay = event.hourOfDay;
         continue;
       case LEG:
         if (sections.isEmpty()) {

@@ -83,7 +83,7 @@ public class TripScore implements Comparable<TripScore> {
     
     Section firstSection = trip.getFirstSection();
     if (firstSection != null) {
-      LocalTime reportTime = firstSection.startDuty.toLocalTime();
+      LocalTime reportTime = firstSection.getStart().toLocalTime();
       if (reportTime.getHourOfDay() > 9 && reportTime.getHourOfDay() <= 20) {
         startTimePoints++;
         goodPoints++;
@@ -96,7 +96,7 @@ public class TripScore implements Comparable<TripScore> {
       
     Section lastSection = trip.getLastSection();
     if (lastSection != null) {
-      LocalTime endTime = lastSection.endDuty.toLocalTime();
+      LocalTime endTime = lastSection.getEnd().toLocalTime();
       if (endTime.getHourOfDay() <= 18) {
         endTimePoints++;
         goodPoints++;        

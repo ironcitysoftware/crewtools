@@ -28,9 +28,6 @@ import java.util.logging.Logger;
 import com.google.common.io.Files;
 import com.google.protobuf.Message;
 import com.google.protobuf.Message.Builder;
-
-import crewtools.flica.bid.ScheduleLoaderThread;
-
 import com.google.protobuf.TextFormat;
 
 public class FileUtils {

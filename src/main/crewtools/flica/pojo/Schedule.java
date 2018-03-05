@@ -53,19 +53,18 @@ public class Schedule {
     this.proto = proto;
   }
 
+  /** Returns trips with PairingKeys, that is, actual line flying. */
   public Map<PairingKey, Trip> getTrips() {
     Map<PairingKey, Trip> result = new HashMap<>();
     trips.forEach(trip -> {
-      if (trip.hasPairingKey()) {
+      if (!trip.hasScheduleType()) {
         result.put(trip.getPairingKey(), trip);  
-      } else {
-        logger.warning("FIXME: trip without PairingKey");
       }
     });
     return result;
   }
 
-  public Schedule mutate(List<Trip> adds, List<PairingKey> drops) {
+  public Schedule copyAndModify(List<Trip> adds, List<PairingKey> drops) {
     List<Trip> newTrips = new ArrayList<>(trips);
     Period newBlockTime = new Period(blockTime);
     Period newCreditTime = new Period(creditTime);

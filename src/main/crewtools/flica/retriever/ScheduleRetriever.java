@@ -43,7 +43,7 @@ public class ScheduleRetriever {
 
   public ScheduleRetriever(String args[]) {
     if (args.length != 2) {
-      System.err.println("ScheduleRetriever month-year schedule.io");
+      System.err.println("ScheduleRetriever year-month schedule.io");
       System.exit(1);
     }
     this.yearMonth = YearMonth.parse(args[0]);

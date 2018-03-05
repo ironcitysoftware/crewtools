@@ -21,9 +21,7 @@ package crewtools.flica.adapters;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.logging.Logger;
 
 import org.joda.time.DateTime;
@@ -364,8 +362,8 @@ public class PairingAdapter {
     } else if (protoTrip.getScheduleType() == ScheduleType.VACATION
         || protoTrip.getScheduleType() == ScheduleType.VACATION_START
         || protoTrip.getScheduleType() == ScheduleType.VACATION_END) {
-      LocalDate startDate = timeHelper.parseProtoDate(protoTrip.getStartDate());
-      LocalDate endDate = timeHelper.parseProtoDate(protoTrip.getEndDate());
+      LocalDate startDate = LocalDate.parse(protoTrip.getStartDate());
+      LocalDate endDate = LocalDate.parse(protoTrip.getEndDate());
       if (startDate.equals(endDate)) {
         // VAS (vacation end) has start = end (inclusive)
         result.add(startDate);

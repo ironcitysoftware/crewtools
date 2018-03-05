@@ -19,7 +19,6 @@
 
 package crewtools.flica.bid;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.logging.Level;
@@ -100,8 +99,20 @@ public class Worker extends Thread {
         logger.info("Discarding " + trip.getPairingName() + " due to credit");
         return;
       }
-      Collection<Trip> overlapTrips = wrapper.getOverlapOrAllDroppable(trip);
-      for (Trip scheduledTrip : overlapTrips) {
+
+      ScheduleWrapper.OverlapEvaluation overlap = wrapper.evaluateOverlap(trip);
+      if (overlap.overlapsUndroppable) {
+        logger.info("Discarding " + trip.getPairingName() + " due to overlap with an undroppable event");
+        return;
+      }
+
+      if (!overlap.noOverlap && overlap.droppable.size() > 1) {
+        logger.info("Discarding " + trip.getPairingName() + " because it overlaps with multiple existing trips, "
+            + "and we don't know how to handle that yet.");
+        return;
+      }
+
+      for (Trip scheduledTrip : overlap.droppable) {
         if (!wrapper.meetsMinimumCredit(scheduledTrip.getPairingKey(), trip, yearMonth)) {
           logger.info("Unable to swap with scheduled trip " 
               + scheduledTrip.getPairingName() + " due to MinCredit");

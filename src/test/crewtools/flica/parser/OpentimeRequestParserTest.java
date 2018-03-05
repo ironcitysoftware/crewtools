@@ -25,10 +25,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
-import crewtools.flica.Proto.DayOfWeek;
-import crewtools.flica.Proto.Trip;
 import crewtools.flica.pojo.OpentimeRequest;
 
 public class OpentimeRequestParserTest {

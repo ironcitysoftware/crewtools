@@ -79,7 +79,7 @@ public class WorkerTest {
         .withLayover("DCA", Period.hours(12))
         .withLeg("DCA", "CLT", Period.hours(10))
         .build();
-    schedule = new ScheduleBuilder().build(firstTrip, secondTrip, thirdTrip);
+    schedule = new ScheduleBuilder().withTrips(firstTrip, secondTrip, thirdTrip).build();
     queue = new ArrayBlockingQueue<>(5);
     service = Mockito.mock(FlicaService.class);
     tree = new ScheduleWrapperTree();
@@ -141,7 +141,7 @@ public class WorkerTest {
     queue.add(betterTrip);
     worker.doWork();
     
-    Schedule newSchedule = new ScheduleBuilder().build(firstTrip, secondTrip, betterTrip);
+    Schedule newSchedule = new ScheduleBuilder().withTrips(firstTrip, secondTrip, betterTrip).build();
     ScheduleWrapper newWrapper = new ScheduleWrapper(
         ImmutableList.of(), /* baggage trips */
         newSchedule,
