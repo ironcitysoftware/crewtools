@@ -25,6 +25,7 @@ import java.io.FileInputStream;
 import com.google.protobuf.Message;
 
 import crewtools.flica.Proto.PairingList;
+import crewtools.flica.Proto.SeniorityList;
 import crewtools.flica.Proto.ThinLineList;
 
 public class CatProto {
@@ -37,8 +38,10 @@ public class CatProto {
     Message.Builder builder = null;
     if (protoFile.getName().startsWith("lines-")) {
       builder = ThinLineList.newBuilder();
-    } else if (true || protoFile.getName().startsWith("pairings-")) {
+    } else if (protoFile.getName().startsWith("pairings-")) {
       builder = PairingList.newBuilder();
+    } else if (protoFile.getName().startsWith("seniority-")) {
+      builder = SeniorityList.newBuilder();
     } else {
       System.err.println("Need to add detection for this filename: " + protoFile.getName());
       System.exit(-1);

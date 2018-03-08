@@ -126,6 +126,8 @@ enum Domicile {
   NHF = 7;  // new hire
   NH1 = 8;  // new hire after ca. Oct 2017
   Z = 9;  // new hire June 2017?
+  PHL = 10;
+  ORF = 11;
 }
 
 enum ScheduleType {
