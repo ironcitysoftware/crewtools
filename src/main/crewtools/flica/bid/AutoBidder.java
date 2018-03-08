@@ -79,12 +79,13 @@ public class AutoBidder {
     }));
 
     Clock clock = new SystemClock();
-    RuntimeStats stats = new RuntimeStats(clock);
+    ScheduleWrapperTree tree = new ScheduleWrapperTree();
+
+    RuntimeStats stats = new RuntimeStats(clock, tree);
 
     StatusService statusService = new StatusService(stats);
     statusService.start();
 
-    ScheduleWrapperTree tree = new ScheduleWrapperTree();
     TripDatabase trips = new TripDatabase(service, config.getYearMonth());
     ScheduleLoaderThread scheduleLoaderThread = new ScheduleLoaderThread(
         config.getScheduleRefreshInterval(), config.getYearMonth(), 

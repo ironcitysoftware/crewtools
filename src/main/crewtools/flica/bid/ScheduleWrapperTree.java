@@ -220,11 +220,14 @@ public class ScheduleWrapperTree {
         && Objects.equal(this.nodes, that.nodes);
   }
 
+  // @formatter:off
   @Override
-  public String toString() {
+  public synchronized String toString() {
     return MoreObjects.toStringHelper(this)
         .add("root", root)
         .add("nodes", nodes)
+        .add("transitions", transitions)
         .toString();
   }
+  // @formatter:on
 }

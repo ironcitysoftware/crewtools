@@ -83,7 +83,7 @@ public class WorkerTest {
     queue = new ArrayBlockingQueue<>(5);
     service = Mockito.mock(FlicaService.class);
     tree = new ScheduleWrapperTree();
-    stats = new RuntimeStats(FAKE_CLOCK);
+    stats = new RuntimeStats(FAKE_CLOCK, tree);
     wrapper = new ScheduleWrapper(
         ImmutableList.of(), /* baggage trips */
         schedule,

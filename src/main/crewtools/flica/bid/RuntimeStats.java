@@ -28,14 +28,16 @@ import crewtools.util.Clock;
 
 public class RuntimeStats {
   private final Clock clock;
+  private final ScheduleWrapperTree tree;
   private DateTime lastEmailTrip;
   private DateTime lastOpentimeTrip;
   private int numEmailTrips;
   private int numOpentimeTrips;
   private List<String> submittedSwaps;
 
-  public RuntimeStats(Clock clock) {
+  public RuntimeStats(Clock clock, ScheduleWrapperTree tree) {
     this.clock = clock;
+    this.tree = tree;
     this.submittedSwaps = new ArrayList<>();
   }
 
@@ -67,6 +69,7 @@ public class RuntimeStats {
     for (String swap : submittedSwaps) {
       result += swap + "\n";
     }
+    result += tree.toString();
     return result;
   }
 

@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
@@ -145,6 +146,9 @@ public class Schedule {
 
   @Override
   public String toString() {
-    return proto.toString();
+    return proto.getTripList()
+        .stream()
+        .map(trip -> trip.getPairingName())
+        .collect(Collectors.joining(":"));
   }
 }
