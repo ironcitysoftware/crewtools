@@ -19,6 +19,8 @@
 
 package crewtools.flica.bid;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,16 +46,18 @@ import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Section;
 import crewtools.flica.pojo.ThinLine;
 import crewtools.flica.pojo.Trip;
+import crewtools.flica.stats.DataReader;
 import crewtools.util.FlicaConfig;
 import crewtools.util.Period;
 
-// tool to list GSP overnights by credit in bid package
 public class MonthlyBidder {
   private final Logger logger = Logger.getLogger(MonthlyBidder.class.getName());
   private final boolean submitBids;
   private final boolean useCachingService;
   private final boolean parseCanceled;
   private final boolean softDaysOff;
+  private final YearMonth yearMonth;
+  private final boolean useProto;
 
   // DAYS OFF are now in LineScore, seems wrong, but..
   
@@ -68,6 +72,8 @@ public class MonthlyBidder {
     boolean useCachingService = false;
     boolean parseCanceled = false;
     boolean softDaysOff = false;
+    boolean useProto = false;
+    YearMonth yearMonth = null;
     for (String arg : args) {
       if (arg.equals("--submit")) {
         submitBids = true;
@@ -77,23 +83,31 @@ public class MonthlyBidder {
         parseCanceled = true;
       } else if (arg.equals("--softDaysOff")) {
         softDaysOff = true;
+      } else if (arg.equals("--proto")) {
+        useProto = true;
+      } else if (arg.startsWith("--ym")) {
+        yearMonth = YearMonth.parse(arg.split("=")[1]);
       }
     }
     this.submitBids = submitBids;
     this.useCachingService = useCachingService;
     this.parseCanceled = parseCanceled;
     this.softDaysOff = softDaysOff;
+    this.yearMonth = Preconditions.checkNotNull(yearMonth, "Need --ym=");
+    this.useProto = useProto;
     logger.info("Submit bids    (--submit)     : " + submitBids);
     logger.info("Use cache      (--cache)      : " + useCachingService);
     logger.info("Parse canceled (--canceled)   : " + parseCanceled);
     logger.info("Soft days off  (--softDaysOff): " + softDaysOff); 
+    logger.info("year month     (--ym=yyyy-mm) : " + yearMonth);
+    logger.info("Use proto      (--proto)      : " + useProto);
   }
   
   public void run() throws Exception {
-    runForMonthlyBid(YearMonth.parse("2018-3"));
+    runForMonthlyBid();
   }
 
-  private void runForMonthlyBid(YearMonth yearMonth) throws Exception {
+  private void runForMonthlyBid() throws Exception {
     FlicaConnection connection = new FlicaConnection(new FlicaConfig());
     FlicaService service;
     if (useCachingService) {
@@ -217,9 +231,19 @@ public class MonthlyBidder {
   }
   
   private Map<PairingKey, Trip> getAllPairings(FlicaService service, YearMonth yearMonth) throws Exception {
-    String rawPairings = service.getAllPairings(AwardDomicile.CLT, Rank.FIRST_OFFICER, 1, yearMonth);
-    PairingParser pairingParser = new PairingParser(rawPairings, yearMonth, parseCanceled);
-    Proto.PairingList pairingList = pairingParser.parse();
+    Proto.PairingList pairingList;
+    if (!useProto) {
+      String rawPairings = service.getAllPairings(AwardDomicile.CLT, Rank.FIRST_OFFICER, 1, yearMonth);
+      PairingParser pairingParser = new PairingParser(rawPairings, yearMonth, parseCanceled);
+      pairingList = pairingParser.parse();
+    } else {
+      String filename = new DataReader().getPairingFilename(yearMonth, AwardDomicile.CLT);
+      Proto.PairingList.Builder builder = Proto.PairingList.newBuilder();
+      FileInputStream inputStream = new FileInputStream(new File(filename));
+      builder.mergeFrom(inputStream);
+      pairingList = builder.build();
+    }
+
     PairingAdapter pairingAdapter = new PairingAdapter();
     Map<PairingKey, Trip> trips = new HashMap<>();
     for (Proto.Trip protoTrip : pairingList.getTripList()) {
@@ -232,9 +256,19 @@ public class MonthlyBidder {
   }
 
   private List<ThinLine> getAllLines(FlicaService service, YearMonth yearMonth) throws Exception {
-    String rawLines = service.getAllLines(AwardDomicile.CLT, Rank.FIRST_OFFICER, 1, yearMonth);
-    LineParser lineParser = new LineParser(rawLines);
-    Proto.ThinLineList lineList = lineParser.parse();
+    Proto.ThinLineList lineList;
+    if (!useProto) {
+      String rawLines = service.getAllLines(AwardDomicile.CLT, Rank.FIRST_OFFICER, 1, yearMonth);
+      LineParser lineParser = new LineParser(rawLines);
+      lineList = lineParser.parse();
+    } else {
+      String filename = new DataReader().getLineFilename(yearMonth, AwardDomicile.CLT);
+      Proto.ThinLineList.Builder builder = Proto.ThinLineList.newBuilder();
+      FileInputStream inputStream = new FileInputStream(new File(filename));
+      builder.mergeFrom(inputStream);
+      lineList = builder.build();
+    }
+
     List<ThinLine> result = new ArrayList<>();
     for (Proto.ThinLine protoThinLine : lineList.getThinLineList()) {
       result.add(new ThinLine(protoThinLine));
