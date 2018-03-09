@@ -70,7 +70,7 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
       bTrips += trip.getPairingName();
     }
 
-    logger.info("T" + a.getLineName() + " (" + aTrips + "=" + aPoints + ") vs " 
+    logger.fine("T" + a.getLineName() + " (" + aTrips + "=" + aPoints + ") vs "
         + "T" + b.getLineName() + " (" + bTrips + "=" + bPoints + ")");
     
     return -((Integer) aPoints).compareTo(bPoints);
