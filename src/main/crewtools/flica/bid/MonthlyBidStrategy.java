@@ -29,9 +29,15 @@ import crewtools.flica.pojo.Trip;
 public class MonthlyBidStrategy implements Comparator<LineScore> {
   private final Logger logger = Logger.getLogger(MonthlyBidStrategy.class.getName());
 
+  private final MonthlyBidderConfig config;
+
+  public MonthlyBidStrategy(MonthlyBidderConfig config) {
+    this.config = config;
+  }
+
   @Override
   public int compare(LineScore a, LineScore b) {
-    int isDesirable = new Boolean(a.isDesirableLine()).compareTo(b.isDesirableLine());
+    int isDesirable = new Boolean(a.isDesirableLine(config)).compareTo(b.isDesirableLine(config));
     if (isDesirable != 0) {
       return -isDesirable;
     }

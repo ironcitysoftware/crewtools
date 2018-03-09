@@ -58,8 +58,7 @@ public class MonthlyBidder {
   private final boolean softDaysOff;
   private final YearMonth yearMonth;
   private final boolean useProto;
-
-  // DAYS OFF are now in LineScore, seems wrong, but..
+  private final MonthlyBidderConfig config;
   
   private static final Period MIN_CREDIT_HOURS_PER_MONTH = Period.hours(65);
   
@@ -95,6 +94,8 @@ public class MonthlyBidder {
     this.softDaysOff = softDaysOff;
     this.yearMonth = Preconditions.checkNotNull(yearMonth, "Need --ym=");
     this.useProto = useProto;
+    // TODO move everything to config.
+    this.config = new MonthlyBidderConfig();
     logger.info("Submit bids    (--submit)     : " + submitBids);
     logger.info("Use cache      (--cache)      : " + useCachingService);
     logger.info("Parse canceled (--canceled)   : " + parseCanceled);
@@ -134,12 +135,12 @@ public class MonthlyBidder {
             Preconditions.checkNotNull(pairings.get(key),
                 "Pairing not found: " + key));
       }
-      LineScore lineScore = new LineScore(yearMonth, line, trips);
-      if (softDaysOff || lineScore.isDesirableLine()) {
+      LineScore lineScore = new LineScore(config, yearMonth, line, trips);
+      if (softDaysOff || lineScore.isDesirableLine(config)) {
         lineScores.add(lineScore);
       }
     }
-    Collections.sort(lineScores, new MonthlyBidStrategy());
+    Collections.sort(lineScores, new MonthlyBidStrategy(config));
 
     logger.info("Computed bids:");
     
@@ -169,7 +170,7 @@ public class MonthlyBidder {
     for (int i = 1; i < lastDateOfMonth + 1; ++i) {
       result.append(i % 10);
     }
-    result.append("    (GSP) need  (RON)");
+    result.append("     (GSP) need  (RON)");
     return result.toString();
   }
 
@@ -211,7 +212,7 @@ public class MonthlyBidder {
     result.append("[");  // TODO fix blend
     result.append(dates);
     result.append("]  ");  // fix blend
-    result.append(lineScore.isDesirableLine() ? "D " : "U ");
+    result.append(lineScore.isDesirableLine(config) ? "D " : "U ");
     result.append(lineScore.getGspCredit());
     result.append(" ");
     result.append(MIN_CREDIT_HOURS_PER_MONTH.minus(lineScore.getGspCredit()));

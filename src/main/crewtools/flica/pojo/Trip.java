@@ -132,7 +132,8 @@ public class Trip implements Comparable<Trip> {
     }
     return false;
   }
-  
+
+  /** Does not include vacation. */
   public Period getCreditInMonth(YearMonth yearMonth) {
     Period outOfMonthCredit = Period.ZERO;
     for (Section section : sections) {
@@ -141,6 +142,19 @@ public class Trip implements Comparable<Trip> {
       }
     }
     return credit.minus(outOfMonthCredit);
+  }
+
+  public Period getCreditInMonth(Set<Integer> vacationDays, YearMonth yearMonth) {
+    Period outOfMonthCredit = Period.ZERO;
+    Period vacationCredit = Period.ZERO;
+    for (Section section : sections) {
+      if (section.date.getMonthOfYear() != yearMonth.getMonthOfYear()) {
+        outOfMonthCredit = outOfMonthCredit.plus(section.credit);
+      } else if (vacationDays.contains(section.date.getDayOfMonth())) {
+        vacationCredit = vacationCredit.plus(section.credit);
+      }
+    }
+    return credit.minus(outOfMonthCredit).minus(vacationCredit);
   }
   
   private static final DateTimeZone EASTERN = DateTimeZone.forID("America/New_York");

@@ -22,7 +22,6 @@ package crewtools.flica.bid;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Logger;
 
 import org.joda.time.LocalDate;
@@ -30,7 +29,6 @@ import org.joda.time.LocalTime;
 import org.joda.time.YearMonth;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
 import crewtools.flica.Proto;
 import crewtools.flica.pojo.PairingKey;
@@ -62,10 +60,7 @@ public class LineScore {
   private final int endTimePoints;
   private final boolean hasEquipmentTwoHundredSegments;
 
-  private static final Set<Integer> DAYS_OFF = ImmutableSet.of(
-     ); //9, 10, 11);
-
-  public LineScore(YearMonth yearMonth, ThinLine line, Map<PairingKey, Trip> trips) {
+  public LineScore(MonthlyBidderConfig config, YearMonth yearMonth, ThinLine line, Map<PairingKey, Trip> trips) {
     this.line = line;
     this.trips = trips;
     
@@ -77,11 +72,16 @@ public class LineScore {
     Map<Trip, Period> creditsInMonthMap = new HashMap<>();
     
     for (Trip trip : trips.values()) {
-      Period creditInMonth = trip.getCreditInMonth(yearMonth);
+      Period creditInMonth = trip.getCreditInMonth(config.getVacationDaysOff(), yearMonth);
       creditsInMonthMap.put(trip, creditInMonth);
       allCredit = allCredit.plus(creditInMonth);
+
       boolean hasGspOvernight = false;
       for (Section section : trip.sections) {
+        if (config.getVacationDaysOff().contains(section.date.getDayOfMonth())) {
+          // This day will be dropped as it falls on vacation.
+          continue;
+        }
         if (section.hasLayoverAirportCode()
             && section.getLayoverAirportCode().equals("GSP")) {
           hasGspOvernight = true;
@@ -92,6 +92,10 @@ public class LineScore {
       if (hasGspOvernight) {
         gspCredit = gspCredit.plus(creditInMonth);
       }
+    }
+
+    if (line.getLineName().equals("218")) {
+      logger.info(line.getLineName() + " allCredit=" + allCredit);
     }
     
     this.gspCredit = gspCredit;
@@ -159,7 +163,7 @@ public class LineScore {
   }
 
   /** Returns true if we want to consider this line for our bid. */
-  public boolean isDesirableLine() {
+  public boolean isDesirableLine(MonthlyBidderConfig config) {
     boolean hasAnyGspOvernights = false;
     for (Trip trip : getTrips()) {
       if (hasThreeTripsThatMeetMinCredit()) {
@@ -182,7 +186,7 @@ public class LineScore {
           hasAnyGspOvernights = true;
         }
       }
-      if (spansDesiredDaysOff(trip)) {
+      if (spansDesiredDaysOff(config, trip)) {
         return false;
       }
     }
@@ -200,9 +204,9 @@ public class LineScore {
     return numGspOvernights;
   }
 
-  private boolean spansDesiredDaysOff(Trip trip) {
+  private boolean spansDesiredDaysOff(MonthlyBidderConfig config, Trip trip) {
     for (LocalDate date : trip.getDepartureDates()) {
-      if (DAYS_OFF.contains(date.getDayOfMonth())) {
+      if (config.getSapDaysOff().contains(date.getDayOfMonth())) {
         return true;
       }
     }
