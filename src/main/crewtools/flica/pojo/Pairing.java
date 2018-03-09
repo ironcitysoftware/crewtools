@@ -45,9 +45,7 @@ public class Pairing {
   private Period credit;
   private Period tafb;
   private Proto.Trip proto;
-  private List<String> scoreInfo = new ArrayList<>();
   private Set<LocalDate> departureDates;
-  private List<PairingKey> pairingKeys;
 
   public Pairing(List<Section> sections, Period block, Period credit, Period tafb,
       Set<LocalDate> departureDates,
@@ -58,31 +56,11 @@ public class Pairing {
     this.tafb = tafb;
     this.proto = proto;
     this.departureDates = departureDates;
-    this.pairingKeys = getPairingKeys();
   }
 
   // This is the first date of departure, not the date of the first show time.
   Section getFirstSection() {
     return sections.get(0);
-  }
-
-  @Deprecated
-  List<PairingKey> getPairingKeys() {
-    if (!proto.hasOperates() || proto.getOperates().contains("Only")) {
-      return ImmutableList.of(
-          new PairingKey(
-              getFirstSection().getShowDate(), proto.getPairingName()));
-    }
-
-    int year = getFirstSection().getShowDate().getYear();
-    OperationDateExpander expander = new OperationDateExpander(
-        year, proto.getOperates(), proto.getDayOfWeekList(), proto.getOperatesExcept());
-    ImmutableList.Builder<PairingKey> result = ImmutableList.builder();
-    
-    for (LocalDate date : expander.getDates()) {
-      result.add(new PairingKey(date, proto.getPairingName()));
-    }
-    return result.build();
   }
   
   public List<Trip> getTrips() {
@@ -106,12 +84,9 @@ public class Pairing {
         - getFirstSection().getDepartureDate().getDayOfMonth();
     List<Section> newSections = new ArrayList<>();
     for (Section section : sections) {
-      LocalDate originalDate = section.getDepartureDate();
-      newSections.add(section.copyWithNewDepartureDate(
-          originalDate.plusDays(daysBetween)));
+      newSections.add(section.copyWithDateOffset(daysBetween));
     }
     Proto.Trip.Builder newProto = proto.toBuilder();
-    newProto.clearOperates();
     
     Set<LocalDate> newDepartureDates = new HashSet<>();
     for (LocalDate departureDate : departureDates) {

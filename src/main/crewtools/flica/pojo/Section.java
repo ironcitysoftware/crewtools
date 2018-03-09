@@ -45,8 +45,10 @@ public class Section implements Comparable<Section> {
     this.endDuty = endDuty;
   }
   
-  public Section copyWithNewDepartureDate(LocalDate date) {
-    return new Section(protoSection, date, block, credit, startDuty, endDuty);
+  public Section copyWithDateOffset(int daysBetween) {
+    // TODO protoSection change?
+    return new Section(protoSection, date.plusDays(daysBetween), block, credit, startDuty.plusDays(daysBetween),
+        endDuty.plusDays(daysBetween));
   }
 
   private Proto.Section protoSection;
