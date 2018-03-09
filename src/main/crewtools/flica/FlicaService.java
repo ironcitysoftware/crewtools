@@ -181,7 +181,6 @@ public class FlicaService {
     builder.addParameter("bFromOT", "1");
     builder.addParameter("BCID", bcid);
     builder.addParameter("CC", ccid);
-    builder.addParameter("bFromOT", "1");
     builder.addParameter("SortOperation", "0");
     builder.addParameter("AllPairingFlag", "1");
     builder.addParameter("StartDate", startDate);
@@ -232,10 +231,6 @@ public class FlicaService {
     builder.addParameter("CC", crewClassId);
 
     LocalDate firstOfMonth = yearMonth.toLocalDate(1);
-    String startDate = DIGITS_ONLY_DATE_FORMAT.print(firstOfMonth);
-    String endDate = DIGITS_ONLY_DATE_FORMAT.print(firstOfMonth.dayOfMonth().withMaximumValue());
-//    builder.addParameter("StartDate", startDate);
-//    builder.addParameter("EndDate", endDate);
     String url = builder.toString();
     logger.info("url = [" + url + "]");
     return connection.retrieveUrl(url);
@@ -275,8 +270,8 @@ public class FlicaService {
     String startDate = DIGITS_ONLY_DATE_FORMAT.print(today);
     String endDate = DIGITS_ONLY_DATE_FORMAT.print(today.dayOfMonth().withMaximumValue().minusDays(1));
     ImmutableMultimap.Builder<String, String> data = ImmutableMultimap.builder();
-    data.put("StartDate", "20180131"); //startDate);
-    data.put("EndDate", "20180301"); // endDate);
+    data.put("StartDate", startDate);
+    data.put("EndDate", endDate);
     for (PairingKey key : addTrips) {
       data.put("addBid", formatPairingKeyForBid(key));
     }
