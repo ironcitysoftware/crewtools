@@ -94,10 +94,6 @@ public class LineScore {
       }
     }
 
-    if (line.getLineName().equals("218")) {
-      logger.info(line.getLineName() + " allCredit=" + allCredit);
-    }
-    
     this.gspCredit = gspCredit;
     this.allCredit = allCredit;
     this.gspOvernightPeriod = gspOvernightPeriod;
