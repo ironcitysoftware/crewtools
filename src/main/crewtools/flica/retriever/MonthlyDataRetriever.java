@@ -112,12 +112,16 @@ public class MonthlyDataRetriever {
   }
 
   public void getSeniority(FlicaService service) throws Exception {
+    File outputFile = new File(dataReader.getSeniorityFilename(yearMonth));
+    if (outputFile.exists()) {
+      logger.info("SKIP " + outputFile + " as it exists");
+      return;
+    }
     byte pdf[] = service.getDocument(AwardDomicile.CLT, Rank.FIRST_OFFICER, ROUND_ONE, yearMonth, seniorityDocumentId,
         "SYSSEN");
     SeniorityParser parser = new SeniorityParser(pdf);
     SeniorityList list = parser.parse();
-    String filename = dataReader.getSeniorityFilename(yearMonth);
-    list.writeTo(new FileOutputStream(filename));
-    logger.info("Wrote " + filename);
+    list.writeTo(new FileOutputStream(outputFile));
+    logger.info("Wrote " + outputFile);
   }
 }
