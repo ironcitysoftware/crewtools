@@ -20,6 +20,7 @@
 package crewtools.flica.pojo;
 
 import java.util.Set;
+import java.util.logging.Logger;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -34,6 +35,8 @@ import crewtools.flica.Proto.LegType;
 import crewtools.util.Period;
 
 public class Section implements Comparable<Section> {
+  private final Logger logger = Logger.getLogger(Section.class.getName());
+
   public Section(Proto.Section protoSection, LocalDate date, 
       Period block, Period credit, 
       DateTime startDuty, DateTime endDuty) {
@@ -77,10 +80,18 @@ public class Section implements Comparable<Section> {
     if (protoSection.getLegCount() == 0) {
       return false;
     }
-    if (!protoSection.getLeg(0).hasEquipment()) {
-      return false;
+    for (Leg leg : protoSection.getLegList()) {
+      if (leg.getIsDeadhead()) {
+        continue;
+      }
+      if (!leg.hasEquipment()) {
+        logger.warning("Section should have an equipment.");
+        return false;
+      }
+      return leg.getEquipment().equals(Equipment.RJ2);
     }
-    return protoSection.getLeg(0).getEquipment().equals(Equipment.RJ2);
+    logger.warning("Ambiguius equipment");
+    return false;
   }
   
   public LocalDate getShowDate() {
