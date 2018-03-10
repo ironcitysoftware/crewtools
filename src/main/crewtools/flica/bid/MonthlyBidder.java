@@ -48,7 +48,6 @@ import crewtools.flica.pojo.ThinLine;
 import crewtools.flica.pojo.Trip;
 import crewtools.flica.stats.DataReader;
 import crewtools.util.FlicaConfig;
-import crewtools.util.Period;
 
 public class MonthlyBidder {
   private final Logger logger = Logger.getLogger(MonthlyBidder.class.getName());
@@ -59,9 +58,7 @@ public class MonthlyBidder {
   private final YearMonth yearMonth;
   private final boolean useProto;
   private final MonthlyBidderConfig config;
-  
-  private static final Period MIN_CREDIT_HOURS_PER_MONTH = Period.hours(65);
-  
+
   public static void main(String args[]) throws Exception {
     new MonthlyBidder(args).run();
   }
@@ -186,7 +183,7 @@ public class MonthlyBidder {
     for (PairingKey key : line.getPairingKeys()) {
       Trip trip = allPairings.get(key);
       String layover;
-      if (lineScore.getThreeTripsThatMeetMinCredit().containsKey(trip)) {
+      if (lineScore.getMinimumTripsThatMeetMinCredit().containsKey(trip)) {
         layover = "*";
       } else {
         layover = " ";
@@ -215,7 +212,7 @@ public class MonthlyBidder {
     result.append(lineScore.isDesirableLine(config) ? "D " : "U ");
     result.append(lineScore.getGspCredit());
     result.append(" ");
-    result.append(MIN_CREDIT_HOURS_PER_MONTH.minus(lineScore.getGspCredit()));
+    result.append(config.getRequiredCredit().minus(lineScore.getGspCredit()));
     result.append(" ");
     result.append(lineScore.getGspOvernightPeriod());
     result.append("  ");

@@ -23,6 +23,8 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
+import crewtools.util.Period;
+
 public class MonthlyBidderConfig {
 
   // @formatter:off
@@ -39,6 +41,14 @@ public class MonthlyBidderConfig {
 
   public Set<Integer> getVacationDaysOff() {
     return VACATION_DAYS_OFF;
+  }
+
+  public int getMinimumNumberOfTrips() {
+    return 2;
+  }
+
+  public Period getRequiredCredit() {
+    return Period.hours(65 - 21);
   }
 
 }

@@ -41,26 +41,21 @@ import crewtools.util.Period;
 public class LineScore {
   private final Logger logger = Logger.getLogger(LineScore.class.getName());
 
-  // Possible that only one additional SAP trip is necessary to make 65 hours.
-  private static final Period TIER_1_THRESHOLD = Period.hours(44);
-  
-  // Single-GSP overnight lines with less than this credit are less
-  // valuable than double-GSP overnights with less than this credit.
-  private static final Period TIER_2_THRESHOLD = Period.hours(22);
-  
+  private final MonthlyBidderConfig config;
   private final ThinLine line;
   private final Map<PairingKey, Trip> trips;
   private final Period gspCredit;
   private final Period allCredit;
   private final Period gspOvernightPeriod;
   private final int numGspOvernights;
-  private final Map<Trip, Period> threeTripsThatMeetMinCredit;
-  private final Period threeTripGspOvernightPeriod;
+  private final Map<Trip, Period> minimumTripsThatMeetMinCredit;
+  private final Period minimumTripGspOvernightPeriod;
   private final int startTimePoints;
   private final int endTimePoints;
   private final boolean hasEquipmentTwoHundredSegments;
 
   public LineScore(MonthlyBidderConfig config, YearMonth yearMonth, ThinLine line, Map<PairingKey, Trip> trips) {
+    this.config = config;
     this.line = line;
     this.trips = trips;
     
@@ -98,26 +93,26 @@ public class LineScore {
     this.allCredit = allCredit;
     this.gspOvernightPeriod = gspOvernightPeriod;
     this.numGspOvernights = numGspOvernights;
-    this.threeTripsThatMeetMinCredit = evaluateMinCredit(creditsInMonthMap);
+    this.minimumTripsThatMeetMinCredit = evaluateMinCredit(creditsInMonthMap);
     
-    Period threeTripGspOvernightPeriod = Period.ZERO;
-    for (Trip trip : threeTripsThatMeetMinCredit.keySet()) {
+    Period minimumTripGspOvernightPeriod = Period.ZERO;
+    for (Trip trip : minimumTripsThatMeetMinCredit.keySet()) {
       for (Section section : trip.sections) {
         if (section.hasLayoverAirportCode()
             && section.getLayoverAirportCode().equals("GSP")) {
-          threeTripGspOvernightPeriod = 
-              threeTripGspOvernightPeriod.plus(section.getLayoverDuration());
+          minimumTripGspOvernightPeriod =
+              minimumTripGspOvernightPeriod.plus(section.getLayoverDuration());
         }
       }
     }
-    this.threeTripGspOvernightPeriod = threeTripGspOvernightPeriod;
+    this.minimumTripGspOvernightPeriod = minimumTripGspOvernightPeriod;
 
     // more points are better.
     int startTimePoints = 0;
     int endTimePoints = 0;
     boolean hasEquipmentTwoHundredSegments = false;
     
-    for (Trip trip : threeTripsThatMeetMinCredit.keySet()) {
+    for (Trip trip : minimumTripsThatMeetMinCredit.keySet()) {
       LocalTime reportTime = trip.getDutyStart().toLocalTime();
       if (reportTime.getHourOfDay() > 9 && reportTime.getHourOfDay() <= 20) {
         startTimePoints++;
@@ -139,18 +134,18 @@ public class LineScore {
     this.hasEquipmentTwoHundredSegments = hasEquipmentTwoHundredSegments;
   }
   
-  /** Are there any three trips that together meed minimum credit? */
+  /** Are there any N trips that together meed minimum credit? */
   private Map<Trip, Period> evaluateMinCredit(Map<Trip, Period> creditsInMonth) {
     Map<Trip, Period> largestToSmallestCredit = Collections.reverseSortByValue(creditsInMonth);
     ImmutableMap.Builder<Trip, Period> result = ImmutableMap.builder();
-    Period requiredCredit = Period.hours(65);
+    Period requiredCredit = config.getRequiredCredit();
     for (Map.Entry<Trip, Period> entry : largestToSmallestCredit.entrySet()) {
       result.put(entry.getKey(), entry.getValue());
       if (requiredCredit.compareTo(entry.getValue()) <= 0) {
         // we're done
         return result.build();
       }
-      if (result.build().size() == 3) {
+      if (result.build().size() == config.getMinimumNumberOfTrips()) {
         break;
       }
       requiredCredit = requiredCredit.minus(entry.getValue());
@@ -162,11 +157,11 @@ public class LineScore {
   public boolean isDesirableLine(MonthlyBidderConfig config) {
     boolean hasAnyGspOvernights = false;
     for (Trip trip : getTrips()) {
-      if (hasThreeTripsThatMeetMinCredit()) {
-        if (!getThreeTripsThatMeetMinCredit().containsKey(trip)) {
+      if (hasMinimumTripsThatMeetMinCredit()) {
+        if (!getMinimumTripsThatMeetMinCredit().containsKey(trip)) {
           // We're planning on dropping this trip in this line in the SAP anyway,
-          // because it is not one of the "magic three" (and there are a magic
-          // three in this line).
+          // because it is not one of the "magic N" (and there are a magic
+          // N in this line).
           // We don't care if it spans a day off.
           continue;
         }
@@ -187,7 +182,7 @@ public class LineScore {
       }
     }
 
-    return hasThreeTripsThatMeetMinCredit() || hasAnyGspOvernights;
+    return hasMinimumTripsThatMeetMinCredit() || hasAnyGspOvernights;
   }
   
   private int countGspOvernights(Trip trip) {
@@ -237,16 +232,16 @@ public class LineScore {
     return gspOvernightPeriod;
   }
   
-  public Map<Trip, Period> getThreeTripsThatMeetMinCredit() {
-    return threeTripsThatMeetMinCredit;
+  public Map<Trip, Period> getMinimumTripsThatMeetMinCredit() {
+    return minimumTripsThatMeetMinCredit;
   }
   
-  public boolean hasThreeTripsThatMeetMinCredit() {
-    return !threeTripsThatMeetMinCredit.isEmpty();
+  public boolean hasMinimumTripsThatMeetMinCredit() {
+    return !minimumTripsThatMeetMinCredit.isEmpty();
   }
   
-  public Period getThreeTripGspOvernightPeriod() {
-    return threeTripGspOvernightPeriod;
+  public Period getMinimumTripGspOvernightPeriod() {
+    return minimumTripGspOvernightPeriod;
   }
   
   public int getStartTimePoints() {
@@ -259,15 +254,5 @@ public class LineScore {
   
   public boolean hasEquipmentTwoHundredSegments() {
     return hasEquipmentTwoHundredSegments;
-  }
-  
-  public int getTier() {
-    if (getGspCredit().compareTo(TIER_1_THRESHOLD) > 0) {
-      return 1;
-    } else if (getGspCredit().compareTo(TIER_2_THRESHOLD) > 0) {
-      return 2;
-    } else {
-      return 3;
-    }
   }
 }

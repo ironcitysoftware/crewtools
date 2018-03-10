@@ -64,17 +64,21 @@ public class TripScore implements Comparable<TripScore> {
     
     logger.fine("Begin point diagnostic for " + trip.getPairingName() + " ----------");
     
-    goodPoints += 5 * numGspOvernights;
+    goodPoints += 2 * numGspOvernights;
     if (numGspOvernights > 0) {
-      logger.fine("+5*" + numGspOvernights + " for GSP overnights");
+      logger.fine("+2*" + numGspOvernights + " for GSP overnights");
     }
     
-    goodPoints += gspOvernightPeriod.getHours();
+    goodPoints += (gspOvernightPeriod.getHours() / 6);
     if (gspOvernightPeriod.getHours() > 0) {
-      logger.fine("+" + gspOvernightPeriod.getHours() + " for GSP overnights hours");
+      logger.fine("+" + gspOvernightPeriod.getHours() + "/6 for GSP overnights hours");
     }
     badPoints += numLegs;
     logger.fine("-" + numLegs + " for legs");
+    if (numLegs > 3) {
+      logger.fine("-1 (surcharge) for > 3 legs");
+      badPoints++;
+    }
 
     // more points are better.
     int startTimePoints = 0;

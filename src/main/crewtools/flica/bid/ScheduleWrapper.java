@@ -72,7 +72,7 @@ public class ScheduleWrapper {
     this.nonTripIntervals = new HashSet<>();
     this.creditInMonth = new HashMap<>();
     this.totalCreditInMonth = Period.ZERO;
-    this.minRequiredCredit = Period.hours(65);
+    this.minRequiredCredit = SIXTY_FIVE;
     this.baggageTrips = baggageTrips;
     this.schedulePojo = schedulePojo;
     this.yearMonth = yearMonth;
