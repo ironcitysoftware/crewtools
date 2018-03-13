@@ -51,7 +51,8 @@ public class TripBuilder {
       LAYOVER,
       DAY_OF_MONTH,
       HOUR_OF_DAY,
-      NAME, LOCAL_DATE;
+      NAME,
+      LOCAL_DATE;
     }
     EventType eventType;
     String airportCode;

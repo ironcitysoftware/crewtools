@@ -261,10 +261,6 @@ public class FlicaService {
   public String submitSwap(int round, YearMonth yearMonth,
       LocalDate today, List<PairingKey> addTrips, 
       List<PairingKey> dropTrips) throws URISyntaxException, ClientProtocolException, IOException {
-    if (true) {
-      logger.info("Would have swapped! Add:" + addTrips + " Drop:" + dropTrips);
-      return "";
-    }
     String bidCloseId = getBidCloseId(round, yearMonth);
     URIBuilder builder = new URIBuilder(BASE_URL + TRIP_SWAP_BASE_URL);
     builder.addParameter("SubmitBids", "YES");
