@@ -48,6 +48,7 @@ public class AutoBidder {
   private final int SMTP_PORT = 25000;
 
   private static final List<PairingKey> BAGGAGE_TRIPS = ImmutableList.of(
+      new PairingKey(LocalDate.parse("2018-4-22"), "L7090A"),
       new PairingKey(LocalDate.parse("2018-4-28"), "L7176"));
 
   public static void main(String args[]) throws Exception {
