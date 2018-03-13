@@ -229,8 +229,6 @@ public class FlicaService {
     builder.addParameter("ViewOT", "1");
     builder.addParameter("SubmitBids", "NO");
     builder.addParameter("CC", crewClassId);
-
-    LocalDate firstOfMonth = yearMonth.toLocalDate(1);
     String url = builder.toString();
     logger.info("url = [" + url + "]");
     return connection.retrieveUrl(url);
@@ -263,6 +261,10 @@ public class FlicaService {
   public String submitSwap(int round, YearMonth yearMonth,
       LocalDate today, List<PairingKey> addTrips, 
       List<PairingKey> dropTrips) throws URISyntaxException, ClientProtocolException, IOException {
+    if (true) {
+      logger.info("Would have swapped! Add:" + addTrips + " Drop:" + dropTrips);
+      return "";
+    }
     String bidCloseId = getBidCloseId(round, yearMonth);
     URIBuilder builder = new URIBuilder(BASE_URL + TRIP_SWAP_BASE_URL);
     builder.addParameter("SubmitBids", "YES");

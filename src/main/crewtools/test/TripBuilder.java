@@ -31,6 +31,7 @@ import org.joda.time.YearMonth;
 import com.google.common.base.Preconditions;
 
 import crewtools.flica.Proto;
+import crewtools.flica.Proto.Equipment;
 import crewtools.flica.Proto.Leg;
 import crewtools.flica.pojo.Section;
 import crewtools.flica.pojo.Trip;
@@ -50,7 +51,7 @@ public class TripBuilder {
       LAYOVER,
       DAY_OF_MONTH,
       HOUR_OF_DAY,
-      NAME;
+      NAME, LOCAL_DATE;
     }
     EventType eventType;
     String airportCode;
@@ -59,9 +60,17 @@ public class TripBuilder {
     int dayOfMonth;
     int hourOfDay;
     String name;
+    LocalDate date;
   }
   
   private final List<Event> events = new ArrayList<>();
+
+  public TripBuilder withLocalDate(LocalDate date) {
+    Event localDate = new Event(Event.EventType.LOCAL_DATE);
+    localDate.date = date;
+    events.add(localDate);
+    return this;
+  }
 
   public TripBuilder withDayOfMonth(int dayOfMonth) {
     Event dom = new Event(Event.EventType.DAY_OF_MONTH);
@@ -111,64 +120,74 @@ public class TripBuilder {
     Set<LocalDate> departureDates = new HashSet<>();
     int currentHourOfDay = DEFAULT_START_HOUR_OF_DAY;
     Proto.Trip.Builder tripBuilder = Proto.Trip.newBuilder();
-    Proto.Section.Builder currentSection = null; 
+    Proto.Section.Builder currentSection = null;
     DateTime sectionStart = null;
     DateTime sectionEnd = null;
+    boolean openSection = false;
     for (Event event : events) {
       switch (event.eventType) {
-      case DAY_OF_MONTH:
-        currentDate = DEFAULT_YEAR_MONTH.toLocalDate(event.dayOfMonth);
-        continue;
-      case HOUR_OF_DAY:
-        currentHourOfDay = event.hourOfDay;
-        continue;
-      case LEG:
-        if (sections.isEmpty()) {
-          startDate = currentDate;
-        }
-        if (currentSection == null) {
-          currentSection = tripBuilder.addSectionBuilder();
-          departureDates.add(currentDate);
-        }
-        if (currentSection.getLegCount() == 0) {
-          currentSection.setLocalDutyStartDate(currentDate.toString());
-          currentSection.setLocalDutyStartTime(String.format("%02d00", currentHourOfDay));
-          sectionStart = currentDate.toDateTimeAtStartOfDay().withHourOfDay(currentHourOfDay);
-        }
-        Proto.Leg.Builder leg = currentSection.addLegBuilder();
-        leg.setDayOfMonth(currentDate.getDayOfMonth());
-        leg.setBlockDuration(event.period.toHhMmString());
-        leg.setDepartureLocalTime(String.format("%02d00", currentHourOfDay));
-        leg.setDepartureAirportCode(event.airportCode);
-        leg.setArrivalAirportCode(event.toAirportCode);
-        currentHourOfDay += event.period.getHours();
-        // TODO minutes
-        Preconditions.checkState(currentHourOfDay < 24);
-        leg.setArrivalLocalTime(String.format("%02d00", currentHourOfDay));
-        sectionEnd = sectionStart.withHourOfDay(currentHourOfDay);
-        sectionBlock = sectionBlock.plus(event.period);
-        tripBlock = tripBlock.plus(event.period);
-        continue;
-      case LAYOVER:
-        Preconditions.checkNotNull(currentSection);
-        currentSection.setLayoverAirportCode(event.airportCode);
-        currentSection.setLayoverDuration(event.period.toHhMmString());
-        Leg.Builder lastLeg = currentSection.getLegBuilder(currentSection.getLegCount() - 1);
-        currentSection.setLocalDutyEndTime(lastLeg.getArrivalLocalTime());
-        sections.add(new Section(currentSection.build(),
-            currentDate,
-            sectionBlock, sectionBlock,
-            sectionStart, sectionEnd));
-        currentSection = null;
-        sectionBlock = Period.ZERO;
-        currentDate = currentDate.plusDays(1);
-        currentHourOfDay = DEFAULT_START_HOUR_OF_DAY;
-        continue;
-      case NAME:
-        tripName = event.name;
-        continue;
+        case LOCAL_DATE:
+          currentDate = event.date;
+          continue;
+        case DAY_OF_MONTH:
+          currentDate = DEFAULT_YEAR_MONTH.toLocalDate(event.dayOfMonth);
+          continue;
+        case HOUR_OF_DAY:
+          currentHourOfDay = event.hourOfDay;
+          continue;
+        case LEG:
+          if (sections.isEmpty()) {
+            startDate = currentDate;
+          }
+          if (currentSection == null) {
+            currentSection = tripBuilder.addSectionBuilder();
+            departureDates.add(currentDate);
+            openSection = true;
+          }
+          if (currentSection.getLegCount() == 0) {
+            currentSection.setLocalDutyStartDate(currentDate.toString());
+            currentSection.setLocalDutyStartTime(String.format("%02d00", currentHourOfDay));
+            sectionStart = currentDate.toDateTimeAtStartOfDay().withHourOfDay(currentHourOfDay);
+          }
+          Proto.Leg.Builder leg = currentSection.addLegBuilder();
+          leg.setDayOfMonth(currentDate.getDayOfMonth());
+          leg.setBlockDuration(event.period.toHhMmString());
+          leg.setDepartureLocalTime(String.format("%02d00", currentHourOfDay));
+          leg.setDepartureAirportCode(event.airportCode);
+          leg.setArrivalAirportCode(event.toAirportCode);
+          leg.setEquipment(Equipment.RJ9);
+          currentHourOfDay += event.period.getHours();
+          // TODO minutes
+          Preconditions.checkState(currentHourOfDay < 24);
+          leg.setArrivalLocalTime(String.format("%02d00", currentHourOfDay));
+          sectionEnd = sectionStart.withHourOfDay(currentHourOfDay);
+          sectionBlock = sectionBlock.plus(event.period);
+          tripBlock = tripBlock.plus(event.period);
+          continue;
+        case LAYOVER:
+          Preconditions.checkNotNull(currentSection);
+          currentSection.setLayoverAirportCode(event.airportCode);
+          currentSection.setLayoverDuration(event.period.toHhMmString());
+          addSectionData(currentSection, sectionBlock, sections, currentDate,
+              sectionStart, sectionEnd);
+          currentSection = null;
+          sectionBlock = Period.ZERO;
+          currentDate = currentDate.plusDays(1);
+          currentHourOfDay = DEFAULT_START_HOUR_OF_DAY;
+          openSection = false;
+          continue;
+        case NAME:
+          tripName = event.name;
+          continue;
       }
     }
+
+    if (openSection) {
+      // "close" the section without a layover.
+      addSectionData(currentSection, sectionBlock, sections, currentDate,
+          sectionStart, sectionEnd);
+    }
+
     tripBuilder.setStartDate(startDate.toString());
     if (tripName == null) {
       tripName = "L" + startDate.toString();
@@ -180,5 +199,18 @@ public class TripBuilder {
         tripBlock,  // tafb
         departureDates,
         tripBuilder.build());
+  }
+
+  private void addSectionData(Proto.Section.Builder currentSection,
+      Period sectionBlock, List<Section> sections, LocalDate currentDate,
+      DateTime sectionStart, DateTime sectionEnd) {
+    Preconditions.checkNotNull(currentSection);
+    Leg.Builder lastLeg = currentSection.getLegBuilder(currentSection.getLegCount() - 1);
+    currentSection.setLocalDutyEndTime(lastLeg.getArrivalLocalTime());
+    currentSection.setCreditDuration(sectionBlock.toHhMmString());
+    sections.add(new Section(currentSection.build(),
+        currentDate,
+        sectionBlock, sectionBlock,
+        sectionStart, sectionEnd));
   }
 }
