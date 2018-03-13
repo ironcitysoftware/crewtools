@@ -27,6 +27,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.joda.time.Duration;
+import org.joda.time.LocalDate;
 import org.subethamail.smtp.server.SMTPServer;
 
 import com.google.common.collect.ImmutableList;
@@ -46,9 +47,8 @@ public class AutoBidder {
 
   private final int SMTP_PORT = 25000;
 
-  private static final List<PairingKey> BAGGAGE_TRIPS = ImmutableList.of();
-//      new PairingKey(LocalDate.parse("2018-3-11"), "L2003"),
-//      new PairingKey(LocalDate.parse("2018-3-28"), "L2095"));
+  private static final List<PairingKey> BAGGAGE_TRIPS = ImmutableList.of(
+      new PairingKey(LocalDate.parse("2018-4-28"), "L7176"));
 
   public static void main(String args[]) throws Exception {
     new AutoBidder().run(args);
