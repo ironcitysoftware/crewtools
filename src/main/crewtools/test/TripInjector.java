@@ -39,7 +39,7 @@ public class TripInjector extends Thread {
 
   public void run() {
     TripBuilder builder = new TripBuilder()
-        .withLocalDate(LocalDate.parse("2018-4-9"))
+        .withLocalDate(LocalDate.parse("2018-4-11"))
         .withLeg("CLT", "GSP", Period.hours(10))
         .withLayover("GSP", Period.hours(16))
         .withLeg("GSP", "CLT", Period.hours(10).plus(Period.minutes(30)));

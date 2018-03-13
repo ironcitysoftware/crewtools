@@ -102,7 +102,8 @@ public class Worker extends Thread {
 
       ScheduleWrapper.OverlapEvaluation overlap = wrapper.evaluateOverlap(trip);
       if (overlap.overlapsUndroppable) {
-        logger.info("Discarding " + trip.getPairingName() + " due to overlap with an undroppable event");
+        logger.info("Discarding " + trip.getPairingName()
+            + " due to overlap with an undroppable event or required day off");
         return;
       }
 

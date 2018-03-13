@@ -47,6 +47,13 @@ public class ScheduleWrapper {
   private final Logger logger = Logger.getLogger(ScheduleWrapper.class.getName());
   private final Map<PairingKey, Trip> schedule;
 
+  /**
+   * TODO: this should be in AutoBidderConfig.
+   * Potential opentime trips which overlap this date will be discarded.
+   */
+  private static final Set<LocalDate> REQUIRED_DAYS_OFF = ImmutableSet.of(
+      LocalDate.parse("2018-4-1"));
+
   // subset of schedule
   // only contains future, droppable trips.
   private final Map<PairingKey, Trip> droppableSchedule;
@@ -158,8 +165,15 @@ public class ScheduleWrapper {
     public Collection<Trip> droppable;
 
     public OverlapEvaluation(Trip trip) {
-      // Vacation or training.
+      // Company vacation or training.
       if (overlapsNonTrip(trip.getInterval())) {
+        overlapsUndroppable = true;
+        droppable = ImmutableSet.of();
+        return;
+      }
+
+      // Hard-and-fast days off.
+      if (overlaps(trip.getDepartureDates(), REQUIRED_DAYS_OFF)) {
         overlapsUndroppable = true;
         droppable = ImmutableSet.of();
         return;
@@ -191,7 +205,11 @@ public class ScheduleWrapper {
       Preconditions.checkState(!scheduledDates.isEmpty());
       scheduledDates.add(Ordering.natural().min(scheduledDates).minusDays(1));
       scheduledDates.add(Ordering.natural().max(scheduledDates).plusDays(1));
-      return !Collections.disjoint(scheduledDates, potentialTrip.getDepartureDates());
+      return overlaps(scheduledDates, potentialTrip.getDepartureDates());
+    }
+
+    private boolean overlaps(Collection<LocalDate> a, Collection<LocalDate> b) {
+      return !Collections.disjoint(a, b);
     }
   }
 

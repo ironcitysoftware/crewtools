@@ -97,7 +97,7 @@ public class AutoBidder {
     Worker worker = new Worker(queue, service, tree, 
         config.getYearMonth(), config.getRound(), clock, stats);
     worker.start();
-    
+
     SMTPServer smtpServer = new SMTPServer(
         (context) -> {
           return new FlicaMessageHandler(context, config.getYearMonth(), queue, stats);
