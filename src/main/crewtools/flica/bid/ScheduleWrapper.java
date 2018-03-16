@@ -52,7 +52,8 @@ public class ScheduleWrapper {
    * Potential opentime trips which overlap this date will be discarded.
    */
   private static final Set<LocalDate> REQUIRED_DAYS_OFF = ImmutableSet.of(
-      LocalDate.parse("2018-4-1"));
+      LocalDate.parse("2018-4-1"),
+      LocalDate.parse("2018-4-22"));
 
   // subset of schedule
   // only contains future, droppable trips.
