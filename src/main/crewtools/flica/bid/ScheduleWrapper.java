@@ -71,7 +71,7 @@ public class ScheduleWrapper {
   
   private static final Period SIXTY_FIVE = Period.hours(65);
  
-  public ScheduleWrapper(Collection<PairingKey> baggageTrips,
+  public ScheduleWrapper(Collection<PairingKey> allBaggageTrips,
       Schedule schedulePojo,
       YearMonth yearMonth,
       Clock clock) {
@@ -81,14 +81,15 @@ public class ScheduleWrapper {
     this.creditInMonth = new HashMap<>();
     this.totalCreditInMonth = Period.ZERO;
     this.minRequiredCredit = SIXTY_FIVE;
-    this.baggageTrips = baggageTrips;
+    this.baggageTrips = new ArrayList<>();
     this.schedulePojo = schedulePojo;
     this.yearMonth = yearMonth;
     this.clock = clock;
-    populate(schedulePojo, yearMonth);
+    populate(schedulePojo, yearMonth, allBaggageTrips);
   }
 
-  private void populate(Schedule schedulePojo, YearMonth yearMonth) {
+  private void populate(Schedule schedulePojo, YearMonth yearMonth,
+      Collection<PairingKey> allBaggageTrips) {
     for (Trip trip : schedulePojo.trips) {
       if (trip.hasScheduleType()) {
         // Vacation, training, etc.
@@ -97,7 +98,7 @@ public class ScheduleWrapper {
         mergeNonTripInterval(trip.getInterval());
       } else {
         logger.info("Scheduled trip " + trip.getPairingKey());
-        if (!baggageTrips.contains(trip.getPairingKey())) {
+        if (!allBaggageTrips.contains(trip.getPairingKey())) {
           schedule.put(trip.getPairingKey(), trip);
           if (trip.isDroppable() && trip.getDutyStart().isAfter(clock.now())) {
             droppableSchedule.put(trip.getPairingKey(), trip);
@@ -105,6 +106,8 @@ public class ScheduleWrapper {
           Period creditInMonth = trip.getCreditInMonth(yearMonth);
           totalCreditInMonth = totalCreditInMonth.plus(creditInMonth);
           this.creditInMonth.put(trip.getPairingKey(), creditInMonth);
+        } else {
+          baggageTrips.add(trip.getPairingKey());
         }
       }
     }
@@ -239,6 +242,7 @@ public class ScheduleWrapper {
     return newWrapper;
   }
   
+  /** Returns any baggage trips that remain in this schedule. */
   public Collection<PairingKey> getBaggage() {
     return baggageTrips;
   }
