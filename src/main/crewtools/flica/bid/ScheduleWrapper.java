@@ -53,7 +53,9 @@ public class ScheduleWrapper {
    */
   private static final Set<LocalDate> REQUIRED_DAYS_OFF = ImmutableSet.of(
       LocalDate.parse("2018-4-1"),
-      LocalDate.parse("2018-4-22"));
+      LocalDate.parse("2018-4-22"),
+      LocalDate.parse("2018-4-23"),
+      LocalDate.parse("2018-5-1"));
 
   // subset of schedule
   // only contains future, droppable trips.
@@ -152,7 +154,11 @@ public class ScheduleWrapper {
         .plus(tripCredit);
     boolean result = SIXTY_FIVE.compareTo(newCredit) <= 0;
     logger.info("If we drop " + scheduledTrip + " and add " 
-        + trip.getPairingName() + " for " + tripCredit + ", is it OK? " + result);
+        + trip.getPairingName() + " for " + tripCredit + ", is it OK? " + result
+        + "\nTotalCreditInMonth:" + totalCreditInMonth
+        + " - scheduledTrip:" + creditInMonth.get(scheduledTrip)
+        + " + tripCreidt:" + tripCredit
+        + " = " + newCredit);
     return result;
   }
   

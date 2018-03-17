@@ -49,7 +49,8 @@ public class AutoBidder {
 
   private static final List<PairingKey> BAGGAGE_TRIPS = ImmutableList.of(
       new PairingKey(LocalDate.parse("2018-4-22"), "L7090A"),
-      new PairingKey(LocalDate.parse("2018-4-28"), "L7176"));
+      new PairingKey(LocalDate.parse("2018-4-28"), "L7176"),
+      new PairingKey(LocalDate.parse("2018-4-22"), "L7776"));
 
   public static void main(String args[]) throws Exception {
     new AutoBidder().run(args);

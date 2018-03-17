@@ -117,6 +117,10 @@ public class Trip implements Comparable<Trip> {
     return proto.hasScheduleType();
   }
   
+  public int getNumSections() {
+    return sections.size();
+  }
+
   public PairingKey getPairingKey() {
     return new PairingKey(getFirstSection().getShowDate(), proto.getPairingName());
   }

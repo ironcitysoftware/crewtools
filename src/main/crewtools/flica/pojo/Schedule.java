@@ -74,6 +74,10 @@ public class Schedule {
     // process drops
     int numDropped = 0;
     for (Trip trip : trips) {
+      if (trip.getNumSections() == 0) {
+        logger.info("copyAndModify a trip with no sections? " + trip.proto);
+        continue;
+      }
       if (drops.contains(trip.getPairingKey())) {
         numDropped++;
         newBlockTime = newBlockTime.minus(trip.block);

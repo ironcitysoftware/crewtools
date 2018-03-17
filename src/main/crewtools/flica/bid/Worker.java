@@ -121,7 +121,12 @@ public class Worker extends Thread {
         }
         TripScore potentialNewTrip = new TripScore(trip);
         TripScore existingTrip = new TripScore(scheduledTrip);
-        if (potentialNewTrip.compareTo(existingTrip) > 0) {
+        boolean newTripIsBetter = potentialNewTrip.compareTo(existingTrip) > 0;
+        boolean scheduleHasBaggage = !wrapper.getBaggage().isEmpty();
+        logger.info("Trip " + trip.getPairingName() + ": better=" + newTripIsBetter
+            + "; scheduleHasBaggage=" + scheduleHasBaggage
+            + " (" + wrapper.getBaggage() + ")");
+        if (newTripIsBetter || scheduleHasBaggage) {
           logger.info("Trip " + trip.getPairingName() 
           + " (" + potentialNewTrip.getPoints() + ") is better than "
           + scheduledTrip.getPairingName() + " (" + existingTrip.getPoints() + ")");
@@ -144,10 +149,15 @@ public class Worker extends Thread {
               logger.info("Ignoring duplicate swap request");
               return;
             }
+            logger.info("Swap response parsed.");
             stats.recordSwap(transition.toString());
+            logger.info("Stats recorded.");
             add(wrapper, transition, wrapper.mutate(ImmutableList.of(trip), drops));
+            logger.info("Transition added.");
             numSwaps++;
           } catch (Throwable e) {
+            e.printStackTrace();
+            logger.warning(e.toString());
             logger.log(Level.WARNING, "Swap error", e);
           }
           Preconditions.checkState(numSwaps < MAX_SWAPS, "Too many swaps.");
