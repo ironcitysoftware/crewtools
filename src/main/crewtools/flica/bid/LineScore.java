@@ -136,7 +136,7 @@ public class LineScore {
   
   /** Are there any N trips that together meed minimum credit? */
   private Map<Trip, Period> evaluateMinCredit(Map<Trip, Period> creditsInMonth) {
-    Map<Trip, Period> largestToSmallestCredit = Collections.reverseSortByValue(creditsInMonth);
+    Map<Trip, Period> largestToSmallestCredit = Collections.sortByValueAscending(creditsInMonth);
     ImmutableMap.Builder<Trip, Period> result = ImmutableMap.builder();
     Period requiredCredit = config.getRequiredCredit();
     for (Map.Entry<Trip, Period> entry : largestToSmallestCredit.entrySet()) {
