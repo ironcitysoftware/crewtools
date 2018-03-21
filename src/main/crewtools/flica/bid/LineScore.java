@@ -26,7 +26,6 @@ import java.util.logging.Logger;
 
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
-import org.joda.time.YearMonth;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -54,7 +53,7 @@ public class LineScore {
   private final int endTimePoints;
   private final boolean hasEquipmentTwoHundredSegments;
 
-  public LineScore(MonthlyBidderConfig config, YearMonth yearMonth, ThinLine line, Map<PairingKey, Trip> trips) {
+  public LineScore(MonthlyBidderConfig config, ThinLine line, Map<PairingKey, Trip> trips) {
     this.config = config;
     this.line = line;
     this.trips = trips;
@@ -67,7 +66,8 @@ public class LineScore {
     Map<Trip, Period> creditsInMonthMap = new HashMap<>();
     
     for (Trip trip : trips.values()) {
-      Period creditInMonth = trip.getCreditInMonth(config.getVacationDaysOff(), yearMonth);
+      Period creditInMonth = trip.getCreditInMonth(
+          config.getVacationDaysOff(), config.getYearMonth());
       creditsInMonthMap.put(trip, creditInMonth);
       allCredit = allCredit.plus(creditInMonth);
 

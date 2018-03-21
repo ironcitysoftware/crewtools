@@ -51,12 +51,6 @@ import crewtools.util.FlicaConfig;
 
 public class MonthlyBidder {
   private final Logger logger = Logger.getLogger(MonthlyBidder.class.getName());
-  private final boolean submitBids;
-  private final boolean useCachingService;
-  private final boolean parseCanceled;
-  private final boolean softDaysOff;
-  private final YearMonth yearMonth;
-  private final boolean useProto;
   private final MonthlyBidderConfig config;
 
   public static void main(String args[]) throws Exception {
@@ -64,41 +58,7 @@ public class MonthlyBidder {
   }
 
   public MonthlyBidder(String args[]) {
-    boolean submitBids = false;
-    boolean useCachingService = false;
-    boolean parseCanceled = false;
-    boolean softDaysOff = false;
-    boolean useProto = false;
-    YearMonth yearMonth = null;
-    for (String arg : args) {
-      if (arg.equals("--submit")) {
-        submitBids = true;
-      } else if (arg.equals("--cache")) {
-        useCachingService = true;
-      } else if (arg.equals("--canceled")) {
-        parseCanceled = true;
-      } else if (arg.equals("--softDaysOff")) {
-        softDaysOff = true;
-      } else if (arg.equals("--proto")) {
-        useProto = true;
-      } else if (arg.startsWith("--ym")) {
-        yearMonth = YearMonth.parse(arg.split("=")[1]);
-      }
-    }
-    this.submitBids = submitBids;
-    this.useCachingService = useCachingService;
-    this.parseCanceled = parseCanceled;
-    this.softDaysOff = softDaysOff;
-    this.yearMonth = Preconditions.checkNotNull(yearMonth, "Need --ym=");
-    this.useProto = useProto;
-    // TODO move everything to config.
-    this.config = new MonthlyBidderConfig();
-    logger.info("Submit bids    (--submit)     : " + submitBids);
-    logger.info("Use cache      (--cache)      : " + useCachingService);
-    logger.info("Parse canceled (--canceled)   : " + parseCanceled);
-    logger.info("Soft days off  (--softDaysOff): " + softDaysOff); 
-    logger.info("year month     (--ym=yyyy-mm) : " + yearMonth);
-    logger.info("Use proto      (--proto)      : " + useProto);
+    this.config = new MonthlyBidderConfig(args);
   }
   
   public void run() throws Exception {
@@ -108,18 +68,17 @@ public class MonthlyBidder {
   private void runForMonthlyBid() throws Exception {
     FlicaConnection connection = new FlicaConnection(new FlicaConfig());
     FlicaService service;
-    if (useCachingService) {
+    if (config.useCachingService()) {
       service = new CachingFlicaService(connection);
     } else {
       service = new FlicaService(connection);
       service.connect();
     }
 
-    int lastDateOfMonth = yearMonth.toLocalDate(1).dayOfMonth().getMaximumValue(); 
-    Map<PairingKey, Trip> pairings = getAllPairings(service, yearMonth);
-    logger.info(pairings.size() + " pairings read for " + yearMonth);
-    List<ThinLine> lines = getAllLines(service, yearMonth);
-    logger.info(lines.size() + " lines read for " + yearMonth);
+    Map<PairingKey, Trip> pairings = getAllPairings(service, config.getYearMonth());
+    logger.info(pairings.size() + " pairings read for " + config.getYearMonth());
+    List<ThinLine> lines = getAllLines(service, config.getYearMonth());
+    logger.info(lines.size() + " lines read for " + config.getYearMonth());
     Map<String, ThinLine> linesByName = new HashMap<>();
 
     List<LineScore> lineScores = new ArrayList<>();
@@ -132,28 +91,30 @@ public class MonthlyBidder {
             Preconditions.checkNotNull(pairings.get(key),
                 "Pairing not found: " + key));
       }
-      LineScore lineScore = new LineScore(config, yearMonth, line, trips);
-      if (softDaysOff || lineScore.isDesirableLine(config)) {
+      LineScore lineScore = new LineScore(config, line, trips);
+      if (config.softDaysOff() || lineScore.isDesirableLine(config)) {
         lineScores.add(lineScore);
       }
     }
     Collections.sort(lineScores, new MonthlyBidStrategy(config));
 
     logger.info("Computed bids:");
-    
+
+    int lastDateOfMonth = config.getYearMonth().toLocalDate(1).dayOfMonth().getMaximumValue();
+
     System.out.println(header(lastDateOfMonth));
     LinkedList<String> bids = new LinkedList<>();
     for (LineScore lineScore : lineScores) {
       if (!bids.contains(lineScore.getLineName())) {
         bids.add(lineScore.getLineName());
-        String text = formatLine(lastDateOfMonth, lineScore, pairings, yearMonth);
+        String text = formatLine(lastDateOfMonth, lineScore, pairings, config.getYearMonth());
         System.out.println(text);
       }
     }
 
-    if (submitBids) {
+    if (config.submitBids()) {
       logger.info("Submitting bids!");
-      service.submitLineBid(/* round */ 1, yearMonth, bids);
+      service.submitLineBid(/* round */ 1, config.getYearMonth(), bids);
     } else {
       logger.info("--submit was not specified, so bids not submitted.");
     }
@@ -230,9 +191,10 @@ public class MonthlyBidder {
   
   private Map<PairingKey, Trip> getAllPairings(FlicaService service, YearMonth yearMonth) throws Exception {
     Proto.PairingList pairingList;
-    if (!useProto) {
+    if (!config.useProto()) {
       String rawPairings = service.getAllPairings(AwardDomicile.CLT, Rank.FIRST_OFFICER, 1, yearMonth);
-      PairingParser pairingParser = new PairingParser(rawPairings, yearMonth, parseCanceled);
+      PairingParser pairingParser = new PairingParser(rawPairings, yearMonth,
+          config.parseCanceled());
       pairingList = pairingParser.parse();
     } else {
       String filename = new DataReader().getPairingFilename(yearMonth, AwardDomicile.CLT);
@@ -255,7 +217,7 @@ public class MonthlyBidder {
 
   private List<ThinLine> getAllLines(FlicaService service, YearMonth yearMonth) throws Exception {
     Proto.ThinLineList lineList;
-    if (!useProto) {
+    if (!config.useProto()) {
       String rawLines = service.getAllLines(AwardDomicile.CLT, Rank.FIRST_OFFICER, 1, yearMonth);
       LineParser lineParser = new LineParser(rawLines);
       lineList = lineParser.parse();
