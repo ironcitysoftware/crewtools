@@ -20,22 +20,17 @@
 package crewtools.flica.bid;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.joda.time.Duration;
-import org.joda.time.LocalDate;
 import org.subethamail.smtp.server.SMTPServer;
-
-import com.google.common.collect.ImmutableList;
 
 import crewtools.flica.CachingFlicaService;
 import crewtools.flica.FlicaConnection;
 import crewtools.flica.FlicaService;
-import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Trip;
 import crewtools.util.Clock;
 import crewtools.util.FlicaConfig;
@@ -46,11 +41,6 @@ public class AutoBidder {
   private final Logger logger = Logger.getLogger(AutoBidder.class.getName());
 
   private final int SMTP_PORT = 25000;
-
-  private static final List<PairingKey> BAGGAGE_TRIPS = ImmutableList.of(
-      new PairingKey(LocalDate.parse("2018-4-22"), "L7090A"),
-      new PairingKey(LocalDate.parse("2018-4-28"), "L7176"),
-      new PairingKey(LocalDate.parse("2018-4-22"), "L7776"));
 
   public static void main(String args[]) throws Exception {
     new AutoBidder().run(args);
@@ -91,7 +81,7 @@ public class AutoBidder {
     TripDatabase trips = new TripDatabase(service, config.getYearMonth());
     ScheduleLoaderThread scheduleLoaderThread = new ScheduleLoaderThread(
         config.getScheduleRefreshInterval(), config.getYearMonth(), 
-        tree, trips, service, BAGGAGE_TRIPS);
+        tree, trips, service);
     scheduleLoaderThread.start();
     scheduleLoaderThread.blockCurrentThreadUntilInitialRunIsComplete();
 

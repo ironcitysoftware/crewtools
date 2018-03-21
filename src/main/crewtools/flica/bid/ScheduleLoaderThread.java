@@ -19,7 +19,6 @@
 
 package crewtools.flica.bid;
 
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,7 +29,6 @@ import crewtools.flica.FlicaService;
 import crewtools.flica.Proto;
 import crewtools.flica.adapters.ScheduleAdapter;
 import crewtools.flica.parser.ScheduleParser;
-import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Schedule;
 import crewtools.util.FileUtils;
 import crewtools.util.SystemClock;
@@ -42,17 +40,14 @@ public class ScheduleLoaderThread extends PeriodicDaemonThread {
   private final ScheduleWrapperTree tree;
   private final TripDatabase tripDatabase;
   private final FlicaService service;
-  private final List<PairingKey> baggageTrips;
   
   public ScheduleLoaderThread(Duration interval, YearMonth yearMonth, 
-      ScheduleWrapperTree tree, TripDatabase tripDatabase, FlicaService service,
-      List<PairingKey> baggageTrips) {
+      ScheduleWrapperTree tree, TripDatabase tripDatabase, FlicaService service) {
     super(Duration.ZERO, interval);
     this.yearMonth = yearMonth;
     this.tree = tree;
     this.tripDatabase = tripDatabase;
     this.service = service;
-    this.baggageTrips = baggageTrips;
     this.setName("ScheduleLoader");
     this.setDaemon(true);
   }
@@ -64,7 +59,7 @@ public class ScheduleLoaderThread extends PeriodicDaemonThread {
       Schedule schedule = getSchedule(service, yearMonth);
       tripDatabase.addTripsFromSchedule(schedule);
       ScheduleWrapper scheduleWrapper = new ScheduleWrapper(
-          baggageTrips, schedule, yearMonth, new SystemClock());
+          schedule, yearMonth, new SystemClock());
       tree.setRootScheduleWrapper(scheduleWrapper);
     } catch (Exception e) {
       e.printStackTrace();

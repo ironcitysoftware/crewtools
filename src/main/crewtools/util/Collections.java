@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Collections {
-  public static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
+  public static <K, V extends Comparable<? super V>> Map<K, V> sortByValueAscending(Map<K, V> map) {
     return map.entrySet()
         .stream()
         .sorted(Map.Entry.comparingByValue())
@@ -37,7 +37,8 @@ public class Collections {
         ));
   }
   
-  public static <K, V extends Comparable<? super V>> Map<K, V> reverseSortByValue(Map<K, V> map) {
+  public static <K, V extends Comparable<? super V>> Map<K, V> sortByValueDescending(
+      Map<K, V> map) {
     return map.entrySet()
         .stream()
         .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))

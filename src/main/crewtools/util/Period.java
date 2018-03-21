@@ -89,6 +89,10 @@ public class Period implements Comparable<Period> {
     return String.format("%02d%02d", minutes / 60, minutes % 60);
   }
   
+  public boolean isLessThan(Period period) {
+    return minutes < period.minutes;
+  }
+
   @Override
   public String toString() {
     int absMinutes = Math.abs(minutes);

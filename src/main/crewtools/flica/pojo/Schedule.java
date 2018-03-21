@@ -31,6 +31,7 @@ import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 
 import crewtools.flica.Proto;
 import crewtools.util.Period;
@@ -46,12 +47,52 @@ public class Schedule {
   public final YearMonth yearMonth;
   public final Proto.Schedule proto;
 
+  public final Map<PairingKey, Period> tripCreditsInMonth;
+  public final Period creditInMonth;
+  public final Period nonTripCreditInMonth;
+
   public Schedule(List<Trip> trips, Period block, Period credit, YearMonth yearMonth, Proto.Schedule proto) {
     this.trips = trips;
     this.blockTime = block;
     this.creditTime = credit;
     this.yearMonth = yearMonth;
     this.proto = proto;
+
+    Period totalCreditInMonth = Period.ZERO;
+    Period nonTripCreditInMonth = Period.ZERO;
+    ImmutableMap.Builder<PairingKey, Period> tripCreditsInMonth = ImmutableMap.builder();
+    for (Trip trip : trips) {
+      Period creditInMonth = trip.getCreditInMonth(yearMonth);
+      totalCreditInMonth = totalCreditInMonth.plus(creditInMonth);
+      if (trip.hasScheduleType()) {
+        nonTripCreditInMonth = nonTripCreditInMonth.plus(creditInMonth);
+      } else {
+        tripCreditsInMonth.put(trip.getPairingKey(), creditInMonth);
+      }
+    }
+
+    this.creditInMonth = totalCreditInMonth;
+    this.nonTripCreditInMonth = nonTripCreditInMonth;
+    this.tripCreditsInMonth = tripCreditsInMonth.build();
+  }
+
+  /**
+   * Returns the credit in the month for all trips (but not training, vacation,
+   * etc)
+   */
+  public Map<PairingKey, Period> getTripCreditInMonth() {
+    return tripCreditsInMonth;
+  }
+
+  /**
+   * Returns the credit in the calendar month for all events.
+   */
+  public Period getCreditInMonth() {
+    return creditInMonth;
+  }
+
+  public Period getNonTripCreditInMonth() {
+    return nonTripCreditInMonth;
   }
 
   /** Returns trips with PairingKeys, that is, actual line flying. */

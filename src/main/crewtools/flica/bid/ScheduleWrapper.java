@@ -45,16 +45,13 @@ import crewtools.util.Period;
 
 public class ScheduleWrapper {
   private final Logger logger = Logger.getLogger(ScheduleWrapper.class.getName());
-  private final Map<PairingKey, Trip> schedule;
+  private final Map<PairingKey, Trip> trips;
 
   /**
    * TODO: this should be in AutoBidderConfig.
    * Potential opentime trips which overlap this date will be discarded.
    */
   private static final Set<LocalDate> REQUIRED_DAYS_OFF = ImmutableSet.of(
-      LocalDate.parse("2018-4-1"),
-      LocalDate.parse("2018-4-22"),
-      LocalDate.parse("2018-4-23"),
       LocalDate.parse("2018-5-1"));
 
   // subset of schedule
@@ -62,66 +59,60 @@ public class ScheduleWrapper {
   private final Map<PairingKey, Trip> droppableSchedule;
 
   private final Collection<PairingKey> baggageTrips;
-  private final Schedule schedulePojo;
+  private final Schedule schedule;
   private final YearMonth yearMonth;
   private final Clock clock;
   
   private Set<Interval> nonTripIntervals;
-  private Map<PairingKey, Period> creditInMonth;  // least first
-  private Period totalCreditInMonth;
+  private Map<PairingKey, Period> creditInMonthMap;  // least first
   private Period minRequiredCredit;
   
   private static final Period SIXTY_FIVE = Period.hours(65);
  
-  public ScheduleWrapper(Collection<PairingKey> allBaggageTrips,
-      Schedule schedulePojo,
+  public ScheduleWrapper(
+      Schedule schedule,
       YearMonth yearMonth,
       Clock clock) {
-    this.schedule = new HashMap<>();  // Trips (not vacation or training)
+    this.trips = new HashMap<>();  // Trips (not vacation or training)
     this.droppableSchedule = new HashMap<>();
     this.nonTripIntervals = new HashSet<>();
-    this.creditInMonth = new HashMap<>();
-    this.totalCreditInMonth = Period.ZERO;
+    this.creditInMonthMap = new HashMap<>();
     this.minRequiredCredit = SIXTY_FIVE;
     this.baggageTrips = new ArrayList<>();
-    this.schedulePojo = schedulePojo;
+    this.schedule = schedule;
     this.yearMonth = yearMonth;
     this.clock = clock;
-    populate(schedulePojo, yearMonth, allBaggageTrips);
+    populate(schedule, yearMonth);
   }
 
-  private void populate(Schedule schedulePojo, YearMonth yearMonth,
-      Collection<PairingKey> allBaggageTrips) {
-    for (Trip trip : schedulePojo.trips) {
+  private void populate(Schedule schedule, YearMonth yearMonth) {
+    Collection<PairingKey> allBaggageTrips = identifyBaggageTrips(schedule);
+    for (Trip trip : schedule.trips) {
       if (trip.hasScheduleType()) {
         // Vacation, training, etc.
-        Period creditInMonth = trip.getCreditInMonth(yearMonth);
-        totalCreditInMonth = totalCreditInMonth.plus(creditInMonth);
         mergeNonTripInterval(trip.getInterval());
       } else {
         logger.info("Scheduled trip " + trip.getPairingKey());
         if (!allBaggageTrips.contains(trip.getPairingKey())) {
-          schedule.put(trip.getPairingKey(), trip);
+          trips.put(trip.getPairingKey(), trip);
           if (trip.isDroppable() && trip.getDutyStart().isAfter(clock.now())) {
             droppableSchedule.put(trip.getPairingKey(), trip);
           }
-          Period creditInMonth = trip.getCreditInMonth(yearMonth);
-          totalCreditInMonth = totalCreditInMonth.plus(creditInMonth);
-          this.creditInMonth.put(trip.getPairingKey(), creditInMonth);
+          this.creditInMonthMap.put(trip.getPairingKey(), trip.getCreditInMonth(yearMonth));
         } else {
           baggageTrips.add(trip.getPairingKey());
         }
       }
     }
-    this.creditInMonth = crewtools.util.Collections.sortByValue(creditInMonth);
-    Period overage = totalCreditInMonth.minus(SIXTY_FIVE);
-    logger.finest("(ordered) credit this month: " + creditInMonth);
-    logger.finest("total credit this month: " + creditInMonth);
+    this.creditInMonthMap = crewtools.util.Collections.sortByValueAscending(creditInMonthMap);
+    Period overage = schedule.getCreditInMonth().minus(SIXTY_FIVE);
+    logger.finest("(ordered) credit this month: " + creditInMonthMap);
+    logger.finest("total credit this month: " + schedule.getCreditInMonth());
     logger.finest("Credit overage this month: " + overage);
     // This period is the minimum period of a trip we care about in opentime.
     // That is, there exists a droppable trip on our schedule such that dropping
     // it and adding a trip of this credit value will yield the minimum schedule credit.
-    this.minRequiredCredit = getSmallestDroppableCredit(creditInMonth).minus(overage);
+    this.minRequiredCredit = getSmallestDroppableCredit(creditInMonthMap).minus(overage);
     logger.finest("Minimum credit for an added trip: " + minRequiredCredit);
   }
   
@@ -149,14 +140,14 @@ public class ScheduleWrapper {
   public boolean meetsMinimumCredit(
       PairingKey scheduledTrip, Trip trip, YearMonth yearMonth) {
     Period tripCredit = trip.getCreditInMonth(yearMonth);
-    Period newCredit = totalCreditInMonth
-        .minus(creditInMonth.get(scheduledTrip))
+    Period newCredit = schedule.getCreditInMonth()
+        .minus(creditInMonthMap.get(scheduledTrip))
         .plus(tripCredit);
     boolean result = SIXTY_FIVE.compareTo(newCredit) <= 0;
     logger.info("If we drop " + scheduledTrip + " and add " 
         + trip.getPairingName() + " for " + tripCredit + ", is it OK? " + result
-        + "\nTotalCreditInMonth:" + totalCreditInMonth
-        + " - scheduledTrip:" + creditInMonth.get(scheduledTrip)
+        + "\nTotalCreditInMonth:" + schedule.getCreditInMonth()
+        + " - scheduledTrip:" + creditInMonthMap.get(scheduledTrip)
         + " + tripCreidt:" + tripCredit
         + " = " + newCredit);
     return result;
@@ -190,7 +181,7 @@ public class ScheduleWrapper {
       }
 
       Set<Trip> result = new HashSet<>();
-      for (Map.Entry<PairingKey, Trip> entry : schedule.entrySet()) {
+      for (Map.Entry<PairingKey, Trip> entry : trips.entrySet()) {
         if (overlapsDates(entry.getValue(), trip)) {
           // The dates overlap.
           if (!droppableSchedule.containsKey(entry.getKey())) {
@@ -236,15 +227,12 @@ public class ScheduleWrapper {
   //
   
   public ScheduleWrapper mutate(List<Trip> adds, List<PairingKey> dropKeys) {
-    Collection<PairingKey> newBaggage = new ArrayList<>(baggageTrips);
-    newBaggage.removeAll(dropKeys);
-
     List<PairingKey> addKeys = new ArrayList<>();
     adds.forEach(trip -> addKeys.add(trip.getPairingKey()));
     
-    Schedule newSchedule = schedulePojo.copyAndModify(adds, dropKeys);
+    Schedule newSchedule = schedule.copyAndModify(adds, dropKeys);
     ScheduleWrapper newWrapper = new ScheduleWrapper(
-        newBaggage, newSchedule, yearMonth, clock);
+        newSchedule, yearMonth, clock);
     return newWrapper;
   }
   
@@ -284,6 +272,27 @@ public class ScheduleWrapper {
     return null;
   }
 
+  /**
+   * Returns the set of the smallest-credit trips beyond the minimum
+   * month credit. These are trips which we desire to drop.
+   * TODO: Could make this configurable.
+   */
+  Collection<PairingKey> identifyBaggageTrips(Schedule schedule) {
+    List<PairingKey> baggageKeys = new ArrayList<>();
+    Map<PairingKey, Period> sortedTripCreditsInMonth =
+        crewtools.util.Collections.sortByValueDescending(
+            schedule.getTripCreditInMonth());
+    Period totalCredit = schedule.getNonTripCreditInMonth();
+    for (PairingKey key : sortedTripCreditsInMonth.keySet()) {
+      if (totalCredit.isLessThan(SIXTY_FIVE)) {
+        totalCredit = totalCredit.plus(sortedTripCreditsInMonth.get(key));
+      } else {
+        baggageKeys.add(key);
+      }
+    }
+    return baggageKeys;
+  }
+
   private boolean overlapsNonTrip(Interval interval) {
     for (Interval existingInterval : nonTripIntervals) {
       if (existingInterval.overlaps(interval)) {
@@ -295,7 +304,7 @@ public class ScheduleWrapper {
 
   @Override
   public int hashCode() {
-    return schedulePojo.hashCode();
+    return schedule.hashCode();
   }
 
   @Override
@@ -307,11 +316,11 @@ public class ScheduleWrapper {
       return false;
     }
     ScheduleWrapper that = (ScheduleWrapper) o;
-    return schedulePojo.equals(that.schedulePojo);
+    return schedule.equals(that.schedule);
   }
 
   @Override
   public String toString() {
-    return schedulePojo.toString();
+    return schedule.toString();
   }
 }

@@ -63,7 +63,6 @@ public class ScheduleWrapperTreeTest {
   
   private ScheduleWrapper newScheduleWrapper(String name) {
     return new ScheduleWrapper(
-        ImmutableList.of(), /* baggage trips */
         new ScheduleBuilder().build(name),
         TripBuilder.DEFAULT_YEAR_MONTH,
         FAKE_CLOCK);

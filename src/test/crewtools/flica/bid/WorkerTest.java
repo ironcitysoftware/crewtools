@@ -85,7 +85,6 @@ public class WorkerTest {
     tree = new ScheduleWrapperTree();
     stats = new RuntimeStats(FAKE_CLOCK, tree);
     wrapper = new ScheduleWrapper(
-        ImmutableList.of(), /* baggage trips */
         schedule,
         TripBuilder.DEFAULT_YEAR_MONTH,
         FAKE_CLOCK);
@@ -143,7 +142,6 @@ public class WorkerTest {
     
     Schedule newSchedule = new ScheduleBuilder().withTrips(firstTrip, secondTrip, betterTrip).build();
     ScheduleWrapper newWrapper = new ScheduleWrapper(
-        ImmutableList.of(), /* baggage trips */
         newSchedule,
         TripBuilder.DEFAULT_YEAR_MONTH,
         FAKE_CLOCK);
