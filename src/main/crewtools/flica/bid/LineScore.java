@@ -173,7 +173,6 @@ public class LineScore {
           continue;
         } else {
           // We're planning on keeping this trip.
-          // TODO What if it spans days off?
           hasAnyGspOvernights = true;
         }
       }
