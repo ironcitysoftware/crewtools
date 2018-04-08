@@ -122,6 +122,8 @@ public class LineParser {
       return yearMonth.toLocalDate(column + 1);      
     } else if (yearMonth.getMonthOfYear() == 4) {
       return yearMonth.toLocalDate(column);
+    } else if (yearMonth.getMonthOfYear() == 5) {
+      return yearMonth.toLocalDate(column);
     } else {
       if (true) {
         throw new IllegalStateException("TODO Verify that column 1 is the first of the month");

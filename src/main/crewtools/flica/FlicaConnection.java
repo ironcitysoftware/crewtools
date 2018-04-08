@@ -97,11 +97,14 @@ public class FlicaConnection {
     HttpGet httpGet = new HttpGet(url);
     CloseableHttpResponse response = httpclient.execute(httpGet);
     try {
+      logger.info("First Request Status: " + response.getStatusLine().toString());
       if (response.getStatusLine().getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY) {
-        logger.fine("(Re)Logging in");
+        logger.info("(Re)Logging in");
         connect();
         response = httpclient.execute(httpGet);
+        logger.info("Second Request Status: " + response.getStatusLine().toString());
       }
+      logger.info("ContentLength=" + response.getEntity().getContentLength());
       return EntityUtils.toString(response.getEntity());
     } finally {
       response.close();

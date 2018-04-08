@@ -83,7 +83,8 @@ public class ScheduleParserHelper {
           .build();
 
   private static final String BASE_REPORT_PREFIX = "BSE REPT: ";
-  private static final Pattern BASE_EQUIPMENT_PATTERN = Pattern.compile("^Base/Equip: (CLT|DCA|CVG|DAY|TYS|TRG|NHF)/(CRJ)$");
+  private static final Pattern BASE_EQUIPMENT_PATTERN = Pattern
+      .compile("^Base/Equip: (CLT|DCA|CVG|DAY|TYS|TRG|NHF|PHL|ORF)/(CRJ)$");
   private static final Pattern CREW_MEMBERS = Pattern.compile("((FO|CA|FA)(\\d{2}))+?");
   private static final String OPERATES_PREFIX = "Operates: ";
   private static final String EXCEPT_PREFIX = "EXCEPT ON ";

@@ -77,6 +77,7 @@ public class ScheduleLoaderThread extends PeriodicDaemonThread {
       ScheduleAdapter scheduleAdapter = new ScheduleAdapter();
       return scheduleAdapter.adapt(protoSchedule);
     } catch (Exception e) {
+      logger.log(Level.WARNING, "getSchedule", e);
       FileUtils.writeDebugFile("getSchedule", rawSchedule);
       throw e;
     }
