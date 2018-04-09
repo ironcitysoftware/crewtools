@@ -30,15 +30,10 @@ import java.util.logging.Logger;
 import org.joda.time.YearMonth;
 
 import crewtools.flica.AwardDomicile;
-import crewtools.flica.FlicaConnection;
-import crewtools.flica.FlicaService;
 import crewtools.flica.Proto.PairingList;
-import crewtools.flica.Proto.Rank;
 import crewtools.flica.Proto.Section;
 import crewtools.flica.Proto.ThinLineList;
 import crewtools.flica.Proto.Trip;
-import crewtools.flica.parser.LineParser;
-import crewtools.util.FlicaConfig;
 
 // You can't use lines for this because CI days are not populated in lines.
 // You have to instead use pairings.
@@ -49,15 +44,9 @@ public class LineStats {
     new LineStats().run();
   }
   
-  private final FlicaConnection connection;
-  private final FlicaService service;
   private final DataReader dataReader;
   
   public LineStats() throws IOException {
-    this.connection = new FlicaConnection(new FlicaConfig());
-    this.service = new FlicaService(connection);
-  //  logger.info("Using CACHING FLICA SERVICE");
-    //this.service = new CachingFlicaService(connection);
     this.dataReader = new DataReader();
   }
 
@@ -89,9 +78,9 @@ public class LineStats {
     // only read these until we are confident in the data
     Map<YearMonth, Map<AwardDomicile, PairingList>> allPairings = dataReader.readPairings();
     Map<AwardDomicile, ThinLineList> lineLists = 
-        allLineLists.get(YearMonth.parse("2018-01"));
+        allLineLists.get(YearMonth.parse("2018-05"));
     Map<AwardDomicile, PairingList> pairingLists =
-        allPairings.get(YearMonth.parse("2018-01"));
+        allPairings.get(YearMonth.parse("2018-05"));
     Map<String, Overnight> overnightCounts = getOvernightCounts(pairingLists);
     
     GraphData graphData = new GraphData();
@@ -138,16 +127,5 @@ public class LineStats {
       }
     }
     return result;
-  }
-
-  public void runToRetrieveLines() throws Exception {
-    YearMonth yearMonth = YearMonth.parse("2017-11");
-    service.connect();
-    for (AwardDomicile awardDomicile : AwardDomicile.values()) {
-      String txt = service.getAllLines(awardDomicile, Rank.FIRST_OFFICER, 1, yearMonth);
-      LineParser lineParser = new LineParser(txt);
-      ThinLineList list = lineParser.parse();
-      System.out.println(awardDomicile + " " + list.getThinLineCount());
-    }
   }
 }

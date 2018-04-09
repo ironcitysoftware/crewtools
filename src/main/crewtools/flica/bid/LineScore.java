@@ -134,7 +134,7 @@ public class LineScore {
     this.hasEquipmentTwoHundredSegments = hasEquipmentTwoHundredSegments;
   }
   
-  /** Are there any N trips that together meed minimum credit? */
+  /** Are there any N trips that together meet minimum credit? */
   private Map<Trip, Period> evaluateMinCredit(Map<Trip, Period> creditsInMonth) {
     Map<Trip, Period> largestToSmallestCredit = Collections
         .sortByValueDescending(creditsInMonth);
