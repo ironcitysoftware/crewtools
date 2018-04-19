@@ -75,10 +75,11 @@ public class AutoBidder {
 
     RuntimeStats stats = new RuntimeStats(clock, tree);
 
-    StatusService statusService = new StatusService(stats);
+    TripDatabase trips = new TripDatabase(service, config.getYearMonth());
+
+    StatusService statusService = new StatusService(stats, trips);
     statusService.start();
 
-    TripDatabase trips = new TripDatabase(service, config.getYearMonth());
     ScheduleLoaderThread scheduleLoaderThread = new ScheduleLoaderThread(
         config.getScheduleRefreshInterval(), config.getYearMonth(), 
         tree, trips, service);
