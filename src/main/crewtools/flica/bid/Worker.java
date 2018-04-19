@@ -76,6 +76,10 @@ public class Worker extends Thread {
   void doWork() {
     try {
       Trip trip = queue.take();
+      if (trip.getFirstSection().date.getMonthOfYear() < yearMonth.getMonthOfYear()) {
+        logger.info("Ignoring " + trip.getPairingKey() + " from previous month");
+        return;
+      }
       if (tree.shouldProcess(trip.getPairingKey())) {
         logger.info("Considering " + trip.getPairingKey());
         tree.visit(new TripProcessor(tree, trip));
@@ -130,7 +134,7 @@ public class Worker extends Thread {
           logger.info("Trip " + trip.getPairingName() 
           + " (" + potentialNewTrip.getPoints() + ") is better than "
           + scheduledTrip.getPairingName() + " (" + existingTrip.getPoints() + ")");
-          logger.info("SWAP!!!! DROP " + scheduledTrip.getPairingName() 
+          logger.info("SWAP!!!! DROP " + scheduledTrip.getPairingName()
               + " FOR " + trip.getPairingName());
           List<PairingKey> adds = ImmutableList.of(trip.getPairingKey());
           

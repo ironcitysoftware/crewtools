@@ -172,6 +172,7 @@ public class ScheduleWrapperTree {
   public synchronized void markApproved(Transition transition) {
     if (!transitions.containsKey(transition)) {
       // The transition could have been removed by a reroot.
+      logger.info("Approved transition missing: " + transition);
       return;
     }
     logger.info("Transition approved: " + transition);
@@ -196,6 +197,7 @@ public class ScheduleWrapperTree {
   public synchronized void markDenied(Transition transition) {
     if (!transitions.containsKey(transition)) {
       // The transition could have been removed by a reroot or approval.
+      logger.info("Denied transition missing: " + transition);
       return;
     }
     logger.info("Transition denied: " + transition);

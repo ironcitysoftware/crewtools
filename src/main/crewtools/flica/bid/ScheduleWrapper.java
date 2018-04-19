@@ -52,7 +52,8 @@ public class ScheduleWrapper {
    * Potential opentime trips which overlap this date will be discarded.
    */
   private static final Set<LocalDate> REQUIRED_DAYS_OFF = ImmutableSet.of(
-      LocalDate.parse("2018-5-1"));
+      LocalDate.parse("2018-5-1"),
+      LocalDate.parse("2018-5-31"));
 
   // subset of schedule
   // only contains future, droppable trips.
@@ -148,7 +149,7 @@ public class ScheduleWrapper {
         + trip.getPairingName() + " for " + tripCredit + ", is it OK? " + result
         + "\nTotalCreditInMonth:" + schedule.getCreditInMonth()
         + " - scheduledTrip:" + creditInMonthMap.get(scheduledTrip)
-        + " + tripCreidt:" + tripCredit
+        + " + tripCredit:" + tripCredit
         + " = " + newCredit);
     return result;
   }
@@ -321,6 +322,10 @@ public class ScheduleWrapper {
 
   @Override
   public String toString() {
-    return schedule.toString();
+    String result = schedule.toString();
+    if (!getBaggage().isEmpty()) {
+      result += "\nBaggage keys: " + getBaggage();
+    }
+    return result;
   }
 }

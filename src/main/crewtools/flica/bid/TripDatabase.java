@@ -19,6 +19,8 @@
 
 package crewtools.flica.bid;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -40,6 +42,7 @@ import crewtools.flica.pojo.Pairing;
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Schedule;
 import crewtools.flica.pojo.Trip;
+import crewtools.flica.stats.DataReader;
 
 public class TripDatabase {
   private final Logger logger = Logger.getLogger(TripDatabase.class.getName());
@@ -78,9 +81,23 @@ public class TripDatabase {
   }
   
   private Map<PairingKey, Trip> getAllPairings(YearMonth yearMonth) throws Exception {
-    String rawPairings = service.getAllPairings(AwardDomicile.CLT, Rank.FIRST_OFFICER, 1, yearMonth);
-    PairingParser pairingParser = new PairingParser(rawPairings, yearMonth, false /* cancelled */);
-    Proto.PairingList pairingList = pairingParser.parse();
+    boolean useProto = false;
+    Proto.PairingList pairingList;
+    if (!useProto) {
+      String rawPairings = service.getAllPairings(AwardDomicile.CLT, Rank.FIRST_OFFICER,
+          1, yearMonth);
+      PairingParser pairingParser = new PairingParser(rawPairings, yearMonth, false /*
+                                                                                     * cancelled
+                                                                                     */);
+      pairingList = pairingParser.parse();
+    } else {
+      String filename = new DataReader().getPairingFilename(yearMonth, AwardDomicile.CLT);
+      Proto.PairingList.Builder builder = Proto.PairingList.newBuilder();
+      FileInputStream inputStream = new FileInputStream(new File(filename));
+      builder.mergeFrom(inputStream);
+      pairingList = builder.build();
+    }
+
     PairingAdapter pairingAdapter = new PairingAdapter();
     Map<PairingKey, Trip> trips = new HashMap<>();
     for (Proto.Trip protoTrip : pairingList.getTripList()) {

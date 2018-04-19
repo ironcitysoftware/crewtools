@@ -1,0 +1,84 @@
+/**
+ * Copyright 2018 Iron City Software LLC
+ *
+ * This file is part of CrewTools.
+ *
+ * CrewTools is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * CrewTools is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with CrewTools.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package crewtools.flica.bid;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.joda.time.YearMonth;
+
+import crewtools.flica.AwardDomicile;
+import crewtools.flica.FlicaConnection;
+import crewtools.flica.FlicaService;
+import crewtools.flica.Proto;
+import crewtools.flica.adapters.PairingAdapter;
+import crewtools.flica.parser.IndividualPairingParser;
+import crewtools.flica.pojo.Pairing;
+import crewtools.flica.pojo.PairingKey;
+import crewtools.flica.pojo.Trip;
+import crewtools.flica.stats.DataReader;
+import crewtools.util.FlicaConfig;
+
+/** Tool for inspecting scoring of arbitrary lines and trips. */
+public class Scorer {
+  public static void main(String args[]) throws Exception {
+    Map<PairingKey, Trip> pairings = getAllPairings(YearMonth.parse("2018-5"));
+    FlicaConnection connection = new FlicaConnection(new FlicaConfig());
+    FlicaService service = new FlicaService(connection);
+    Trip left = getTrip(args[0], pairings, service);
+    Trip right = getTrip(args[1], pairings, service);
+    TripScore leftScore = new TripScore(left);
+    TripScore rightScore = new TripScore(right);
+  }
+
+  private static Trip getTrip(String keyString, Map<PairingKey, Trip> allPairings,
+      FlicaService service) throws Exception {
+    PairingKey key = PairingKey.parse(keyString);
+    if (allPairings.containsKey(key)) {
+      return allPairings.get(key);
+    }
+    String rawPairingDetail = service.getPairingDetail(key.getPairingName(),
+        key.getPairingDate());
+    IndividualPairingParser parser = new IndividualPairingParser(key, rawPairingDetail);
+    PairingAdapter pairingAdapter = new PairingAdapter();
+    Proto.Trip trip = parser.parse();
+    return pairingAdapter.adaptTrip(trip);
+  }
+
+  private static Map<PairingKey, Trip> getAllPairings(YearMonth yearMonth)
+      throws Exception {
+    String filename = new DataReader().getPairingFilename(yearMonth, AwardDomicile.CLT);
+    Proto.PairingList.Builder builder = Proto.PairingList.newBuilder();
+    FileInputStream inputStream = new FileInputStream(new File(filename));
+    builder.mergeFrom(inputStream);
+    Proto.PairingList pairingList = builder.build();
+    PairingAdapter pairingAdapter = new PairingAdapter();
+    Map<PairingKey, Trip> trips = new HashMap<>();
+    for (Proto.Trip protoTrip : pairingList.getTripList()) {
+      Pairing pairing = pairingAdapter.adaptPairing(protoTrip);
+      for (Trip trip : pairing.getTrips()) {
+        trips.put(trip.getPairingKey(), trip);
+      }
+    }
+    return trips;
+  }
+}

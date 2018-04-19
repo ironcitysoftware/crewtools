@@ -19,6 +19,7 @@
 
 package crewtools.flica.pojo;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -74,6 +75,15 @@ public class Section implements Comparable<Section> {
       }
     }
     return true;
+  }
+
+  public Set<String> getAllTurnAirports() {
+    Set<String> airports = new HashSet<>();
+    for (Leg leg : protoSection.getLegList()) {
+      airports.add(leg.getArrivalAirportCode());
+      airports.add(leg.getDepartureAirportCode());
+    }
+    return airports;
   }
   
   public boolean isEquipmentTwoHundred() {

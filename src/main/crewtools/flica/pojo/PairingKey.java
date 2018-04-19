@@ -19,11 +19,14 @@
 
 package crewtools.flica.pojo;
 
+import java.util.List;
 import java.util.Objects;
 
 import org.joda.time.LocalDate;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 
 /**
  * Pairing names can be repeated for different months and mean different things.
@@ -45,6 +48,14 @@ public class PairingKey {
 
   public LocalDate getPairingDate() {
     return pairingDate;
+  }
+
+  // 2018-1-1:L1234
+  public static PairingKey parse(String key) {
+    List<String> parts = Splitter.on(":").splitToList(key);
+    Preconditions.checkState(parts.size() == 2, "2018-1-1:L1234, not " + key);
+    LocalDate date = LocalDate.parse(parts.get(0));
+    return new PairingKey(date, parts.get(1));
   }
 
   @Override

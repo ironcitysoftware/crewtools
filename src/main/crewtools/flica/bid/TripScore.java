@@ -19,11 +19,14 @@
 
 package crewtools.flica.bid;
 
+import java.util.Set;
 import java.util.logging.Logger;
 
 import org.joda.time.DateTimeConstants;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
+
+import com.google.common.collect.ImmutableSet;
 
 import crewtools.flica.pojo.Section;
 import crewtools.flica.pojo.Trip;
@@ -32,8 +35,13 @@ import crewtools.util.Period;
 public class TripScore implements Comparable<TripScore> {
   private final Logger logger = Logger.getLogger(TripScore.class.getName());
 
-  private final Period gspOvernightPeriod;
-  private final int numGspOvernights;
+  private static final Set<String> FAVORITE_OVERNIGHTS = ImmutableSet.of("GSP");
+
+  private static final Set<String> FAVORITE_TURNS = ImmutableSet.of("RAP", "SAT", "TUL",
+      "OKC", "DSM");
+
+  private final Period favoriteOvernightPeriod;
+  private final int numFavoriteOvernights;
   private final int startTimePoints;
   private final int endTimePoints;
   private final boolean hasEquipmentTwoHundredSegments;
@@ -45,40 +53,58 @@ public class TripScore implements Comparable<TripScore> {
     int goodPoints = 0;
     int badPoints = 0;
     
-    Period gspOvernightPeriod = Period.ZERO;
-    int numGspOvernights = 0;
+    Period favoriteOvernightPeriod = Period.ZERO;
+    int numFavoriteOvernights = 0;
     
     int numLegs = 0;
     for (Section section : trip.sections) {
       if (section.hasLayoverAirportCode()
-          && section.getLayoverAirportCode().equals("GSP")) {
-        gspOvernightPeriod = gspOvernightPeriod.plus(section.getLayoverDuration());
-        numGspOvernights++;
+          && FAVORITE_OVERNIGHTS.contains(section.getLayoverAirportCode())) {
+        favoriteOvernightPeriod = favoriteOvernightPeriod
+            .plus(section.getLayoverDuration());
+        numFavoriteOvernights++;
       }
       numLegs += section.getNumLegs();
     }
     
-    this.gspOvernightPeriod = gspOvernightPeriod;
-    this.numGspOvernights = numGspOvernights;
+    this.favoriteOvernightPeriod = favoriteOvernightPeriod;
+    this.numFavoriteOvernights = numFavoriteOvernights;
     this.numLegs = numLegs;
     
     logger.fine("Begin point diagnostic for " + trip.getPairingName() + " ----------");
     
-    goodPoints += numGspOvernights;
-    if (numGspOvernights > 0) {
-      logger.fine("+" + numGspOvernights + " for GSP overnights");
+    goodPoints += numFavoriteOvernights * 3;
+    if (numFavoriteOvernights > 0) {
+      logger.fine("+" + numFavoriteOvernights * 3 + " for favorite overnights");
     }
-    //
-    // goodPoints += (gspOvernightPeriod.getHours() / 6);
-    // if (gspOvernightPeriod.getHours() > 0) {
-    // logger.fine("+" + gspOvernightPeriod.getHours() + "/6 for GSP overnights
+
+    // goodPoints += (favoriteOvernightPeriod.getHours() / 6);
+    // if (favoriteOvernightPeriod.getHours() > 0) {
+    // logger.fine("+" + favoriteOvernightPeriod.getHours() + "/6 for favorite
+    // overnights
     // hours");
     // }
-    badPoints += (numLegs * 2);
-    logger.fine("-" + numLegs + " for legs");
-    if (numLegs > 3) {
-      logger.fine("-1 (surcharge) for > 3 legs");
-      badPoints++;
+
+    // favorite turns
+    for (Section section : trip.sections) {
+      for (String airportCode : section.getAllTurnAirports()) {
+        if (FAVORITE_TURNS.contains(airportCode)) {
+          goodPoints++;
+          logger.info("+1 for a turn to " + airportCode);
+        }
+      }
+    }
+
+    // numLegs
+    for (int i = 0; i < trip.sections.size(); i++) {
+      Section section = trip.sections.get(i);
+      boolean isFirstOrLast = i == 0 || i == trip.sections.size() - 1;
+      int idealNumLegs = isFirstOrLast ? 3 : 2;
+      int excessiveLegs = section.getNumLegs() - idealNumLegs;
+      if (excessiveLegs > 0) {
+        badPoints += excessiveLegs;
+        logger.fine("-" + excessiveLegs + " for legs");
+      }
     }
 
     // more points are better.
@@ -112,36 +138,27 @@ public class TripScore implements Comparable<TripScore> {
       }
     }
     
-    int numTwoHundredSegments = 0;
     for (Section section : trip.sections) {
       if (section.isEquipmentTwoHundred()) {
         hasEquipmentTwoHundredSegments = true;
-        numTwoHundredSegments++;
       }
     }
-    if (numTwoHundredSegments > 0) {
-      logger.fine("-" + numTwoHundredSegments + " for 200 segments");
+    if (hasEquipmentTwoHundredSegments) {
+      logger.fine("-" + numLegs + " for 200 segments");
+      badPoints += numLegs;
     }
-    badPoints += numTwoHundredSegments;
 
     this.startTimePoints = startTimePoints;
     this.endTimePoints = endTimePoints;
     this.hasEquipmentTwoHundredSegments = hasEquipmentTwoHundredSegments;
     
-    if (isWeekday(trip.getFirstSection().date)) {
-      goodPoints += 2;
-      logger.fine("+2 for weekday start");
+    // TODO don't reward trips which span the weekend
+    if (isPreferredStartDayOfWeek(trip.getFirstSection().date)) {
+      goodPoints += 1;
+      logger.fine("+1 for weekday start");
     } else {
-      badPoints += 2;
-      logger.fine("-2 for weekend start");
-    }
-
-    if (isWeekday(trip.getLastSection().date)) {
-      goodPoints += 2;
-      logger.fine("+2 for weekday end");
-    } else {
-      badPoints += 2;
-      logger.fine("-2 for weekend end");
+      badPoints += 1;
+      logger.fine("-1 for weekend start");
     }
 
     this.points = goodPoints - badPoints;
@@ -149,25 +166,27 @@ public class TripScore implements Comparable<TripScore> {
     logger.fine("end point diagnostic for " + trip.getPairingName() + " ----------");
   }
   
-  private boolean isWeekday(LocalDate date) {
+  private boolean isPreferredStartDayOfWeek(LocalDate date) {
     switch (date.getDayOfWeek()) {
     case DateTimeConstants.SUNDAY: return false;
     case DateTimeConstants.MONDAY: return true;
     case DateTimeConstants.TUESDAY: return true;
     case DateTimeConstants.WEDNESDAY: return true;
-    case DateTimeConstants.THURSDAY: return true;
-    case DateTimeConstants.FRIDAY: return true;
+      case DateTimeConstants.THURSDAY:
+        return false;
+      case DateTimeConstants.FRIDAY:
+        return false;
     case DateTimeConstants.SATURDAY: return false;
     default: throw new IllegalStateException("What day of week is this? " + date);
     }
   }
   
   public int getNumGspOvernights() {
-    return numGspOvernights;
+    return numFavoriteOvernights;
   }
 
   public Period getGspOvernightPeriod() {
-    return gspOvernightPeriod;
+    return favoriteOvernightPeriod;
   }
 
   /** Points are good.  The more points, the better. */
