@@ -36,6 +36,8 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 
 import crewtools.flica.pojo.PairingKey;
+import crewtools.rpc.Proto.ScheduleNode;
+import crewtools.rpc.Proto.Status;
 
 // DAG where each node represents a schedule state and each 
 // line represents a swap request.
@@ -232,4 +234,15 @@ public class ScheduleWrapperTree {
         .toString();
   }
   // @formatter:on
+
+  public synchronized void populate(Status.Builder builder) {
+    recurse(root, builder.getRootBuilder());
+  }
+
+  private void recurse(ScheduleWrapper wrapper, ScheduleNode.Builder builder) {
+    wrapper.populate(builder);
+    for (ScheduleWrapper node : nodes.get(wrapper)) {
+      recurse(node, builder.addChildBuilder());
+    }
+  }
 }

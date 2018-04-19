@@ -22,6 +22,7 @@ package crewtools.flica.bid;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.joda.time.YearMonth;
@@ -48,6 +49,9 @@ public class Scorer {
     Trip right = getTrip(args[1], pairings, service);
     TripScore leftScore = new TripScore(left);
     TripScore rightScore = new TripScore(right);
+    displayScoreExplanation(left.getPairingName(), leftScore.getScoreExplanation());
+    System.out.println("----------------------------------------------------");
+    displayScoreExplanation(right.getPairingName(), rightScore.getScoreExplanation());
   }
 
   private static Trip getTrip(String keyString, Map<PairingKey, Trip> allPairings,
@@ -80,5 +84,13 @@ public class Scorer {
       }
     }
     return trips;
+  }
+
+  private static void displayScoreExplanation(String pairingName,
+      List<String> explanations) {
+    System.out.println(pairingName + " score diagnostic:");
+    for (String line : explanations) {
+      System.out.println(line);
+    }
   }
 }

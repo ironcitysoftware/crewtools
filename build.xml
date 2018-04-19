@@ -26,6 +26,9 @@
   <property name="aa-proto" location="src/proto/aa.proto" relative="yes" />
   <property name="aa-proto.java" location="src/main/crewtools/aa/Proto.java" />
 
+  <property name="rpc-proto" location="src/proto/rpc.proto" relative="yes" />
+  <property name="rpc-proto.java" location="src/main/crewtools/rpc/Proto.java" />
+
   <path id="main-classpath">
     <path location="lib/gson-2.8.0.jar" />
     <path location="lib/guava-21.0.jar" />
@@ -48,6 +51,7 @@
   <target name="checkprotoforchanges">
     <uptodate property="build-flica-proto.notrequired" srcfile="${flica-proto}" targetfile="${flica-proto.java}" />
     <uptodate property="build-aa-proto.notrequired" srcfile="${aa-proto}" targetfile="${aa-proto.java}" />
+    <uptodate property="build-rpc-proto.notrequired" srcfile="${rpc-proto}" targetfile="${rpc-proto.java}" />
   </target>
 
 <!-- 
@@ -73,7 +77,16 @@
     </exec>
   </target>
 
-  <target name="build" depends="build-flica-proto,build-aa-proto">
+  <target name="build-rpc-proto" depends="checkprotoforchanges"
+          unless="build-rpc-proto.notrequired" >
+    <mkdir dir="${bin}" />
+    <exec executable="protoc" failonerror="true">
+      <arg value="${rpc-proto}" />
+      <arg value="--java_out=src/main" />
+    </exec>
+  </target>
+
+  <target name="build" depends="build-flica-proto,build-aa-proto,build-rpc-proto">
     <mkdir dir="${bin}" />
     <javac srcdir="src/main" includes="**" destdir="${bin}" includeantruntime="false" >
       <classpath>
@@ -106,5 +119,6 @@
     <delete dir="bin" />
     <delete file="${flica-proto.java}" />
     <delete file="${aa-proto.java}" />
+    <delete file="${rpc-proto.java}" />
   </target>
 </project>

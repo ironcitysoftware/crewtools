@@ -1,0 +1,54 @@
+// Copyright 2018 Iron City Software LLC
+//
+// This file is part of CrewTools.
+//
+// CrewTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// CrewTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with CrewTools.  If not, see <http://www.gnu.org/licenses/>.
+
+syntax = "proto2";
+
+package crewtools_rpc;
+
+option java_package = "crewtools.rpc";
+option java_outer_classname = "Proto";
+
+// Autobidder RPC
+
+message AutobidderRequest {
+  optional bool status = 1;
+  optional bool health = 2;
+  repeated string compare_trip = 3;
+}
+
+message AutobidderResponse {
+  optional bool healthy = 1;
+  repeated ScoreExplanation score_explanation = 2;
+  optional Status status = 3;
+  optional string error = 4;
+}
+
+message ScoreExplanation {
+  repeated string line = 1;
+}
+
+message Status {
+  optional int32 num_email = 1;
+  optional int32 num_opentime = 2;
+  optional int32 num_swaps = 3;
+  optional ScheduleNode root = 4;
+}
+
+message ScheduleNode {
+  repeated string trip = 1;
+  repeated ScheduleNode child = 2;
+}

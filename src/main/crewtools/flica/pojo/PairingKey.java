@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Objects;
 
 import org.joda.time.LocalDate;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
@@ -74,6 +76,12 @@ public class PairingKey {
     PairingKey that = (PairingKey) o;
     return Objects.equals(pairingDate, that.pairingDate)
         && Objects.equals(pairingName, that.pairingName);
+  }
+
+  private static final DateTimeFormatter DAY_MONTH = DateTimeFormat.forPattern("ddMMM");
+
+  public String toShortString() {
+    return String.format("%s:%s", DAY_MONTH.print(pairingDate), pairingName);
   }
 
   @Override

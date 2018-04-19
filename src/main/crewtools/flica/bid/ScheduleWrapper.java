@@ -48,7 +48,6 @@ public class ScheduleWrapper {
   private final Map<PairingKey, Trip> trips;
 
   /**
-   * TODO: this should be in AutoBidderConfig.
    * Potential opentime trips which overlap this date will be discarded.
    */
   private static final Set<LocalDate> REQUIRED_DAYS_OFF = ImmutableSet.of(
@@ -327,5 +326,11 @@ public class ScheduleWrapper {
       result += "\nBaggage keys: " + getBaggage();
     }
     return result;
+  }
+
+  public void populate(crewtools.rpc.Proto.ScheduleNode.Builder builder) {
+    for (PairingKey key : creditInMonthMap.keySet()) {
+      builder.addTrip(key.toShortString());
+    }
   }
 }

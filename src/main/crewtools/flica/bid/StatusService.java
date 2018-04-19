@@ -26,16 +26,24 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
+
+import crewtools.flica.pojo.PairingKey;
+import crewtools.flica.pojo.Trip;
+import crewtools.rpc.Proto.AutobidderRequest;
+import crewtools.rpc.Proto.AutobidderResponse;
+import crewtools.rpc.Proto.ScoreExplanation;
 
 public class StatusService extends Thread {
   private final ServerSocket serverSocket;
   private final int PORT = 8422;
   private final int BACKLOG = 100;
   private final RuntimeStats stats;
+  private final TripDatabase trips;
 
-  public StatusService(RuntimeStats stats) throws UnknownHostException, IOException {
+  public StatusService(RuntimeStats stats, TripDatabase trips)
+      throws UnknownHostException, IOException {
     this.stats = stats;
+    this.trips = trips;
     this.serverSocket = new ServerSocket(PORT, BACKLOG, InetAddress.getLocalHost());
     this.setDaemon(true);
     this.setName("StatusService");
@@ -67,12 +75,43 @@ public class StatusService extends Thread {
         InputStream input  = socket.getInputStream();
         OutputStream output = socket.getOutputStream();
 
-        output.write(stats.toString().getBytes(StandardCharsets.UTF_8));
+        AutobidderRequest request = AutobidderRequest.newBuilder().mergeFrom(input)
+            .build();
+        getResponse(request).writeTo(output);
 
         output.close();
         input.close();
       } catch (IOException e) {
         e.printStackTrace();
+      }
+    }
+
+    private AutobidderResponse getResponse(AutobidderRequest request) {
+      AutobidderResponse.Builder response = AutobidderResponse.newBuilder();
+      if (request.getHealth()) {
+        response.setHealthy(true);
+      } else if (request.getStatus()) {
+        stats.populate(response.getStatusBuilder());
+      } else if (request.getCompareTripCount() == 2) {
+        try {
+          populateExplanation(request.getCompareTrip(0),
+              response.addScoreExplanationBuilder());
+          populateExplanation(request.getCompareTrip(1),
+              response.addScoreExplanationBuilder());
+        } catch (Exception e) {
+          response.setError(e.getMessage());
+        }
+      }
+      return response.build();
+    }
+
+    private void populateExplanation(String keyString, ScoreExplanation.Builder builder)
+        throws Exception {
+      PairingKey key = PairingKey.parse(keyString);
+      Trip trip = trips.getTrip(key);
+      TripScore score = new TripScore(trip);
+      for (String line : score.getScoreExplanation()) {
+        builder.addLine(line);
       }
     }
   }

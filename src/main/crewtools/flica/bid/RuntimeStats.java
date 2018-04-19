@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 
+import crewtools.rpc.Proto;
 import crewtools.util.Clock;
 
 public class RuntimeStats {
@@ -55,6 +56,13 @@ public class RuntimeStats {
     submittedSwaps.add(swap);
   }
 
+  public synchronized void populate(Proto.Status.Builder builder) {
+    builder.setNumEmail(numEmailTrips);
+    builder.setNumOpentime(numOpentimeTrips);
+    builder.setNumSwaps(submittedSwaps.size());
+    tree.populate(builder);
+  }
+
   @Override
   public String toString() {
     return toStringInternal();
@@ -72,5 +80,4 @@ public class RuntimeStats {
     result += tree.toString();
     return result;
   }
-
 }

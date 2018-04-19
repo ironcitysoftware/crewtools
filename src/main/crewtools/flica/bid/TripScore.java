@@ -19,6 +19,8 @@
 
 package crewtools.flica.bid;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -46,8 +48,8 @@ public class TripScore implements Comparable<TripScore> {
   private final int endTimePoints;
   private final boolean hasEquipmentTwoHundredSegments;
   private final int numLegs;
-  
   private final int points;
+  private final List<String> scoreExplanation = new ArrayList<>();
   
   public TripScore(Trip trip) {
     int goodPoints = 0;
@@ -71,16 +73,14 @@ public class TripScore implements Comparable<TripScore> {
     this.numFavoriteOvernights = numFavoriteOvernights;
     this.numLegs = numLegs;
     
-    logger.fine("Begin point diagnostic for " + trip.getPairingName() + " ----------");
-    
     goodPoints += numFavoriteOvernights * 3;
     if (numFavoriteOvernights > 0) {
-      logger.fine("+" + numFavoriteOvernights * 3 + " for favorite overnights");
+      scoreExplanation.add("+" + numFavoriteOvernights * 3 + " for favorite overnights");
     }
 
     // goodPoints += (favoriteOvernightPeriod.getHours() / 6);
     // if (favoriteOvernightPeriod.getHours() > 0) {
-    // logger.fine("+" + favoriteOvernightPeriod.getHours() + "/6 for favorite
+    // debug.add("+" + favoriteOvernightPeriod.getHours() + "/6 for favorite
     // overnights
     // hours");
     // }
@@ -90,7 +90,7 @@ public class TripScore implements Comparable<TripScore> {
       for (String airportCode : section.getAllTurnAirports()) {
         if (FAVORITE_TURNS.contains(airportCode)) {
           goodPoints++;
-          logger.info("+1 for a turn to " + airportCode);
+          scoreExplanation.add("+1 for a turn to " + airportCode);
         }
       }
     }
@@ -103,7 +103,7 @@ public class TripScore implements Comparable<TripScore> {
       int excessiveLegs = section.getNumLegs() - idealNumLegs;
       if (excessiveLegs > 0) {
         badPoints += excessiveLegs;
-        logger.fine("-" + excessiveLegs + " for legs");
+        scoreExplanation.add("-" + excessiveLegs + " for legs");
       }
     }
 
@@ -118,10 +118,10 @@ public class TripScore implements Comparable<TripScore> {
       if (reportTime.getHourOfDay() > 9 && reportTime.getHourOfDay() <= 20) {
         startTimePoints++;
         goodPoints++;
-        logger.fine("+1 for good start time");
+        scoreExplanation.add("+1 for good start time");
       } else {
         badPoints++;
-        logger.fine("-1 for bad start time");
+        scoreExplanation.add("-1 for bad start time");
       }
     }
       
@@ -131,10 +131,10 @@ public class TripScore implements Comparable<TripScore> {
       if (endTime.getHourOfDay() <= 18) {
         endTimePoints++;
         goodPoints++;        
-        logger.fine("+1 for good end time");
+        scoreExplanation.add("+1 for good end time");
       } else {
         badPoints++;
-        logger.fine("-1 for bad end time");
+        scoreExplanation.add("-1 for bad end time");
       }
     }
     
@@ -144,7 +144,7 @@ public class TripScore implements Comparable<TripScore> {
       }
     }
     if (hasEquipmentTwoHundredSegments) {
-      logger.fine("-" + numLegs + " for 200 segments");
+      scoreExplanation.add("-" + numLegs + " for 200 segments");
       badPoints += numLegs;
     }
 
@@ -155,15 +155,14 @@ public class TripScore implements Comparable<TripScore> {
     // TODO don't reward trips which span the weekend
     if (isPreferredStartDayOfWeek(trip.getFirstSection().date)) {
       goodPoints += 1;
-      logger.fine("+1 for weekday start");
+      scoreExplanation.add("+1 for weekday start");
     } else {
       badPoints += 1;
-      logger.fine("-1 for weekend start");
+      scoreExplanation.add("-1 for weekend start");
     }
 
     this.points = goodPoints - badPoints;
-    logger.fine("Total points: " + points);
-    logger.fine("end point diagnostic for " + trip.getPairingName() + " ----------");
+    scoreExplanation.add("Final score: " + points);
   }
   
   private boolean isPreferredStartDayOfWeek(LocalDate date) {
@@ -209,6 +208,10 @@ public class TripScore implements Comparable<TripScore> {
   
   public int getPoints() {
     return points;
+  }
+
+  public List<String> getScoreExplanation() {
+    return scoreExplanation;
   }
 
   @Override
