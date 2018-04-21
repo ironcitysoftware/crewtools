@@ -236,6 +236,9 @@ public class ScheduleWrapperTree {
   // @formatter:on
 
   public synchronized void populate(Status.Builder builder) {
+    if (root == null) {
+      return;
+    }
     recurse(root, builder.getRootBuilder());
   }
 

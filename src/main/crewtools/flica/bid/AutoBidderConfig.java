@@ -41,12 +41,14 @@ public class AutoBidderConfig {
   private final YearMonth yearMonth;
   private final int round;
   private final boolean cache;
+  private final boolean useProto;
   
   public AutoBidderConfig(String args[]) {
     Iterator<String> argIterator = Arrays.asList(args).iterator();
     YearMonth yearMonth = null;
     int round = 0;
     boolean cache = false;
+    boolean useProto = false;
     while (argIterator.hasNext()) {
       List<String> parameter = EQUALS.splitToList(argIterator.next());
       String arg = parameter.get(0);
@@ -66,6 +68,8 @@ public class AutoBidderConfig {
         }
       } else if (arg.equals("cache")) {
         cache = true;        
+      } else if (arg.equals("proto")) {
+        useProto = true;
       } else {
         System.err.println("Unrecognized argument " + arg);
         System.exit(-1);
@@ -78,6 +82,7 @@ public class AutoBidderConfig {
     this.yearMonth = yearMonth;
     this.round = round;
     this.cache = cache;
+    this.useProto = useProto;
   }
 
   public Duration getScheduleRefreshInterval() {
@@ -146,5 +151,9 @@ public class AutoBidderConfig {
   
   public boolean useCache() {
     return cache;
+  }
+
+  public boolean getUseProto() {
+    return useProto;
   }
 }

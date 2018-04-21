@@ -54,7 +54,7 @@ public class AutoBidder {
     logger.info("Welcome to AutoBidder for " + config.getYearMonth());
     FlicaConnection connection = new FlicaConnection(new FlicaConfig());
     FlicaService service;
-    if (config.useCache()) {
+    if (config.useCache() || config.getUseProto()) {
       service = new CachingFlicaService(connection);
     } else {
       service = new FlicaService(connection);
@@ -75,7 +75,8 @@ public class AutoBidder {
 
     RuntimeStats stats = new RuntimeStats(clock, tree);
 
-    TripDatabase trips = new TripDatabase(service, config.getYearMonth());
+    TripDatabase trips = new TripDatabase(service, config.getUseProto(),
+        config.getYearMonth());
 
     StatusService statusService = new StatusService(stats, trips);
     statusService.start();

@@ -48,10 +48,13 @@ public class TripDatabase {
   private final Logger logger = Logger.getLogger(TripDatabase.class.getName());
 
   private final FlicaService service;
+  private final boolean useProto;
   private final Map<PairingKey, Trip> trips;
   
-  public TripDatabase(FlicaService service, YearMonth yearMonth) throws Exception {
+  public TripDatabase(FlicaService service, boolean useProto, YearMonth yearMonth)
+      throws Exception {
     this.service = service;
+    this.useProto = useProto;
     // The same pairing name in adjacent months refer to totally different trips,
     // so we use a key class which combines the date of the trip.
     logger.info("Loading this month's pairings");
@@ -81,7 +84,6 @@ public class TripDatabase {
   }
   
   private Map<PairingKey, Trip> getAllPairings(YearMonth yearMonth) throws Exception {
-    boolean useProto = false;
     Proto.PairingList pairingList;
     if (!useProto) {
       String rawPairings = service.getAllPairings(AwardDomicile.CLT, Rank.FIRST_OFFICER,
