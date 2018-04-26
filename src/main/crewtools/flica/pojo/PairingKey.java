@@ -60,6 +60,16 @@ public class PairingKey {
     return new PairingKey(date, parts.get(1));
   }
 
+  private static final DateTimeFormatter DATE_MONTH = DateTimeFormat.forPattern("ddMMM");
+
+  // 17May:L1234
+  public static PairingKey parseShort(String key) {
+    List<String> parts = Splitter.on(":").splitToList(key);
+    Preconditions.checkState(parts.size() == 2, "2018-1-1:L1234, not " + key);
+    LocalDate date = DATE_MONTH.parseLocalDate(parts.get(0));
+    return new PairingKey(date, parts.get(1));
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(pairingDate, pairingName);

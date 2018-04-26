@@ -26,6 +26,8 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Trip;
@@ -34,6 +36,8 @@ import crewtools.rpc.Proto.AutobidderResponse;
 import crewtools.rpc.Proto.ScoreExplanation;
 
 public class StatusService extends Thread {
+  private final Logger logger = Logger.getLogger(StatusService.class.getName());
+
   private final ServerSocket serverSocket;
   private final int PORT = 8422;
   private final int BACKLOG = 100;
@@ -99,7 +103,8 @@ public class StatusService extends Thread {
           populateExplanation(request.getCompareTrip(1),
               response.addScoreExplanationBuilder());
         } catch (Exception e) {
-          response.setError(e.getMessage());
+          logger.log(Level.WARNING, "Error comparing trips", e);
+          response.setError(e.getMessage() == null ? "Error, see logs" : e.getMessage());
         }
       }
       return response.build();
@@ -107,7 +112,7 @@ public class StatusService extends Thread {
 
     private void populateExplanation(String keyString, ScoreExplanation.Builder builder)
         throws Exception {
-      PairingKey key = PairingKey.parse(keyString);
+      PairingKey key = PairingKey.parseShort(keyString);
       Trip trip = trips.getTrip(key);
       TripScore score = new TripScore(trip);
       for (String line : score.getScoreExplanation()) {
