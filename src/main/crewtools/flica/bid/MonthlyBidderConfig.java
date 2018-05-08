@@ -77,7 +77,7 @@ public class MonthlyBidderConfig {
 
   // @formatter:off
   public static final Set<Integer> SAP_DAYS_OFF = ImmutableSet.of(
-      1);
+      23);
 
   public static final Set<Integer> VACATION_DAYS_OFF = ImmutableSet.of(
       );

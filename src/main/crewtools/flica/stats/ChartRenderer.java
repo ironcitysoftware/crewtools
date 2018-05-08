@@ -35,12 +35,16 @@ public class ChartRenderer {
 
   private final String templateFilename;
   private final String outputFilename;
-  private final Map<String, GraphData> data;
+  private final Map<String, String> stringData;
+  private final Map<String, GraphData> graphData;
   
-  public ChartRenderer(Map<String, GraphData> data,
+  public ChartRenderer(
+      Map<String, String> stringData,
+      Map<String, GraphData> graphData,
       String templateFilename,
       String outputFilename) throws IOException {
-    this.data = data;
+    this.stringData = stringData;
+    this.graphData = graphData;
     this.templateFilename = new FlicaConfig().getDataDirectory() + templateFilename;
     this.outputFilename = outputFilename;
   }
@@ -48,9 +52,14 @@ public class ChartRenderer {
   public void render() throws IOException {
     File templateFile = new File(templateFilename);
     String template = Files.toString(templateFile, StandardCharsets.UTF_8);
-    for (String key : data.keySet()) {
+    for (String key : graphData.keySet()) {
+      Preconditions.checkState(template.contains(key),
+          "Missing " + key + " in " + templateFile);
+      template = template.replace(key, graphData.get(key).getGraphData());
+    }
+    for (String key : stringData.keySet()) {
       Preconditions.checkState(template.contains(key), "Missing " + key + " in " + templateFile);
-      template = template.replace(key, data.get(key).getGraphData());
+      template = template.replace(key, stringData.get(key));
     }
     Files.write(template, new File(outputFilename), StandardCharsets.UTF_8);
     logger.info("Wrote " + outputFilename);

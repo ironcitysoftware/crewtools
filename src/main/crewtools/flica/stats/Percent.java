@@ -27,6 +27,7 @@ import java.util.logging.Logger;
 import org.joda.time.YearMonth;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.Proto.CrewMember;
@@ -88,7 +89,8 @@ public class Percent {
     GraphData graphData = getGraphData(Optional.absent(), seniorityLists, numLineLists);
     tokenToDataMap.put("$ALL_SENIORITY_DATA", graphData);
 
-    new ChartRenderer(tokenToDataMap, "percent.template", "/tmp/percent.html").render();
+    new ChartRenderer(ImmutableMap.of(), tokenToDataMap, "percent.template",
+        "/tmp/percent.html").render();
   }
   
   private GraphData getGraphData(Optional<AwardDomicile> awardDomicile,

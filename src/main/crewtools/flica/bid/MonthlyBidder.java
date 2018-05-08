@@ -128,7 +128,7 @@ public class MonthlyBidder {
     for (int i = 1; i < lastDateOfMonth + 1; ++i) {
       result.append(i % 10);
     }
-    result.append("     (GSP) need  (RON)");
+    result.append("  (GSP)");
     return result.toString();
   }
 
@@ -169,12 +169,8 @@ public class MonthlyBidder {
     }
     result.append("[");  // TODO fix blend
     result.append(dates);
-    result.append("]  ");  // fix blend
+    result.append("] ");  // fix blend
     result.append(lineScore.isDesirableLine(config) ? "D " : "U ");
-    result.append(lineScore.getGspCredit());
-    result.append(" ");
-    result.append(config.getRequiredCredit().minus(lineScore.getGspCredit()));
-    result.append(" ");
     result.append(lineScore.getGspOvernightPeriod());
     result.append("  ");
     if (lineScore.hasEquipmentTwoHundredSegments()) {

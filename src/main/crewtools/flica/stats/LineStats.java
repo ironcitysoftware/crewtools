@@ -29,10 +29,11 @@ import java.util.logging.Logger;
 
 import org.joda.time.YearMonth;
 
+import com.google.common.collect.Ordering;
+
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.Proto.PairingList;
 import crewtools.flica.Proto.Section;
-import crewtools.flica.Proto.ThinLineList;
 import crewtools.flica.Proto.Trip;
 
 // You can't use lines for this because CI days are not populated in lines.
@@ -74,13 +75,11 @@ public class LineStats {
   }
   
   public void run() throws Exception {
-    Map<YearMonth, Map<AwardDomicile, ThinLineList>> allLineLists = dataReader.readLines();
-    // only read these until we are confident in the data
-    Map<YearMonth, Map<AwardDomicile, PairingList>> allPairings = dataReader.readPairings();
-    Map<AwardDomicile, ThinLineList> lineLists = 
-        allLineLists.get(YearMonth.parse("2018-05"));
+    Map<YearMonth, Map<AwardDomicile, PairingList>> allPairings = dataReader
+        .readPairings();
+    YearMonth latestMonth = Ordering.natural().max(allPairings.keySet());
     Map<AwardDomicile, PairingList> pairingLists =
-        allPairings.get(YearMonth.parse("2018-05"));
+        allPairings.get(latestMonth);
     Map<String, Overnight> overnightCounts = getOvernightCounts(pairingLists);
     
     GraphData graphData = new GraphData();
@@ -108,7 +107,11 @@ public class LineStats {
     Map<String, GraphData> tokenToDataMap = new HashMap<>();
     tokenToDataMap.put("$OVERNIGHT_DATA", graphData);
     
-    new ChartRenderer(tokenToDataMap, "line.template", "/tmp/line.html").render();
+    Map<String, String> tokenToStringMap = new HashMap<>();
+    tokenToStringMap.put("$TITLE", "\"Overnights by base for " + latestMonth + "\"");
+
+    new ChartRenderer(tokenToStringMap, tokenToDataMap, "line.template", "/tmp/line.html")
+        .render();
   }
   
   private Map<String, Overnight> getOvernightCounts(Map<AwardDomicile, PairingList> lines) {

@@ -21,6 +21,7 @@ package crewtools.flica.parser;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import org.joda.time.LocalDate;
@@ -34,6 +35,7 @@ import org.jsoup.select.Elements;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableSet;
 
 import crewtools.flica.Proto.ThinLine;
 import crewtools.flica.Proto.ThinLineList;
@@ -105,10 +107,19 @@ public class LineParser {
     return thinLineList.build();
   }
 
+  private static final Set<Integer> MONTHS_WHERE_FIRST_COLUMN_IS_FIRST_DAY = ImmutableSet
+      .of(4, 5, 6);
+
   /** column is 1 .. numColumns */
   /** TODO, capture header text row and properly map columns to days */
   /** Except, I'm not sure what this is used for and how much effort to put into it */
   private LocalDate getColumnDate(YearMonth yearMonth, int column) {
+    int monthOfYear = yearMonth.getMonthOfYear();
+    if (MONTHS_WHERE_FIRST_COLUMN_IS_FIRST_DAY.contains(monthOfYear)) {
+      return yearMonth.toLocalDate(column);
+    }
+
+    // exceptions follow.
     if (yearMonth.getMonthOfYear() == 2) {
       if (column == 1) {
         return yearMonth.minusMonths(1).toLocalDate(31);
@@ -120,16 +131,10 @@ public class LineParser {
       }
     } else if (yearMonth.getMonthOfYear() == 3) {
       return yearMonth.toLocalDate(column + 1);      
-    } else if (yearMonth.getMonthOfYear() == 4) {
-      return yearMonth.toLocalDate(column);
-    } else if (yearMonth.getMonthOfYear() == 5) {
-      return yearMonth.toLocalDate(column);
     } else {
-      if (true) {
-        throw new IllegalStateException("TODO Verify that column 1 is the first of the month");
-      }
+      throw new IllegalStateException(
+          "TODO Verify that column 1 is the first of the month");
     }
-    return yearMonth.toLocalDate(column);
   }
   
   private void parseLine(int numColumns, YearMonth yearMonth, Elements tds,
