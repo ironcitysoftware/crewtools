@@ -52,3 +52,36 @@ message ScheduleNode {
   repeated string trip = 1;
   repeated ScheduleNode child = 2;
 }
+
+// TODO better home
+// Configuration
+
+message BidConfig {
+  // Turns to these airports are preferred.
+  repeated string favorite_turn = 1;
+
+  // Overnights at these airports are preferred.
+  repeated string favorite_overnight = 2;
+
+  // If there is baggage in the schedule, swap it away, even if
+  // the resulting trip is scored lower than the non-baggage trip
+  // which was given away.
+  optional bool discard_baggage_regardless_of_score = 3;
+
+  // Scheduled vacation days.
+  // TODO: read from schedule.
+  repeated int32 vacation_date = 4;
+
+  // Monthly bidding: lines will be disqualified from consideration
+  // if any trips on that line span a desired day off.
+  repeated int32 desired_day_off = 5;
+
+  // The minimum number of credit hours the contract allows per month.
+  optional int32 minimum_credit_hours = 6;
+
+  // The minimum number of trips required to achieve minimum_credit_hours.
+  optional int32 minimum_number_of_trips = 7;
+
+  // The target year-month (eg 2018-5)
+  optional string year_month = 8;
+}

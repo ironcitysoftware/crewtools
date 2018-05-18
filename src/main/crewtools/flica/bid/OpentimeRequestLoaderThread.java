@@ -26,6 +26,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.joda.time.Duration;
+import org.joda.time.YearMonth;
 
 import crewtools.flica.FlicaService;
 import crewtools.flica.parser.OpentimeRequestParser;
@@ -34,18 +35,21 @@ import crewtools.flica.pojo.OpentimeRequest;
 
 public class OpentimeRequestLoaderThread extends PeriodicDaemonThread {
   private final Logger logger = Logger.getLogger(OpentimeRequestLoaderThread.class.getName());
-  
+
+  private final YearMonth yearMonth;
   private final FlicaService service;
   private final ScheduleWrapperTree tree;
-  private final AutoBidderConfig config;
+  private final AutoBidderCommandLineConfig cmdLine;
 
-  public OpentimeRequestLoaderThread(Duration initialDelay,
-      AutoBidderConfig config,
+  public OpentimeRequestLoaderThread(YearMonth yearMonth,
+      Duration initialDelay,
+      AutoBidderCommandLineConfig config,
       FlicaService service, ScheduleWrapperTree tree) {
     super(initialDelay, config.getOpentimeRequestRefreshInterval());
+    this.yearMonth = yearMonth;
     this.service = service;
     this.tree = tree;
-    this.config = config;
+    this.cmdLine = config;
     setName("OpentimeRequestLoader");
     setDaemon(true);
   }
@@ -54,7 +58,7 @@ public class OpentimeRequestLoaderThread extends PeriodicDaemonThread {
   public void doPeriodicWork() {
     logger.info("Refreshing opentime requests");
     try {
-      String raw = service.getOpentimeRequests(config.getRound(), config.getYearMonth());
+      String raw = service.getOpentimeRequests(cmdLine.getRound(), yearMonth);
       //Files.write(raw, new File("/tmp/or.txt"), StandardCharsets.UTF_8);
       List<OpentimeRequest> requests = new OpentimeRequestParser(raw).parse();
       for (OpentimeRequest request : requests) {

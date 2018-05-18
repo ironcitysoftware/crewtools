@@ -33,6 +33,7 @@ import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Trip;
 import crewtools.rpc.Proto.AutobidderRequest;
 import crewtools.rpc.Proto.AutobidderResponse;
+import crewtools.rpc.Proto.BidConfig;
 import crewtools.rpc.Proto.ScoreExplanation;
 
 public class StatusService extends Thread {
@@ -43,12 +44,15 @@ public class StatusService extends Thread {
   private final int BACKLOG = 100;
   private final RuntimeStats stats;
   private final TripDatabase trips;
+  private final BidConfig bidConfig;
 
-  public StatusService(RuntimeStats stats, TripDatabase trips)
+  public StatusService(RuntimeStats stats, TripDatabase trips,
+      BidConfig bidConfig)
       throws UnknownHostException, IOException {
     this.stats = stats;
     this.trips = trips;
     this.serverSocket = new ServerSocket(PORT, BACKLOG, InetAddress.getLocalHost());
+    this.bidConfig = bidConfig;
     this.setDaemon(true);
     this.setName("StatusService");
   }
@@ -114,7 +118,7 @@ public class StatusService extends Thread {
         throws Exception {
       PairingKey key = PairingKey.parseShort(keyString);
       Trip trip = trips.getTrip(key);
-      TripScore score = new TripScore(trip);
+      TripScore score = new TripScore(trip, bidConfig);
       for (String line : score.getScoreExplanation()) {
         builder.addLine(line);
       }

@@ -26,6 +26,7 @@ import java.util.logging.Logger;
 
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
+import org.joda.time.YearMonth;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -34,15 +35,16 @@ import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Section;
 import crewtools.flica.pojo.ThinLine;
 import crewtools.flica.pojo.Trip;
+import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.Collections;
 import crewtools.util.Period;
 
 public class LineScore {
   private final Logger logger = Logger.getLogger(LineScore.class.getName());
 
-  private final MonthlyBidderConfig config;
   private final ThinLine line;
   private final Map<PairingKey, Trip> trips;
+  private final BidConfig bidConfig;
   private final Period gspCredit;
   private final Period allCredit;
   private final Period gspOvernightPeriod;
@@ -53,11 +55,12 @@ public class LineScore {
   private final int endTimePoints;
   private final boolean hasEquipmentTwoHundredSegments;
 
-  public LineScore(MonthlyBidderConfig config, ThinLine line, Map<PairingKey, Trip> trips) {
-    this.config = config;
+  public LineScore(ThinLine line,
+      Map<PairingKey, Trip> trips, BidConfig bidConfig) {
     this.line = line;
     this.trips = trips;
-    
+    this.bidConfig = bidConfig;
+
     Period gspCredit = Period.ZERO;
     Period allCredit = Period.ZERO;
     Period gspOvernightPeriod = Period.ZERO;
@@ -67,13 +70,13 @@ public class LineScore {
     
     for (Trip trip : trips.values()) {
       Period creditInMonth = trip.getCreditInMonth(
-          config.getVacationDaysOff(), config.getYearMonth());
+          bidConfig.getVacationDateList(), YearMonth.parse(bidConfig.getYearMonth()));
       creditsInMonthMap.put(trip, creditInMonth);
       allCredit = allCredit.plus(creditInMonth);
 
       boolean hasGspOvernight = false;
       for (Section section : trip.sections) {
-        if (config.getVacationDaysOff().contains(section.date.getDayOfMonth())) {
+        if (bidConfig.getVacationDateList().contains(section.date.getDayOfMonth())) {
           // This day will be dropped as it falls on vacation.
           continue;
         }
@@ -139,14 +142,14 @@ public class LineScore {
     Map<Trip, Period> largestToSmallestCredit = Collections
         .sortByValueDescending(creditsInMonth);
     ImmutableMap.Builder<Trip, Period> result = ImmutableMap.builder();
-    Period requiredCredit = config.getRequiredCredit();
+    Period requiredCredit = Period.hours(bidConfig.getMinimumCreditHours());
     for (Map.Entry<Trip, Period> entry : largestToSmallestCredit.entrySet()) {
       result.put(entry.getKey(), entry.getValue());
       if (requiredCredit.compareTo(entry.getValue()) <= 0) {
         // we're done
         return result.build();
       }
-      if (result.build().size() == config.getMinimumNumberOfTrips()) {
+      if (result.build().size() == bidConfig.getMinimumNumberOfTrips()) {
         break;
       }
       requiredCredit = requiredCredit.minus(entry.getValue());
@@ -155,7 +158,7 @@ public class LineScore {
   }
 
   /** Returns true if we want to consider this line for our bid. */
-  public boolean isDesirableLine(MonthlyBidderConfig config) {
+  public boolean isDesirableLine() {
     boolean hasAnyGspOvernights = false;
     for (Trip trip : getTrips()) {
       if (hasMinimumTripsThatMeetMinCredit()) {
@@ -177,7 +180,8 @@ public class LineScore {
           hasAnyGspOvernights = true;
         }
       }
-      if (spansDesiredDaysOff(config, trip)) {
+      if (spansDesiredDaysOff(trip)) {
+        // A trip on this line spans a desired day off. Disqualify the line.
         return false;
       }
     }
@@ -195,9 +199,9 @@ public class LineScore {
     return numGspOvernights;
   }
 
-  private boolean spansDesiredDaysOff(MonthlyBidderConfig config, Trip trip) {
+  private boolean spansDesiredDaysOff(Trip trip) {
     for (LocalDate date : trip.getDepartureDates()) {
-      if (config.getSapDaysOff().contains(date.getDayOfMonth())) {
+      if (bidConfig.getDesiredDayOffList().contains(date.getDayOfMonth())) {
         return true;
       }
     }

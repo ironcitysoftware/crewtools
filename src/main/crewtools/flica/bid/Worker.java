@@ -33,6 +33,7 @@ import crewtools.flica.FlicaService;
 import crewtools.flica.parser.SwapResponseParser;
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Trip;
+import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.Clock;
 
 public class Worker extends Thread {
@@ -46,11 +47,12 @@ public class Worker extends Thread {
   private final int round;
   private final Clock clock;
   private final RuntimeStats stats;
+  private final BidConfig bidConfig;
   private int numSwaps;
   
   public Worker(BlockingQueue<Trip> queue, FlicaService service,
       ScheduleWrapperTree tree, YearMonth yearMonth,
-      int round, Clock clock, RuntimeStats stats) {
+      int round, Clock clock, RuntimeStats stats, BidConfig bidConfig) {
     this.queue = queue;
     this.service = service;
     this.tree = tree;
@@ -58,6 +60,7 @@ public class Worker extends Thread {
     this.round = round;
     this.clock = clock;
     this.stats = stats;
+    this.bidConfig = bidConfig;
     this.numSwaps = 0;
     this.setName("autobidder worker");
     this.setDaemon(false);
@@ -123,14 +126,16 @@ public class Worker extends Thread {
               + scheduledTrip.getPairingName() + " due to MinCredit");
           continue;
         }
-        TripScore potentialNewTrip = new TripScore(trip);
-        TripScore existingTrip = new TripScore(scheduledTrip);
+        TripScore potentialNewTrip = new TripScore(trip, bidConfig);
+        TripScore existingTrip = new TripScore(scheduledTrip, bidConfig);
         boolean newTripIsBetter = potentialNewTrip.compareTo(existingTrip) > 0;
         boolean scheduleHasBaggage = !wrapper.getBaggage().isEmpty();
         logger.info("Trip " + trip.getPairingName() + ": better=" + newTripIsBetter
             + "; scheduleHasBaggage=" + scheduleHasBaggage
             + " (" + wrapper.getBaggage() + ")");
-        if (newTripIsBetter || scheduleHasBaggage) {
+        if (newTripIsBetter ||
+            (bidConfig.getDiscardBaggageRegardlessOfScore()
+                && scheduleHasBaggage)) {
           logger.info("Trip " + trip.getPairingName() 
           + " (" + potentialNewTrip.getPoints() + ") is better than "
           + scheduledTrip.getPairingName() + " (" + existingTrip.getPoints() + ")");

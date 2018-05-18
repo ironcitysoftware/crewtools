@@ -30,8 +30,18 @@ import com.google.protobuf.Message;
 import com.google.protobuf.Message.Builder;
 import com.google.protobuf.TextFormat;
 
+import crewtools.rpc.Proto.BidConfig;
+
 public class FileUtils {
   private final static Logger logger = Logger.getLogger(FileUtils.class.getName());
+
+  public static BidConfig readBidConfig() throws Exception {
+    File proto = new File(System.getProperty("user.home"), ".bid");
+    BidConfig.Builder config = BidConfig.newBuilder();
+    TextFormat.getParser().merge(
+        Files.toString(proto, StandardCharsets.UTF_8), config);
+    return config.build();
+  }
 
   @SuppressWarnings("unchecked")
   public static <B extends Builder, M extends Message> M

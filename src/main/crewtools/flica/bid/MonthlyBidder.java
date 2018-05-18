@@ -47,18 +47,22 @@ import crewtools.flica.pojo.Section;
 import crewtools.flica.pojo.ThinLine;
 import crewtools.flica.pojo.Trip;
 import crewtools.flica.stats.DataReader;
+import crewtools.rpc.Proto.BidConfig;
+import crewtools.util.FileUtils;
 import crewtools.util.FlicaConfig;
 
 public class MonthlyBidder {
   private final Logger logger = Logger.getLogger(MonthlyBidder.class.getName());
-  private final MonthlyBidderConfig config;
+  private final MonthlyBidderCommandLineConfig cmdLine;
+  private final BidConfig bidConfig;
 
   public static void main(String args[]) throws Exception {
     new MonthlyBidder(args).run();
   }
 
-  public MonthlyBidder(String args[]) {
-    this.config = new MonthlyBidderConfig(args);
+  public MonthlyBidder(String args[]) throws Exception {
+    this.cmdLine = new MonthlyBidderCommandLineConfig(args);
+    this.bidConfig = FileUtils.readBidConfig();
   }
   
   public void run() throws Exception {
@@ -68,17 +72,18 @@ public class MonthlyBidder {
   private void runForMonthlyBid() throws Exception {
     FlicaConnection connection = new FlicaConnection(new FlicaConfig());
     FlicaService service;
-    if (config.useCachingService()) {
+    if (cmdLine.useCachingService()) {
       service = new CachingFlicaService(connection);
     } else {
       service = new FlicaService(connection);
       service.connect();
     }
 
-    Map<PairingKey, Trip> pairings = getAllPairings(service, config.getYearMonth());
-    logger.info(pairings.size() + " pairings read for " + config.getYearMonth());
-    List<ThinLine> lines = getAllLines(service, config.getYearMonth());
-    logger.info(lines.size() + " lines read for " + config.getYearMonth());
+    YearMonth yearMonth = YearMonth.parse(bidConfig.getYearMonth());
+    Map<PairingKey, Trip> pairings = getAllPairings(service, yearMonth);
+    logger.info(pairings.size() + " pairings read for " + yearMonth);
+    List<ThinLine> lines = getAllLines(service, yearMonth);
+    logger.info(lines.size() + " lines read for " + yearMonth);
     Map<String, ThinLine> linesByName = new HashMap<>();
 
     List<LineScore> lineScores = new ArrayList<>();
@@ -91,30 +96,30 @@ public class MonthlyBidder {
             Preconditions.checkNotNull(pairings.get(key),
                 "Pairing not found: " + key));
       }
-      LineScore lineScore = new LineScore(config, line, trips);
-      if (config.softDaysOff() || lineScore.isDesirableLine(config)) {
+      LineScore lineScore = new LineScore(line, trips, bidConfig);
+      if (cmdLine.softDaysOff() || lineScore.isDesirableLine()) {
         lineScores.add(lineScore);
       }
     }
-    Collections.sort(lineScores, new MonthlyBidStrategy(config));
+    Collections.sort(lineScores, new MonthlyBidStrategy(bidConfig));
 
     logger.info("Computed bids:");
 
-    int lastDateOfMonth = config.getYearMonth().toLocalDate(1).dayOfMonth().getMaximumValue();
+    int lastDateOfMonth = yearMonth.toLocalDate(1).dayOfMonth().getMaximumValue();
 
     System.out.println(header(lastDateOfMonth));
     LinkedList<String> bids = new LinkedList<>();
     for (LineScore lineScore : lineScores) {
       if (!bids.contains(lineScore.getLineName())) {
         bids.add(lineScore.getLineName());
-        String text = formatLine(lastDateOfMonth, lineScore, pairings, config.getYearMonth());
+        String text = formatLine(lastDateOfMonth, lineScore, pairings, yearMonth);
         System.out.println(text);
       }
     }
 
-    if (config.submitBids()) {
+    if (cmdLine.submitBids()) {
       logger.info("Submitting bids!");
-      service.submitLineBid(/* round */ 1, config.getYearMonth(), bids);
+      service.submitLineBid(/* round */ 1, yearMonth, bids);
     } else {
       logger.info("--submit was not specified, so bids not submitted.");
     }
@@ -170,7 +175,7 @@ public class MonthlyBidder {
     result.append("[");  // TODO fix blend
     result.append(dates);
     result.append("] ");  // fix blend
-    result.append(lineScore.isDesirableLine(config) ? "D " : "U ");
+    result.append(lineScore.isDesirableLine() ? "D " : "U ");
     result.append(lineScore.getGspOvernightPeriod());
     result.append("  ");
     if (lineScore.hasEquipmentTwoHundredSegments()) {
@@ -187,10 +192,10 @@ public class MonthlyBidder {
   
   private Map<PairingKey, Trip> getAllPairings(FlicaService service, YearMonth yearMonth) throws Exception {
     Proto.PairingList pairingList;
-    if (!config.useProto()) {
+    if (!cmdLine.useProto()) {
       String rawPairings = service.getAllPairings(AwardDomicile.CLT, Rank.FIRST_OFFICER, 1, yearMonth);
       PairingParser pairingParser = new PairingParser(rawPairings, yearMonth,
-          config.parseCanceled());
+          cmdLine.parseCanceled());
       pairingList = pairingParser.parse();
     } else {
       String filename = new DataReader().getPairingFilename(yearMonth, AwardDomicile.CLT);
@@ -213,7 +218,7 @@ public class MonthlyBidder {
 
   private List<ThinLine> getAllLines(FlicaService service, YearMonth yearMonth) throws Exception {
     Proto.ThinLineList lineList;
-    if (!config.useProto()) {
+    if (!cmdLine.useProto()) {
       String rawLines = service.getAllLines(AwardDomicile.CLT, Rank.FIRST_OFFICER, 1, yearMonth);
       LineParser lineParser = new LineParser(rawLines);
       lineList = lineParser.parse();

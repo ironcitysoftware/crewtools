@@ -19,33 +19,23 @@
 
 package crewtools.flica.bid;
 
-import java.util.Set;
 import java.util.logging.Logger;
 
-import org.joda.time.YearMonth;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
-
-import crewtools.util.Period;
-
-public class MonthlyBidderConfig {
-  private final Logger logger = Logger.getLogger(MonthlyBidderConfig.class.getName());
+public class MonthlyBidderCommandLineConfig {
+  private final Logger logger = Logger.getLogger(MonthlyBidderCommandLineConfig.class.getName());
 
   private final boolean submitBids;
   private final boolean useCachingService;
   private final boolean parseCanceled;
   private final boolean softDaysOff;
   private final boolean useProto;
-  private final YearMonth yearMonth;
 
-  public MonthlyBidderConfig(String args[]) {
+  public MonthlyBidderCommandLineConfig(String args[]) {
     boolean submitBids = false;
     boolean useCachingService = false;
     boolean parseCanceled = false;
     boolean softDaysOff = false;
     boolean useProto = false;
-    YearMonth yearMonth = null;
     for (String arg : args) {
       if (arg.equals("--submit")) {
         submitBids = true;
@@ -57,47 +47,21 @@ public class MonthlyBidderConfig {
         softDaysOff = true;
       } else if (arg.equals("--proto")) {
         useProto = true;
-      } else if (arg.startsWith("--ym")) {
-        yearMonth = YearMonth.parse(arg.split("=")[1]);
+      } else {
+        System.err.println("Unrecognized argument " + arg);
+        System.exit(-1);
       }
     }
     this.submitBids = submitBids;
     this.useCachingService = useCachingService;
     this.parseCanceled = parseCanceled;
     this.softDaysOff = softDaysOff;
-    this.yearMonth = Preconditions.checkNotNull(yearMonth, "Need --ym=");
     this.useProto = useProto;
     logger.info("Submit bids    (--submit)     : " + submitBids);
     logger.info("Use cache      (--cache)      : " + useCachingService);
     logger.info("Parse canceled (--canceled)   : " + parseCanceled);
     logger.info("Soft days off  (--softDaysOff): " + softDaysOff);
-    logger.info("year month     (--ym=yyyy-mm) : " + yearMonth);
     logger.info("Use proto      (--proto)      : " + useProto);
-  }
-
-  // @formatter:off
-  public static final Set<Integer> SAP_DAYS_OFF = ImmutableSet.of(
-      23);
-
-  public static final Set<Integer> VACATION_DAYS_OFF = ImmutableSet.of(
-      );
-  // @formatter:on
-
-  public Set<Integer> getSapDaysOff() {
-    return SAP_DAYS_OFF;
-  }
-
-  public Set<Integer> getVacationDaysOff() {
-    return VACATION_DAYS_OFF;
-  }
-
-  // maximum?
-  public int getMinimumNumberOfTrips() {
-    return 3;
-  }
-
-  public Period getRequiredCredit() {
-    return Period.hours(65);
   }
 
   public boolean submitBids() {
@@ -118,9 +82,5 @@ public class MonthlyBidderConfig {
 
   public boolean useProto() {
     return useProto;
-  }
-
-  public YearMonth getYearMonth() {
-    return yearMonth;
   }
 }

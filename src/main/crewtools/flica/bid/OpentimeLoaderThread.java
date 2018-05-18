@@ -43,17 +43,19 @@ import crewtools.flica.pojo.Trip;
 public class OpentimeLoaderThread extends PeriodicDaemonThread {
   private final Logger logger = Logger.getLogger(OpentimeLoaderThread.class.getName());
 
-  private final AutoBidderConfig config;
+  private final YearMonth yearMonth;
+  private final AutoBidderCommandLineConfig cmdLine;
   private final FlicaService service;
   private final TripDatabase tripDatabase;
   private final BlockingQueue<Trip> queue;
   private final RuntimeStats stats;
   
-  public OpentimeLoaderThread(Duration initialDelay,
-      AutoBidderConfig config, FlicaService service,
+  public OpentimeLoaderThread(YearMonth yearMonth, Duration initialDelay,
+      AutoBidderCommandLineConfig cmdLine, FlicaService service,
       TripDatabase tripDatabase, BlockingQueue<Trip> queue, RuntimeStats stats) {
-    super(initialDelay, config.getOpentimeRefreshInterval());
-    this.config = config;
+    super(initialDelay, cmdLine.getOpentimeRefreshInterval());
+    this.yearMonth = yearMonth;
+    this.cmdLine = cmdLine;
     this.service = service;
     this.tripDatabase = tripDatabase;
     this.queue = queue;
@@ -66,7 +68,7 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
   public void doPeriodicWork() {
     logger.info("Refreshing opentime");
     try {
-      List<PairingKey> trips = getOpentimeTrips(service, config.getYearMonth(), config.getRound());
+      List<PairingKey> trips = getOpentimeTrips(service, yearMonth, cmdLine.getRound());
       for (PairingKey tripKey : trips) {
         Trip trip = tripDatabase.getTrip(tripKey);
         logger.info("Adding " + tripKey + " from opentime refresh");

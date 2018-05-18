@@ -25,19 +25,21 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import crewtools.flica.pojo.Trip;
+import crewtools.rpc.Proto.BidConfig;
 
 public class MonthlyBidStrategy implements Comparator<LineScore> {
   private final Logger logger = Logger.getLogger(MonthlyBidStrategy.class.getName());
 
-  private final MonthlyBidderConfig config;
+  private final BidConfig bidConfig;
 
-  public MonthlyBidStrategy(MonthlyBidderConfig config) {
-    this.config = config;
+  public MonthlyBidStrategy(BidConfig bidConfig) {
+    this.bidConfig = bidConfig;
   }
 
   @Override
   public int compare(LineScore a, LineScore b) {
-    int isDesirable = new Boolean(a.isDesirableLine(config)).compareTo(b.isDesirableLine(config));
+    int isDesirable = new Boolean(a.isDesirableLine())
+        .compareTo(b.isDesirableLine());
     if (isDesirable != 0) {
       return -isDesirable;
     }
@@ -53,7 +55,7 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
     int aPoints = 0;
     String aTrips = "";
     for (Trip trip : getTrips(a)) {
-      aPoints += new TripScore(trip).getPoints();
+      aPoints += new TripScore(trip, bidConfig).getPoints();
       if (!aTrips.isEmpty()) {
         aTrips += ", ";
       }
@@ -63,7 +65,7 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
     int bPoints = 0;
     String bTrips = "";
     for (Trip trip : getTrips(b)) {
-      bPoints += new TripScore(trip).getPoints();
+      bPoints += new TripScore(trip, bidConfig).getPoints();
       if (!bTrips.isEmpty()) {
         bTrips += ", ";
       }

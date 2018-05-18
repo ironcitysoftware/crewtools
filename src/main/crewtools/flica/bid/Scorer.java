@@ -37,6 +37,8 @@ import crewtools.flica.pojo.Pairing;
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Trip;
 import crewtools.flica.stats.DataReader;
+import crewtools.rpc.Proto.BidConfig;
+import crewtools.util.FileUtils;
 import crewtools.util.FlicaConfig;
 
 /** Tool for inspecting scoring of arbitrary lines and trips. */
@@ -45,10 +47,11 @@ public class Scorer {
     Map<PairingKey, Trip> pairings = getAllPairings(YearMonth.parse("2018-5"));
     FlicaConnection connection = new FlicaConnection(new FlicaConfig());
     FlicaService service = new FlicaService(connection);
+    BidConfig bidConfig = FileUtils.readBidConfig();
     Trip left = getTrip(args[0], pairings, service);
     Trip right = getTrip(args[1], pairings, service);
-    TripScore leftScore = new TripScore(left);
-    TripScore rightScore = new TripScore(right);
+    TripScore leftScore = new TripScore(left, bidConfig);
+    TripScore rightScore = new TripScore(right, bidConfig);
     displayScoreExplanation(left.getPairingName(), leftScore.getScoreExplanation());
     System.out.println("----------------------------------------------------");
     displayScoreExplanation(right.getPairingName(), rightScore.getScoreExplanation());

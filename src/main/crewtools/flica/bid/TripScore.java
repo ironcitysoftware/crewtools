@@ -21,26 +21,19 @@ package crewtools.flica.bid;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Logger;
 
 import org.joda.time.DateTimeConstants;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
 
-import com.google.common.collect.ImmutableSet;
-
 import crewtools.flica.pojo.Section;
 import crewtools.flica.pojo.Trip;
+import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.Period;
 
 public class TripScore implements Comparable<TripScore> {
   private final Logger logger = Logger.getLogger(TripScore.class.getName());
-
-  private static final Set<String> FAVORITE_OVERNIGHTS = ImmutableSet.of("GSP");
-
-  private static final Set<String> FAVORITE_TURNS = ImmutableSet.of("RAP", "SAT", "TUL",
-      "OKC", "DSM");
 
   private final Period favoriteOvernightPeriod;
   private final int numFavoriteOvernights;
@@ -51,7 +44,7 @@ public class TripScore implements Comparable<TripScore> {
   private final int points;
   private final List<String> scoreExplanation = new ArrayList<>();
   
-  public TripScore(Trip trip) {
+  public TripScore(Trip trip, BidConfig config) {
     int goodPoints = 0;
     int badPoints = 0;
     
@@ -61,7 +54,8 @@ public class TripScore implements Comparable<TripScore> {
     int numLegs = 0;
     for (Section section : trip.sections) {
       if (section.hasLayoverAirportCode()
-          && FAVORITE_OVERNIGHTS.contains(section.getLayoverAirportCode())) {
+          && config.getFavoriteOvernightList()
+              .contains(section.getLayoverAirportCode())) {
         favoriteOvernightPeriod = favoriteOvernightPeriod
             .plus(section.getLayoverDuration());
         numFavoriteOvernights++;
@@ -72,7 +66,7 @@ public class TripScore implements Comparable<TripScore> {
     this.favoriteOvernightPeriod = favoriteOvernightPeriod;
     this.numFavoriteOvernights = numFavoriteOvernights;
     this.numLegs = numLegs;
-    
+
     goodPoints += numFavoriteOvernights * 3;
     if (numFavoriteOvernights > 0) {
       scoreExplanation.add("+" + numFavoriteOvernights * 3 + " for favorite overnights");
@@ -88,7 +82,7 @@ public class TripScore implements Comparable<TripScore> {
     // favorite turns
     for (Section section : trip.sections) {
       for (String airportCode : section.getAllTurnAirports()) {
-        if (FAVORITE_TURNS.contains(airportCode)) {
+        if (config.getFavoriteTurnList().contains(airportCode)) {
           goodPoints++;
           scoreExplanation.add("+1 for a turn to " + airportCode);
         }

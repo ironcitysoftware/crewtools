@@ -148,7 +148,7 @@ public class Trip implements Comparable<Trip> {
     return credit.minus(outOfMonthCredit);
   }
 
-  public Period getCreditInMonth(Set<Integer> vacationDays, YearMonth yearMonth) {
+  public Period getCreditInMonth(List<Integer> vacationDays, YearMonth yearMonth) {
     Period outOfMonthCredit = Period.ZERO;
     Period vacationCredit = Period.ZERO;
     for (Section section : sections) {
