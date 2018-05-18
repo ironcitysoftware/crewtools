@@ -30,21 +30,21 @@ public abstract class PeriodicDaemonThread extends Thread {
 
   private final Duration initialDelay;
   private final Duration interval;
-  private final AtomicBoolean initialRun;
+  private final AtomicBoolean initialRunComplete;
   
   public PeriodicDaemonThread(Duration initialDelay, Duration interval) {
     this.initialDelay = initialDelay;
     this.interval = interval;
-    this.initialRun = new AtomicBoolean(false);
+    this.initialRunComplete = new AtomicBoolean(false);
   }
   
   public void blockCurrentThreadUntilInitialRunIsComplete() {
-    if (initialRun.get()) {
+    if (initialRunComplete.get()) {
       return;
     }
-    synchronized (initialRun) {
+    synchronized (initialRunComplete) {
       try {
-        initialRun.wait();
+        initialRunComplete.wait();
       } catch (InterruptedException e) {
         String prefix = String.format("[%s] ", getName());
         logger.log(Level.WARNING, prefix + "Unable to wait for initial run", e);
@@ -63,13 +63,15 @@ public abstract class PeriodicDaemonThread extends Thread {
         logger.log(Level.SEVERE, prefix + "Error sleeping for initial delay", e);
       }
     }
-    
+
+    doInitialWork();
+
     while (true) {
       doPeriodicWork();
       
-      initialRun.set(true);
-      synchronized (initialRun) {
-        initialRun.notifyAll();
+      initialRunComplete.set(true);
+      synchronized (initialRunComplete) {
+        initialRunComplete.notifyAll();
       }
       
       if (interval.getMillis() > 0) {
@@ -80,6 +82,9 @@ public abstract class PeriodicDaemonThread extends Thread {
         }
       }
     }
+  }
+
+  protected void doInitialWork() {
   }
 
   protected abstract void doPeriodicWork();

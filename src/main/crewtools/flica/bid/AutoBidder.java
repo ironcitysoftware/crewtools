@@ -109,7 +109,7 @@ public class AutoBidder {
     
     OpentimeLoaderThread opentimeLoader = new OpentimeLoaderThread(
         yearMonth,
-        initialDelay,
+        initialDelay.minus(Duration.standardMinutes(2)),
         cmdLine,
         service,
         trips,

@@ -65,6 +65,15 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
   }
   
   @Override
+  public void doInitialWork() {
+    try {
+      service.connect();
+    } catch (IOException e) {
+      logger.log(Level.SEVERE, "Error performing initial work", e);
+    }
+  }
+
+  @Override
   public void doPeriodicWork() {
     logger.info("Refreshing opentime");
     try {
