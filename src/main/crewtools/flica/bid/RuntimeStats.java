@@ -19,8 +19,9 @@
 
 package crewtools.flica.bid;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.joda.time.DateTime;
 
@@ -32,33 +33,41 @@ public class RuntimeStats {
   private final ScheduleWrapperTree tree;
   private DateTime lastEmailTrip;
   private DateTime lastOpentimeTrip;
-  private int numEmailTrips;
-  private int numOpentimeTrips;
-  private List<String> submittedSwaps;
+  private AtomicInteger numEmailTrips;
+  private AtomicInteger numOpentimeTrips;
+  private Queue<String> submittedSwaps;
 
   public RuntimeStats(Clock clock, ScheduleWrapperTree tree) {
     this.clock = clock;
     this.tree = tree;
-    this.submittedSwaps = new ArrayList<>();
+    this.lastEmailTrip = new DateTime();
+    this.lastOpentimeTrip = new DateTime();
+    this.numEmailTrips = new AtomicInteger();
+    this.numOpentimeTrips = new AtomicInteger();
+    this.submittedSwaps = new ConcurrentLinkedQueue<>();
   }
 
-  public synchronized void incrementEmailTrip() {
-    numEmailTrips++;
-    lastEmailTrip = clock.now();
+  public void incrementEmailTrip() {
+    numEmailTrips.getAndIncrement();
+    synchronized (lastEmailTrip) {
+      lastEmailTrip = clock.now();
+    }
   }
 
-  public synchronized void incrementOpentimeTrip() {
-    numOpentimeTrips++;
-    lastOpentimeTrip = clock.now();
+  public void incrementOpentimeTrip() {
+    numOpentimeTrips.getAndIncrement();
+    synchronized (lastOpentimeTrip) {
+      lastOpentimeTrip = clock.now();
+    }
   }
 
-  public synchronized void recordSwap(String swap) {
+  public void recordSwap(String swap) {
     submittedSwaps.add(swap);
   }
 
-  public synchronized void populate(Proto.Status.Builder builder) {
-    builder.setNumEmail(numEmailTrips);
-    builder.setNumOpentime(numOpentimeTrips);
+  public void populate(Proto.Status.Builder builder) {
+    builder.setNumEmail(numEmailTrips.get());
+    builder.setNumOpentime(numOpentimeTrips.get());
     builder.setNumSwaps(submittedSwaps.size());
     tree.populate(builder);
   }
@@ -68,12 +77,12 @@ public class RuntimeStats {
     return toStringInternal();
   }
 
-  private synchronized String toStringInternal() {
+  private String toStringInternal() {
     String result = "";
-    result = String.format("%d trips from email (last %s)\n", numEmailTrips,
-        numEmailTrips > 0 ? lastEmailTrip : "none");
-    result += String.format("%d trips from opentime (last %s)\n", numOpentimeTrips,
-        numOpentimeTrips > 0 ? lastOpentimeTrip : "none");
+    result = String.format("%d trips from email (last %s)\n", numEmailTrips.get(),
+        numEmailTrips.get() > 0 ? lastEmailTrip : "none");
+    result += String.format("%d trips from opentime (last %s)\n", numOpentimeTrips.get(),
+        numOpentimeTrips.get() > 0 ? lastOpentimeTrip : "none");
     for (String swap : submittedSwaps) {
       result += swap + "\n";
     }
