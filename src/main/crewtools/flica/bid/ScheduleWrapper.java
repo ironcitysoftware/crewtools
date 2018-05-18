@@ -51,8 +51,7 @@ public class ScheduleWrapper {
    * Potential opentime trips which overlap this date will be discarded.
    */
   private static final Set<LocalDate> REQUIRED_DAYS_OFF = ImmutableSet.of(
-      LocalDate.parse("2018-5-1"),
-      LocalDate.parse("2018-5-31"));
+  );
 
   // subset of schedule
   // only contains future, droppable trips.
@@ -87,6 +86,7 @@ public class ScheduleWrapper {
 
   private void populate(Schedule schedule, YearMonth yearMonth) {
     Collection<PairingKey> allBaggageTrips = identifyBaggageTrips(schedule);
+    Period nonBaggageCreditThisMonth = Period.ZERO;
     for (Trip trip : schedule.trips) {
       if (trip.hasScheduleType()) {
         // Vacation, training, etc.
@@ -98,22 +98,26 @@ public class ScheduleWrapper {
           if (trip.isDroppable() && trip.getDutyStart().isAfter(clock.now())) {
             droppableSchedule.put(trip.getPairingKey(), trip);
           }
-          this.creditInMonthMap.put(trip.getPairingKey(), trip.getCreditInMonth(yearMonth));
+          Period tripCredit = trip.getCreditInMonth(yearMonth);
+          this.creditInMonthMap.put(trip.getPairingKey(), tripCredit);
+          nonBaggageCreditThisMonth = nonBaggageCreditThisMonth.plus(tripCredit);
         } else {
           baggageTrips.add(trip.getPairingKey());
         }
       }
     }
     this.creditInMonthMap = crewtools.util.Collections.sortByValueAscending(creditInMonthMap);
-    Period overage = schedule.getCreditInMonth().minus(SIXTY_FIVE);
-    logger.finest("(ordered) credit this month: " + creditInMonthMap);
-    logger.finest("total credit this month: " + schedule.getCreditInMonth());
-    logger.finest("Credit overage this month: " + overage);
+    Period overage = nonBaggageCreditThisMonth.minus(SIXTY_FIVE);
+    logger.info("(ordered) credit this month: " + creditInMonthMap);
+    logger.info("non-baggage credit this month: " + nonBaggageCreditThisMonth);
+    logger.info("non-baggage credit overage this month: " + overage);
     // This period is the minimum period of a trip we care about in opentime.
     // That is, there exists a droppable trip on our schedule such that dropping
     // it and adding a trip of this credit value will yield the minimum schedule credit.
+    //
+    // creditInMonthMap does not include baggage.
     this.minRequiredCredit = getSmallestDroppableCredit(creditInMonthMap).minus(overage);
-    logger.finest("Minimum credit for an added trip: " + minRequiredCredit);
+    logger.info("Minimum credit for an added trip: " + minRequiredCredit);
   }
   
   // Credits should be ordered from smallest to largest period.
@@ -124,6 +128,8 @@ public class ScheduleWrapper {
         logger.finest(entry.getKey() + " is not droppable");
         continue;
       }
+      logger.info(
+          "Smallest droppable credit is " + entry.getKey() + " for " + entry.getValue());
       return entry.getValue();
     }
     logger.severe("Can't find any droppable trips?");
