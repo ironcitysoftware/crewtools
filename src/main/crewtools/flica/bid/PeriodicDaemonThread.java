@@ -28,6 +28,8 @@ import org.joda.time.Duration;
 public abstract class PeriodicDaemonThread extends Thread {
   private final Logger logger = Logger.getLogger(PeriodicDaemonThread.class.getName());
 
+  private static final Duration FAILURE_DURATION = Duration.standardSeconds(10);
+
   private final Duration initialDelay;
   private final Duration interval;
   private final AtomicBoolean initialRunComplete;
@@ -57,29 +59,39 @@ public abstract class PeriodicDaemonThread extends Thread {
     String prefix = String.format("[%s] ", getName());
     if (initialDelay.getMillis() > 0) {
       logger.info(prefix + "Waiting " + initialDelay.toString() + " initially");
-      try {
-        Thread.sleep(initialDelay.getMillis());
-      } catch (InterruptedException e) {
-        logger.log(Level.SEVERE, prefix + "Error sleeping for initial delay", e);
-      }
+      safeSleep(prefix, initialDelay);
     }
 
     doInitialWork();
 
+    int numFailures = 0;
+
     while (true) {
-      doPeriodicWork();
+      if (doPeriodicWork()) {
+        safeSleep(prefix, FAILURE_DURATION);
+        numFailures++;
+        if (numFailures < getMaximumNumFailuresBeforeSleeping()) {
+          continue;
+        }
+      }
       
+      numFailures = 0;
+
       initialRunComplete.set(true);
       synchronized (initialRunComplete) {
         initialRunComplete.notifyAll();
       }
       
-      if (interval.getMillis() > 0) {
-        try {
-          Thread.sleep(interval.getMillis());
-        } catch (InterruptedException e) {
-          logger.log(Level.SEVERE, prefix + "Error sleeping for interval", e);
-        }
+      safeSleep(prefix, interval);
+    }
+  }
+
+  private void safeSleep(String prefix, Duration sleepDuration) {
+    if (sleepDuration.getMillis() > 0) {
+      try {
+        Thread.sleep(sleepDuration.getMillis());
+      } catch (InterruptedException e) {
+        logger.log(Level.SEVERE, prefix + "Error sleeping", e);
       }
     }
   }
@@ -87,5 +99,13 @@ public abstract class PeriodicDaemonThread extends Thread {
   protected void doInitialWork() {
   }
 
-  protected abstract void doPeriodicWork();
+  protected int getMaximumNumFailuresBeforeSleeping() {
+    return 1;
+  }
+
+  /**
+   * Returns true if the work succeeded.
+   * If false is returned, the thread will sleep FAILURE_INTERVAL and retry.
+   */
+  protected abstract boolean doPeriodicWork();
 }

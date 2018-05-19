@@ -55,7 +55,7 @@ public class OpentimeRequestLoaderThread extends PeriodicDaemonThread {
   }
   
   @Override
-  public void doPeriodicWork() {
+  public boolean doPeriodicWork() {
     logger.info("Refreshing opentime requests");
     try {
       String raw = service.getOpentimeRequests(cmdLine.getRound(), yearMonth);
@@ -76,8 +76,10 @@ public class OpentimeRequestLoaderThread extends PeriodicDaemonThread {
             logger.info("FIXME: handle request status " + request.getStatus());
         }
       }
+      return true;
     } catch (URISyntaxException | IOException | ParseException e) {
       logger.log(Level.SEVERE, "Error refreshing opentime requests", e);
+      return false;
     }
   }
 }

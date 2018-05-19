@@ -74,7 +74,7 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
   }
 
   @Override
-  public void doPeriodicWork() {
+  public boolean doPeriodicWork() {
     logger.info("Refreshing opentime");
     try {
       List<PairingKey> trips = getOpentimeTrips(service, yearMonth, cmdLine.getRound());
@@ -84,13 +84,21 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
         stats.incrementOpentimeTrip();
         queue.add(trip);
       }
+      return true;
     } catch (URISyntaxException | IOException | ParseException e) {
       logger.severe(e.getMessage());
       e.printStackTrace();
       logger.log(Level.SEVERE, "Error refreshing opentime", e);
+      return false;
     }
   }
-  
+
+  /** Each work unit will be retried every 10 seconds this many times */
+  @Override
+  protected int getMaximumNumFailuresBeforeSleeping() {
+    return 18;
+  }
+
   private List<PairingKey> getOpentimeTrips(FlicaService service, YearMonth yearMonth,
       int round) throws ClientProtocolException, URISyntaxException, IOException, ParseException {
     String rawOpenTime = service.getOpenTime(
