@@ -97,7 +97,9 @@ public class TripScore implements Comparable<TripScore> {
       int excessiveLegs = section.getNumLegs() - idealNumLegs;
       if (excessiveLegs > 0) {
         badPoints += excessiveLegs;
-        scoreExplanation.add("-" + excessiveLegs + " for legs");
+        scoreExplanation.add(
+            String.format("-%d for legs on day %d (%d > %d)",
+                excessiveLegs, i + 1, section.getNumLegs(), idealNumLegs));
       }
     }
 
@@ -146,6 +148,18 @@ public class TripScore implements Comparable<TripScore> {
     this.endTimePoints = endTimePoints;
     this.hasEquipmentTwoHundredSegments = hasEquipmentTwoHundredSegments;
     
+    if (config.getEnableEfficiencyScore()
+        && trip.credit.isMoreThan(Period.ZERO)) {
+      // 0.0 is no flying when away from home.
+      // 1.0 is flying every minute away from home.
+      float efficiency = trip.credit.dividedBy(trip.getDuty());
+      int factor = (int) -(((1.0 - efficiency)) * 10);
+      scoreExplanation.add(
+          String.format("Efficiency %.2f; efficiency factor %d (%s credit / %s duty)",
+              efficiency, factor, trip.credit.toString(), trip.getDuty().toString()));
+      goodPoints += factor;
+    }
+
     // TODO don't reward trips which span the weekend
     if (isPreferredStartDayOfWeek(trip.getFirstSection().date)) {
       goodPoints += 1;
@@ -174,11 +188,11 @@ public class TripScore implements Comparable<TripScore> {
     }
   }
   
-  public int getNumGspOvernights() {
+  public int getNumFavoriteOvernights() {
     return numFavoriteOvernights;
   }
 
-  public Period getGspOvernightPeriod() {
+  public Period getFavoriteOvernightPeriod() {
     return favoriteOvernightPeriod;
   }
 

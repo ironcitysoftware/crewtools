@@ -198,6 +198,7 @@ public class TripBuilder {
         tripBlock,  // block
         tripBlock,  // credit
         tripBlock,  // tafb
+        tripBlock,  // duty
         departureDates,
         tripBuilder.build());
   }
@@ -211,7 +212,7 @@ public class TripBuilder {
     currentSection.setCreditDuration(sectionBlock.toHhMmString());
     sections.add(new Section(currentSection.build(),
         currentDate,
-        sectionBlock, sectionBlock,
+        sectionBlock, sectionBlock, sectionBlock,
         sectionStart, sectionEnd));
   }
 }

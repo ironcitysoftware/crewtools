@@ -46,13 +46,15 @@ public class Trip implements Comparable<Trip> {
   private final TimeUtils timeUtils = new TimeUtils();
   private final Logger logger = Logger.getLogger(Trip.class.getName());
   
-  public Trip(List<Section> sections, Period block, Period credit, Period tafb,
+  public Trip(List<Section> sections, Period block, Period credit,
+      Period tafb, Period duty,
       Set<LocalDate> departureDates,
       Proto.Trip proto) {
     this.sections = sections;
     this.block = block;
     this.credit = credit;
     this.tafb = tafb;
+    this.duty = duty;
     this.proto = proto;
     this.departureDates = departureDates;
   }
@@ -96,6 +98,7 @@ public class Trip implements Comparable<Trip> {
   public Period block;
   public Period credit;
   public Period tafb;
+  private Period duty;
   public Proto.Trip proto;
   public List<String> scoreInfo = new ArrayList<>();
   private Set<LocalDate> departureDates;
@@ -123,6 +126,10 @@ public class Trip implements Comparable<Trip> {
 
   public PairingKey getPairingKey() {
     return new PairingKey(getFirstSection().getShowDate(), proto.getPairingName());
+  }
+
+  public Period getDuty() {
+    return duty;
   }
 
   private static final String OPEN = "Open";

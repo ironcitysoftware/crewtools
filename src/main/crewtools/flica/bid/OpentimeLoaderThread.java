@@ -96,7 +96,7 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
   /** Each work unit will be retried every 10 seconds this many times */
   @Override
   protected int getMaximumNumFailuresBeforeSleeping() {
-    return 18;
+    return 18;  // 3 minutes
   }
 
   private List<PairingKey> getOpentimeTrips(FlicaService service, YearMonth yearMonth,

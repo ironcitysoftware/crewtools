@@ -47,6 +47,9 @@ public class IndividualPairingParser {
 
   public Trip parse() throws ParseException {
     try {
+      if (input.contains(PAIRING_NOT_FOUND)) {
+        throw new IllegalStateException("Pairing " + key + " not found.");
+      }
       return parseInternal();
     } catch (ParseException pe) {
       throw pe;
@@ -56,11 +59,12 @@ public class IndividualPairingParser {
   }
 
   private static final String PAIRING_CANCELED = "Pairing Canceled";
+  private static final String PAIRING_NOT_FOUND = "Pairing not found";
 
   protected Trip parseInternal() throws ParseException {
     Document document = Jsoup.parse(input);
     Elements containerCells = document.select("table > tbody > tr > td > table");
-    Preconditions.checkState(!containerCells.isEmpty());
+    Preconditions.checkState(!containerCells.isEmpty(), document.toString());
     Element table = containerCells.first();
     // JSoup returns all recursive children unless we limit it with >
     Elements rows = table.select("> tbody > tr");

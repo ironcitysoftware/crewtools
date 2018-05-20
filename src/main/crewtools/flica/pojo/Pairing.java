@@ -44,16 +44,19 @@ public class Pairing {
   private Period block;
   private Period credit;
   private Period tafb;
+  private Period duty;
   private Proto.Trip proto;
   private Set<LocalDate> departureDates;
 
-  public Pairing(List<Section> sections, Period block, Period credit, Period tafb,
+  public Pairing(List<Section> sections, Period block, Period credit,
+      Period tafb, Period duty,
       Set<LocalDate> departureDates,
       Proto.Trip proto) {
     this.sections = sections;
     this.block = block;
     this.credit = credit;
     this.tafb = tafb;
+    this.duty = duty;
     this.proto = proto;
     this.departureDates = departureDates;
   }
@@ -93,6 +96,7 @@ public class Pairing {
       newDepartureDates.add(departureDate.plusDays(daysBetween));
     }
 
-    return new Trip(newSections, block, credit, tafb, newDepartureDates, newProto.build());
+    return new Trip(newSections, block, credit, tafb, duty, newDepartureDates,
+        newProto.build());
   }
 }

@@ -84,4 +84,7 @@ message BidConfig {
 
   // The target year-month (eg 2018-5)
   optional string year_month = 8;
+
+  // Enable experimental feature of considering long sits in scoring.
+  optional bool enable_efficiency_score = 9;
 }

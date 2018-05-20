@@ -49,12 +49,20 @@ public class Scorer {
     FlicaService service = new FlicaService(connection);
     BidConfig bidConfig = FileUtils.readBidConfig();
     Trip left = getTrip(args[0], pairings, service);
-    Trip right = getTrip(args[1], pairings, service);
+    Trip right = null;
+    if (args.length > 1) {
+      right = getTrip(args[1], pairings, service);
+    }
     TripScore leftScore = new TripScore(left, bidConfig);
-    TripScore rightScore = new TripScore(right, bidConfig);
+    TripScore rightScore = null;
+    if (args.length > 1) {
+      rightScore = new TripScore(right, bidConfig);
+    }
     displayScoreExplanation(left.getPairingName(), leftScore.getScoreExplanation());
-    System.out.println("----------------------------------------------------");
-    displayScoreExplanation(right.getPairingName(), rightScore.getScoreExplanation());
+    if (args.length > 1) {
+      System.out.println("----------------------------------------------------");
+      displayScoreExplanation(right.getPairingName(), rightScore.getScoreExplanation());
+    }
   }
 
   private static Trip getTrip(String keyString, Map<PairingKey, Trip> allPairings,
@@ -66,8 +74,8 @@ public class Scorer {
     String rawPairingDetail = service.getPairingDetail(key.getPairingName(),
         key.getPairingDate());
     IndividualPairingParser parser = new IndividualPairingParser(key, rawPairingDetail);
-    PairingAdapter pairingAdapter = new PairingAdapter();
     Proto.Trip trip = parser.parse();
+    PairingAdapter pairingAdapter = new PairingAdapter();
     return pairingAdapter.adaptTrip(trip);
   }
 

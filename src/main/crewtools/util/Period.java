@@ -80,6 +80,10 @@ public class Period implements Comparable<Period> {
     return Period.minutes((minutes + 1) / 2);
   }
   
+  public float dividedBy(Period that) {
+    return ((float) minutes) / that.minutes;
+  }
+
   public int getHours() {
     return minutes / 60;
   }
@@ -91,6 +95,10 @@ public class Period implements Comparable<Period> {
   
   public boolean isLessThan(Period period) {
     return minutes < period.minutes;
+  }
+
+  public boolean isMoreThan(Period period) {
+    return minutes > period.minutes;
   }
 
   @Override

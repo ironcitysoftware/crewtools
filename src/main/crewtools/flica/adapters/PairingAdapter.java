@@ -51,26 +51,29 @@ public class PairingAdapter {
     private final Period block;
     private final Period credit;
     private final Period tafb;
+    private final Period duty;
     private final Set<LocalDate> departureDates;
     private final Proto.Trip proto;
 
-    TripOrPairingData(List<Section> sections, Period block, Period credit, Period tafb,
+    TripOrPairingData(List<Section> sections, Period block, Period credit,
+        Period tafb, Period duty,
         Set<LocalDate> departureDates,
         Proto.Trip proto) {
       this.sections = sections;
       this.block = block;
       this.credit = credit;
       this.tafb = tafb;
+      this.duty = duty;
       this.departureDates = departureDates;
       this.proto = proto;
     }
 
     private Trip toTrip() {
-      return new Trip(sections, block, credit, tafb, departureDates, proto);
+      return new Trip(sections, block, credit, tafb, duty, departureDates, proto);
     }
     
     Pairing toPairing() {
-      return new Pairing(sections, block, credit, tafb, departureDates, proto);
+      return new Pairing(sections, block, credit, tafb, duty, departureDates, proto);
     }
   }
   
@@ -188,7 +191,8 @@ public class PairingAdapter {
       tripStats.add(sectionStats);
 
       sections.add( 
-          new Section(protoSection, legDate, sectionStats.block, sectionStats.credit, startDuty, endDuty));
+          new Section(protoSection, legDate, sectionStats.block, sectionStats.credit,
+              sectionStats.duty, startDuty, endDuty));
 
       if (!isNextSectionSameDate(protoTrip, sectionIndex)) {
         legDate = legDate.plusDays(1);
@@ -210,7 +214,8 @@ public class PairingAdapter {
       credit = Period.fromText(protoTrip.getCreditDuration());
     }
     
-    return new TripOrPairingData(sections, tripStats.block, credit, tafb, dates, protoTrip);
+    return new TripOrPairingData(sections, tripStats.block, credit, tafb, tripStats.duty,
+        dates, protoTrip);
   }
 
   boolean isNextSectionSameDate(Proto.Trip trip, int sectionIndex) {

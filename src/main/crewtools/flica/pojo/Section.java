@@ -39,19 +39,22 @@ public class Section implements Comparable<Section> {
   private final Logger logger = Logger.getLogger(Section.class.getName());
 
   public Section(Proto.Section protoSection, LocalDate date, 
-      Period block, Period credit, 
+      Period block, Period credit, Period duty,
       DateTime startDuty, DateTime endDuty) {
     this.protoSection = protoSection;
     this.date = date;
     this.block = block;
     this.credit = credit;
+    this.duty = duty;
     this.startDuty = startDuty;
     this.endDuty = endDuty;
   }
   
   public Section copyWithDateOffset(int daysBetween) {
     // TODO protoSection change?
-    return new Section(protoSection, date.plusDays(daysBetween), block, credit, startDuty.plusDays(daysBetween),
+    return new Section(protoSection, date.plusDays(daysBetween), block, credit,
+        duty,
+        startDuty.plusDays(daysBetween),
         endDuty.plusDays(daysBetween));
   }
 
@@ -59,6 +62,7 @@ public class Section implements Comparable<Section> {
   public LocalDate date;
   public Period block;
   public Period credit;
+  public Period duty;
   private DateTime startDuty;
   private DateTime endDuty;
 
@@ -160,6 +164,7 @@ public class Section implements Comparable<Section> {
         .add("date", date)
         .add("block", block)
         .add("credit", credit)
+        .add("duty", duty)
         .add("startDuty", startDuty)
         .add("endDuty", endDuty)
         .toString();
