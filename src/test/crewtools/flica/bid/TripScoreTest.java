@@ -29,6 +29,7 @@ import crewtools.flica.Proto.Equipment;
 import crewtools.flica.Proto.Trip;
 import crewtools.flica.adapters.PairingAdapter;
 import crewtools.flica.parser.ParseException;
+import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.Period;
 
 public class TripScoreTest {
@@ -39,7 +40,7 @@ public class TripScoreTest {
     Trip.Builder builder = Trip.newBuilder();
     builder.setStartDate("2018-01-01");
     builder.addSectionBuilder()
-        .setLayoverAirportCode("GSP")
+        .setLayoverAirportCode("SFO")
         .setLayoverDuration("0100")
         .setLocalDutyStartDate("2018-01-01")
         .setLocalDutyStartTime("0800")
@@ -53,21 +54,24 @@ public class TripScoreTest {
   }
       
   @Test
-  public void testGspOvernightPeriodAndNum() throws ParseException {
+  public void testFavoriteOvernightPeriodAndNum() throws ParseException {
     Trip.Builder trip = Trip.newBuilder(SAMPLE_TRIP);
-    TripScore score = new TripScore(new PairingAdapter().adaptTrip(trip.build()));
-    assertEquals(Period.hours(1), score.getGspOvernightPeriod());
-    assertEquals(1, score.getNumGspOvernights());
+    TripScore score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
+        BidConfig.newBuilder().addFavoriteOvernight("SFO").build());
+    assertEquals(Period.hours(1), score.getFavoriteOvernightPeriod());
+    assertEquals(1, score.getNumFavoriteOvernights());
   }
 
   @Test
   public void testStartTimePoints() throws ParseException {
     Trip.Builder trip = Trip.newBuilder(SAMPLE_TRIP);
-    TripScore score = new TripScore(new PairingAdapter().adaptTrip(trip.build()));
+    TripScore score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
+        BidConfig.getDefaultInstance());
     assertEquals(0, score.getStartTimePoints());
     
     trip.getSectionBuilder(0).setLocalDutyStartTime("1000");
-    score = new TripScore(new PairingAdapter().adaptTrip(trip.build()));
+    score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
+        BidConfig.getDefaultInstance());
     assertEquals(1, score.getStartTimePoints());
   }
   
@@ -75,29 +79,34 @@ public class TripScoreTest {
   public void testEndTimePoints() throws ParseException {
     Trip.Builder trip = Trip.newBuilder(SAMPLE_TRIP);
     trip.getSectionBuilder(0).setLocalDutyEndTime("2330");
-    TripScore score = new TripScore(new PairingAdapter().adaptTrip(trip.build()));
+    TripScore score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
+        BidConfig.getDefaultInstance());
     assertEquals(0, score.getEndTimePoints());
     
     trip.getSectionBuilder(0).setLocalDutyEndTime("0830");
-    score = new TripScore(new PairingAdapter().adaptTrip(trip.build()));
+    score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
+        BidConfig.getDefaultInstance());
     assertEquals(1, score.getEndTimePoints());
   }
   
   @Test
   public void testNumLegs() throws ParseException {
     Trip.Builder trip = Trip.newBuilder(SAMPLE_TRIP);
-    TripScore score = new TripScore(new PairingAdapter().adaptTrip(trip.build()));
+    TripScore score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
+        BidConfig.getDefaultInstance());
     assertEquals(1, score.getNumLegs());
   }
   
   @Test
   public void testEquipment() throws ParseException {
     Trip.Builder trip = Trip.newBuilder(SAMPLE_TRIP);
-    TripScore score = new TripScore(new PairingAdapter().adaptTrip(trip.build()));
+    TripScore score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
+        BidConfig.getDefaultInstance());
     assertFalse(score.hasEquipmentTwoHundredSegments());
     
     trip.getSectionBuilder(0).getLegBuilder(0).setEquipment(Equipment.RJ2);
-    score = new TripScore(new PairingAdapter().adaptTrip(trip.build()));
+    score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
+        BidConfig.getDefaultInstance());
     assertTrue(score.hasEquipmentTwoHundredSegments());
   }
 }

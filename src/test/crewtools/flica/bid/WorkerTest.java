@@ -37,6 +37,7 @@ import crewtools.flica.FlicaService;
 import crewtools.flica.parser.ParseException;
 import crewtools.flica.pojo.Schedule;
 import crewtools.flica.pojo.Trip;
+import crewtools.rpc.Proto.BidConfig;
 import crewtools.test.FakeClock;
 import crewtools.test.ScheduleBuilder;
 import crewtools.test.TripBuilder;
@@ -63,9 +64,9 @@ public class WorkerTest {
   public WorkerTest() {
     firstTrip = new TripBuilder()
         .withDayOfMonth(1)
-        .withLeg("CLT", "GSP", Period.hours(12))
-        .withLayover("GSP", Period.hours(12))
-        .withLeg("GSP", "CLT", Period.hours(10))
+        .withLeg("CLT", "SFO", Period.hours(12))
+        .withLayover("SFO", Period.hours(12))
+        .withLeg("SFO", "CLT", Period.hours(10))
         .build();
     secondTrip = new TripBuilder()
         .withDayOfMonth(10)
@@ -89,7 +90,9 @@ public class WorkerTest {
         TripBuilder.DEFAULT_YEAR_MONTH,
         FAKE_CLOCK);
     tree.setRootScheduleWrapper(wrapper);
-    worker = new Worker(queue, service, tree, TripBuilder.DEFAULT_YEAR_MONTH, ROUND, FAKE_CLOCK, stats);
+    worker = new Worker(queue, service, tree, TripBuilder.DEFAULT_YEAR_MONTH, ROUND,
+        FAKE_CLOCK, stats,
+        BidConfig.newBuilder().addFavoriteOvernight("SFO").build());
   }
   
   @Test
@@ -114,9 +117,9 @@ public class WorkerTest {
     Trip betterTrip = new TripBuilder()
         .withName("LBetter")
         .withDayOfMonth(20)
-        .withLeg("CLT", "GSP", Period.hours(12))
-        .withLayover("GSP", Period.hours(12))
-        .withLeg("GSP", "CLT", Period.hours(10))
+        .withLeg("CLT", "SFO", Period.hours(12))
+        .withLayover("SFO", Period.hours(12))
+        .withLeg("SFO", "CLT", Period.hours(10))
         .build();
     queue.add(betterTrip);
     worker.doWork();
@@ -133,9 +136,9 @@ public class WorkerTest {
     Trip betterTrip = new TripBuilder()
         .withName("LBetter")
         .withDayOfMonth(20)
-        .withLeg("CLT", "GSP", Period.hours(12))
-        .withLayover("GSP", Period.hours(12))
-        .withLeg("GSP", "CLT", Period.hours(10))
+        .withLeg("CLT", "SFO", Period.hours(12))
+        .withLayover("SFO", Period.hours(12))
+        .withLeg("SFO", "CLT", Period.hours(10))
         .build();
     queue.add(betterTrip);
     worker.doWork();
