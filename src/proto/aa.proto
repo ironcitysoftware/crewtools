@@ -22,16 +22,103 @@ package flica2;
 option java_package = "crewtools.aa";
 option java_outer_classname = "Proto";
 
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.FieldOptions {
+  optional string json_name = 50000;
+}
+
+message FlightStatusResponse {
+  optional FisFlightStatus fis_flight_status = 1 [(json_name)="FIS flight status"];
+}
+
+message FisFlightStatus {
+  optional string alert_message = 1;
+  optional string field_errors = 2;
+  repeated Flight flight = 3 [(json_name)="flights"];
+  optional string info_messages = 4;
+  optional string message_params = 5;
+  optional string presentation_errors = 6;
+}
+
+message Flight {
+  optional string aircraft_type = 1;
+  optional bool allow_fsn = 2 [(json_name)="allowFSN"];
+  optional string arrival_date = 3;
+  optional string boarding_time = 4;
+  optional string depart_date = 5;
+  optional string destination_airport_code = 6;
+  optional string destination_city = 7;
+  optional string drinks = 22;
+  optional string flight_number = 8;
+  optional FlightStatus flight_status = 9;
+  optional string marketing_carrier_code = 10;
+  optional string marketing_carrier_name = 11;
+  optional string miles = 23;
+  optional bool oa_segment = 12;
+  optional string operating_carrier_code = 13;
+  optional string operating_carrier_name = 14;
+  optional string operational_disclosure_text = 15;
+  optional string origin_airport_code = 16;
+  optional string origin_city = 17;
+  optional PriorLegFlightInfo prior_leg_flight_info = 18;
+  optional int32 refresh_time = 19;
+  optional string seat_no = 24;
+  optional bool show_upgrade_standby_list = 20;
+  optional bool update_required = 25;
+  optional bool wifi_carrier = 21;
+}
+
 message FlightStatus {
+  optional bool arrived = 1;
+  optional bool cancelled = 2;
+  optional bool departed = 3;
+  optional AirportInfo destination_info = 4;
+  optional string flight_status = 5;
+  optional AirportInfo origin_info = 6;
+  optional bool valid_data_present = 7;
+}
+
+message AirportInfo {
+  optional string actual_time = 1;
+  optional string baggage_claim_area = 2;
+  optional string estimated_time = 3;
+  optional string flight_status = 4;
+  optional string gate = 5;
+  optional string terminal = 6;
+}
+
+message PriorLegFlightInfo {
+  optional string arrival_actual_time = 1;
+  optional string arrival_airport_code = 2;
+  optional string arrival_estimated_time = 3;
+  optional string arrival_gate = 4;
+  optional string arrival_scheduled_time = 5;
+  optional string arrival_terminal = 17;
+  optional string departure_actual_time = 6;
+  optional string departure_airport_code = 7;
+  optional string departure_estimated_time = 8;
+  optional string departure_gate = 9;
+  optional string departure_scheduled_time = 10;
+  optional string departure_terminal = 18;
+  optional string flight_number = 11;
+  optional string flight_status = 12;
+  optional string marketing_carrier_code = 13;
+  optional string marketing_carrier_name = 14;
+  optional string operating_carrier_code = 15;
+  optional string operating_carrier_name = 16;
+}
+
+message LegacyFlightStatus {
   optional int32 flight_number = 1;
   optional string operated_by = 2;
   optional string operated_as = 3;
   optional string status = 4;
-  optional Location departure = 5;
-  optional Location arrival = 6;
+  optional LegacyLocation departure = 5;
+  optional LegacyLocation arrival = 6;
 }
 
-message Location {
+message LegacyLocation {
   optional string actual_time = 1;
   optional string scheduled_time = 2;
   optional string airport_code = 3;

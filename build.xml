@@ -72,6 +72,8 @@
           unless="build-aa-proto.notrequired" >
     <mkdir dir="${bin}" />
     <exec executable="protoc" failonerror="true">
+      <arg value="-I/opt/protobuf-2.6.1/src" />
+      <arg value="-Isrc/proto" />
       <arg value="${aa-proto}" />
       <arg value="--java_out=src/main" />
     </exec>

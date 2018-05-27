@@ -28,6 +28,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.protobuf.util.JsonFormat;
+
+import crewtools.aa.Proto.FlightStatusResponse;
 
 public class FlightStatusService {
   private final FlightStatusConnection connection;
@@ -70,6 +73,10 @@ public class FlightStatusService {
     JsonObject jsonObject = parser.parse(json).getAsJsonObject();
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
     String prettyJson = gson.toJson(jsonObject);
-    System.out.println(prettyJson);
+    System.out.println(json);
+
+    FlightStatusResponse.Builder builder = FlightStatusResponse.newBuilder();
+    JsonFormat.parser().merge(json, builder);
+    System.out.println(builder.build());
   }
 }
