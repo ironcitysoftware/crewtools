@@ -21,19 +21,22 @@ package crewtools.aa;
 
 public class UserAgentFactory {
 
-  public static final String AA_APP_VERSION = "5.0.1";
+  // AARequestInterceptor.versionName
+  public static final String AA_APP_VERSION = "5.0.6";
 
   private static final String AA_APP_VERSION_NAME = "Android";
 
   // android.os.Build(.MODEL|.DEVICE)
   private static final String DEVICE_NAME = "Nexus 5X";
 
-  private static final String AA_BUILD_VERSION_RELEASE = "7.1.2";
+  // android.os.Build.VERSION.RELEASE (N_MR1)
+  private static final String BUILD_VERSION_RELEASE = "7.1.2";
 
   private static final int DEFAULT_DISPLAY_WIDTH = 1080;
 
   private static final int DEFAULT_DISPLAY_HEIGHT = 1794;
 
+  // AANetworkUtils.getMWSHeader constant
   private static final String MAGIC_VERSION = "1.0";
 
   public String getUserAgent() {
@@ -41,7 +44,7 @@ public class UserAgentFactory {
         AA_APP_VERSION_NAME,
         AA_APP_VERSION,
         DEVICE_NAME,
-        AA_BUILD_VERSION_RELEASE,
+        BUILD_VERSION_RELEASE,
         DEFAULT_DISPLAY_WIDTH,
         DEFAULT_DISPLAY_HEIGHT,
         MAGIC_VERSION);

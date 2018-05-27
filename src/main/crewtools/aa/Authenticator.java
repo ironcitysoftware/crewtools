@@ -28,19 +28,24 @@ public class Authenticator {
   private static final String SHA1 = "SHA-1";
   private static final String MD5 = "MD5";
 
-  private static final String SALT = "WVo4JeQr2";
+  // AARequestInterceptor.addAuthData
+  private static final String SALT_BASE = "d70X3cj^5_~J9_@$7_0XI%_";
 
   public String getAuthToken(long currentMillis, String deviceId) {
     deviceId = deviceId.toUpperCase();
+
+    String salt = SALT_BASE
+        .replace("0X", "").replace("_", "")
+        .substring(5);
 
     String saltedDeviceId;
     // Either the author is attempting obfuscation, or this is a bug.
     long alwaysZero = currentMillis / 2 % 2;
     if (alwaysZero == 0) {
-      saltedDeviceId = SALT + deviceId;
+      saltedDeviceId = salt + deviceId;
     } else {
       // Never happens.
-      saltedDeviceId = deviceId + SALT;
+      saltedDeviceId = deviceId + salt;
     }
 
     boolean isMillisOdd = currentMillis % 2 == 0;

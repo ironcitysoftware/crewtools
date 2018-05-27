@@ -50,7 +50,8 @@ public class FlightStatusService {
     new FlightStatusService().getFlightStatus(flightNumber, localDate);
   }
 
-  private static final int API_VERSION = 32;
+  // assets/network_config.json
+  private static final int API_VERSION = 37;
 
   private static final String FLIGHT_STATUS_URL_FORMAT_SPEC =
       "https://cdn.flyaa.aa.com/mws_v%d/flightstatus?"
@@ -64,6 +65,8 @@ public class FlightStatusService {
         localDate.getDayOfMonth(),
         flightNumber);
     String json = connection.retrieveUrl(url);
+
+    System.out.println("JSON: [" + json + "]");
 
     JsonParser parser = new JsonParser();
     JsonObject jsonObject = parser.parse(json).getAsJsonObject();
