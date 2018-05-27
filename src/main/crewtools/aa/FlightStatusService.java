@@ -66,8 +66,6 @@ public class FlightStatusService {
         flightNumber);
     String json = connection.retrieveUrl(url);
 
-    System.out.println("JSON: [" + json + "]");
-
     JsonParser parser = new JsonParser();
     JsonObject jsonObject = parser.parse(json).getAsJsonObject();
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
