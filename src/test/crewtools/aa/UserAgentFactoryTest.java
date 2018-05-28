@@ -26,7 +26,7 @@ import org.junit.Test;
 public class UserAgentFactoryTest {
   @Test
   public void testUserAgent() {
-    assertEquals("Android/5.0.1 Nexus 5X|7.1.2|1080|1794|1.0",
+    assertEquals("Android/5.0.6 Nexus 5X|7.1.2|1080|1794|1.0",
         new UserAgentFactory().getUserAgent());
   }
 }
