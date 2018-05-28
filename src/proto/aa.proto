@@ -17,7 +17,7 @@
 
 syntax = "proto2";
 
-package flica2;
+package crewtools;
 
 option java_package = "crewtools.aa";
 option java_outer_classname = "Proto";
@@ -49,24 +49,24 @@ message Flight {
   optional string depart_date = 5;
   optional string destination_airport_code = 6;
   optional string destination_city = 7;
-  optional string drinks = 22;
-  optional string flight_number = 8;
-  optional FlightStatus flight_status = 9;
-  optional string marketing_carrier_code = 10;
-  optional string marketing_carrier_name = 11;
-  optional string miles = 23;
-  optional bool oa_segment = 12;
-  optional string operating_carrier_code = 13;
-  optional string operating_carrier_name = 14;
-  optional string operational_disclosure_text = 15;
-  optional string origin_airport_code = 16;
-  optional string origin_city = 17;
-  optional PriorLegFlightInfo prior_leg_flight_info = 18;
-  optional int32 refresh_time = 19;
-  optional string seat_no = 24;
-  optional bool show_upgrade_standby_list = 20;
-  optional bool update_required = 25;
-  optional bool wifi_carrier = 21;
+  optional string drinks = 8;
+  optional string flight_number = 9;
+  optional FlightStatus flight_status = 10;
+  optional string marketing_carrier_code = 11;
+  optional string marketing_carrier_name = 12;
+  optional string miles = 13;
+  optional bool oa_segment = 14;
+  optional string operating_carrier_code = 15;
+  optional string operating_carrier_name = 16;
+  optional string operational_disclosure_text = 17;
+  optional string origin_airport_code = 18;
+  optional string origin_city = 19;
+  optional PriorLegFlightInfo prior_leg_flight_info = 20;
+  optional int32 refresh_time = 21;
+  optional string seat_no = 22;
+  optional bool show_upgrade_standby_list = 23;
+  optional bool update_required = 24;
+  optional bool wifi_carrier = 25;
 }
 
 message FlightStatus {
@@ -94,35 +94,17 @@ message PriorLegFlightInfo {
   optional string arrival_estimated_time = 3;
   optional string arrival_gate = 4;
   optional string arrival_scheduled_time = 5;
-  optional string arrival_terminal = 17;
-  optional string departure_actual_time = 6;
-  optional string departure_airport_code = 7;
-  optional string departure_estimated_time = 8;
-  optional string departure_gate = 9;
-  optional string departure_scheduled_time = 10;
-  optional string departure_terminal = 18;
-  optional string flight_number = 11;
-  optional string flight_status = 12;
-  optional string marketing_carrier_code = 13;
-  optional string marketing_carrier_name = 14;
-  optional string operating_carrier_code = 15;
-  optional string operating_carrier_name = 16;
-}
-
-message LegacyFlightStatus {
-  optional int32 flight_number = 1;
-  optional string operated_by = 2;
-  optional string operated_as = 3;
-  optional string status = 4;
-  optional LegacyLocation departure = 5;
-  optional LegacyLocation arrival = 6;
-}
-
-message LegacyLocation {
-  optional string actual_time = 1;
-  optional string scheduled_time = 2;
-  optional string airport_code = 3;
-  optional string terminal = 4;
-  optional string gate = 5;
-  optional string baggage = 6;
+  optional string arrival_terminal = 6;
+  optional string departure_actual_time = 7;
+  optional string departure_airport_code = 8;
+  optional string departure_estimated_time = 9;
+  optional string departure_gate = 10;
+  optional string departure_scheduled_time = 11;
+  optional string departure_terminal = 12;
+  optional string flight_number = 13;
+  optional string flight_status = 14;
+  optional string marketing_carrier_code = 15;
+  optional string marketing_carrier_name = 16;
+  optional string operating_carrier_code = 17;
+  optional string operating_carrier_name = 18;
 }

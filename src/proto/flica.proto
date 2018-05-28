@@ -17,7 +17,7 @@
 
 syntax = "proto2";
 
-package flica2;
+package crewtools;
 
 option java_package = "crewtools.flica";
 option java_outer_classname = "Proto";
