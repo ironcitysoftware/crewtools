@@ -37,8 +37,8 @@ import crewtools.util.Clock;
 import crewtools.util.FlicaConfig;
 import crewtools.util.SystemClock;
 
-public class ScheduleSelector {
-  private static final Logger logger = Logger.getLogger(ScheduleSelector.class.getName());
+public class LegSelector {
+  private static final Logger logger = Logger.getLogger(LegSelector.class.getName());
 
   private Clock clock;
 
@@ -50,7 +50,7 @@ public class ScheduleSelector {
     FlicaConnection connection = new FlicaConnection(new FlicaConfig());
     FlicaService service = new FlicaService(connection);
 
-    ScheduleSelector selector = new ScheduleSelector(new SystemClock());
+    LegSelector selector = new LegSelector(new SystemClock());
     Schedule thisMonth = getSchedule(service, yearMonth);
     Leg currentLeg = selector.getCurrentLeg(thisMonth);
     if (currentLeg != null) {
@@ -72,7 +72,7 @@ public class ScheduleSelector {
     return scheduleAdapter.adapt(protoSchedule);
   }
 
-  public ScheduleSelector(Clock clock) {
+  public LegSelector(Clock clock) {
     this.clock = clock;
   }
 
