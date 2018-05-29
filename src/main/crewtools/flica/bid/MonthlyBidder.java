@@ -154,8 +154,8 @@ public class MonthlyBidder {
       } else {
         layover = " ";
       }
-      for (int i = 0; i < trip.sections.size(); ++i) {
-        Section section = trip.sections.get(i);
+      for (int i = 0; i < trip.getSections().size(); ++i) {
+        Section section = trip.getSections().get(i);
 
         Proto.Section proto = trip.proto.getSection(i);
         if (section.getDepartureDate().getMonthOfYear() == 

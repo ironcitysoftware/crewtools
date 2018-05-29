@@ -25,8 +25,6 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
 
-import com.google.common.base.Preconditions;
-
 import crewtools.flica.Proto;
 import crewtools.util.TimeUtils;
 
@@ -37,52 +35,16 @@ public class ProtoTimeHelper {
   private final TimeUtils timeUtils = new TimeUtils();
   private final Logger logger = Logger.getLogger(ProtoTimeHelper.class.getName());
 
-  public LocalTime getArrivalLocalTime(Proto.Leg leg) {
-    return timeUtils.parseLocalTime(leg.getArrivalLocalTime());
-  }
-
   public LocalTime getLocalDutyEndTime(Proto.Section section) {
     return timeUtils.parseLocalTime(section.getLocalDutyEndTime());
-  }
-
-  /** Returns a DateTime relative to the given departureDate */
-  public DateTime getDepartureDateTime(Proto.Leg leg, LocalDate legDate) {
-    LocalTime departureTime = timeUtils.parseLocalTime(leg.getDepartureLocalTime());
-    if (legDate.getDayOfMonth() != leg.getDayOfMonth()
-        && legDate.plusDays(1).getDayOfMonth() == leg.getDayOfMonth()) {
-      legDate = legDate.plusDays(1);
-    } else {
-    }
-
-    Preconditions.checkState(legDate.getDayOfMonth() == leg.getDayOfMonth(),
-        "legDate.DOM " + legDate.getDayOfMonth() + " != leg.DOM " + leg.getDayOfMonth());
-    return timeUtils.getDateTime(
-        legDate,
-        departureTime,
-        leg.getDepartureAirportCode());
-  }
-
-  /** Returns a DateTime relative to the given arrivalDate */
-  public DateTime getArrivalDateTime(Proto.Leg leg, LocalDate legDate) {
-    // July 1, 2017
-    if (legDate.getDayOfMonth() != leg.getDayOfMonth()
-        && legDate.plusDays(1).getDayOfMonth() == leg.getDayOfMonth()) {
-      legDate = legDate.plusDays(1);
-    }
-    Preconditions.checkState(legDate.getDayOfMonth() == leg.getDayOfMonth());
-    LocalTime notReally = timeUtils.parseLocalTime(leg.getBlockDuration());
-    LocalTime arrivalTime = timeUtils.parseLocalTime(leg.getArrivalLocalTime());
-    return timeUtils.getDateTime(
-        arrivalTime.isBefore(notReally) ? legDate.plusDays(1) : legDate,
-        arrivalTime,
-        leg.getArrivalAirportCode());
   }
 
   public DateTime getLocalDutyStartDateTime(Proto.Section section, LocalDate legDate) {
     LocalTime localDutyStartTime = timeUtils.parseLocalTime(section.getLocalDutyStartTime());
     if (section.hasLocalDutyStartDate()) {
       // We know the date, don't guess.
-      return timeUtils.getDateTime(LocalDate.parse(section.getLocalDutyStartDate()),
+      return timeUtils.getDateTime(
+          LocalDate.parse(section.getLocalDutyStartDate()),
           localDutyStartTime,
           section.getLeg(0).getDepartureAirportCode());
     }

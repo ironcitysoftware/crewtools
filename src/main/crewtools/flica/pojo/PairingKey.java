@@ -35,7 +35,7 @@ import com.google.common.base.Splitter;
  * When doing any work involving multiple months, use this class to
  * disambiguate pairings.
  */
-public class PairingKey {
+public class PairingKey implements Comparable<PairingKey> {
   private LocalDate pairingDate;
   private String pairingName;
 
@@ -100,5 +100,14 @@ public class PairingKey {
         .add("date", pairingDate)
         .add("name", pairingName)
         .toString();
+  }
+
+  @Override
+  public int compareTo(PairingKey that) {
+    int result = this.pairingDate.compareTo(that.pairingDate);
+    if (result != 0) {
+      return result;
+    }
+    return this.pairingName.compareTo(that.pairingName);
   }
 }

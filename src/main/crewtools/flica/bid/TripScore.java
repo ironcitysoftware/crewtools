@@ -52,7 +52,7 @@ public class TripScore implements Comparable<TripScore> {
     int numFavoriteOvernights = 0;
     
     int numLegs = 0;
-    for (Section section : trip.sections) {
+    for (Section section : trip.getSections()) {
       if (section.hasLayoverAirportCode()
           && config.getFavoriteOvernightList()
               .contains(section.getLayoverAirportCode())) {
@@ -80,7 +80,7 @@ public class TripScore implements Comparable<TripScore> {
     // }
 
     // favorite turns
-    for (Section section : trip.sections) {
+    for (Section section : trip.getSections()) {
       for (String airportCode : section.getAllTurnAirports()) {
         if (config.getFavoriteTurnList().contains(airportCode)) {
           goodPoints++;
@@ -90,9 +90,9 @@ public class TripScore implements Comparable<TripScore> {
     }
 
     // numLegs
-    for (int i = 0; i < trip.sections.size(); i++) {
-      Section section = trip.sections.get(i);
-      boolean isFirstOrLast = i == 0 || i == trip.sections.size() - 1;
+    for (int i = 0; i < trip.getSections().size(); i++) {
+      Section section = trip.getSections().get(i);
+      boolean isFirstOrLast = i == 0 || i == trip.getNumSections() - 1;
       int idealNumLegs = isFirstOrLast ? 3 : 2;
       int excessiveLegs = section.getNumLegs() - idealNumLegs;
       if (excessiveLegs > 0) {
@@ -134,7 +134,7 @@ public class TripScore implements Comparable<TripScore> {
       }
     }
     
-    for (Section section : trip.sections) {
+    for (Section section : trip.getSections()) {
       if (section.isEquipmentTwoHundred()) {
         hasEquipmentTwoHundredSegments = true;
       }

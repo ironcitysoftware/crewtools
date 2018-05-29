@@ -75,7 +75,7 @@ public class LineScore {
       allCredit = allCredit.plus(creditInMonth);
 
       boolean hasGspOvernight = false;
-      for (Section section : trip.sections) {
+      for (Section section : trip.getSections()) {
         if (bidConfig.getVacationDateList().contains(section.date.getDayOfMonth())) {
           // This day will be dropped as it falls on vacation.
           continue;
@@ -100,7 +100,7 @@ public class LineScore {
     
     Period minimumTripGspOvernightPeriod = Period.ZERO;
     for (Trip trip : minimumTripsThatMeetMinCredit.keySet()) {
-      for (Section section : trip.sections) {
+      for (Section section : trip.getSections()) {
         if (section.hasLayoverAirportCode()
             && section.getLayoverAirportCode().equals("GSP")) {
           minimumTripGspOvernightPeriod =
@@ -126,7 +126,7 @@ public class LineScore {
         endTimePoints++;
       }
       
-      for (Section section : trip.sections) {
+      for (Section section : trip.getSections()) {
         if (section.isEquipmentTwoHundred()) {
           hasEquipmentTwoHundredSegments = true;
         }

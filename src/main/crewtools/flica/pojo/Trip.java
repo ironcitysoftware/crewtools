@@ -20,6 +20,7 @@
 package crewtools.flica.pojo;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -31,6 +32,7 @@ import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Ordering;
 
 import crewtools.flica.Proto;
 import crewtools.flica.Proto.CrewPosition;
@@ -42,7 +44,7 @@ import crewtools.util.TimeUtils;
 /**
  * A trip is a pairing associated with a particular date.
  */
-public class Trip implements Comparable<Trip> {
+public class Trip implements Comparable<Trip>, Iterable<Leg> {
   private final TimeUtils timeUtils = new TimeUtils();
   private final Logger logger = Logger.getLogger(Trip.class.getName());
   
@@ -57,6 +59,7 @@ public class Trip implements Comparable<Trip> {
     this.duty = duty;
     this.proto = proto;
     this.departureDates = departureDates;
+    this.earliestDepartureDate = Ordering.natural().min(departureDates);
   }
 
   public String getPairingName() {
@@ -93,8 +96,12 @@ public class Trip implements Comparable<Trip> {
     return departureDates;
   }
   
+  public List<Section> getSections() {
+    return sections;
+  }
+
   // A section starts on a certain day but may finish on another day.
-  public List<Section> sections;
+  private List<Section> sections;
   public Period block;
   public Period credit;
   public Period tafb;
@@ -102,6 +109,7 @@ public class Trip implements Comparable<Trip> {
   public Proto.Trip proto;
   public List<String> scoreInfo = new ArrayList<>();
   private Set<LocalDate> departureDates;
+  private LocalDate earliestDepartureDate;
   
   public boolean isTwoHundred() {
     return proto.getEquipment().equals(Proto.Equipment.RJ2);
@@ -221,6 +229,41 @@ public class Trip implements Comparable<Trip> {
 
   @Override
   public int compareTo(Trip that) {
+    int result = earliestDepartureDate.compareTo(that.earliestDepartureDate);
+    if (result != 0) {
+      return result;
+    }
     return new Integer(proto.hashCode()).compareTo(that.proto.hashCode());
+  }
+
+  // TODO: consolidate with Section.iterator
+  @Override
+  public Iterator<Leg> iterator() {
+    return new Iterator<Leg>() {
+      private Iterator<Section> sectionIterator = sections.iterator();
+      private Iterator<Leg> legIterator = null;
+
+      @Override
+      public boolean hasNext() {
+        if (legIterator == null) {
+          if (!sectionIterator.hasNext()) {
+            return false;
+          }
+          legIterator = sectionIterator.next().iterator();
+        }
+        while (!legIterator.hasNext()) {
+          if (!sectionIterator.hasNext()) {
+            return false;
+          }
+          legIterator = sectionIterator.next().iterator();
+        }
+        return true;
+      }
+
+      @Override
+      public Leg next() {
+        return legIterator.next();
+      }
+    };
   }
 }

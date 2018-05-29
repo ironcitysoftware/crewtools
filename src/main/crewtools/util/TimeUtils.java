@@ -22,22 +22,12 @@ package crewtools.util;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
-import org.joda.time.Period;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.PeriodFormatter;
-import org.joda.time.format.PeriodFormatterBuilder;
 
 import crewtools.flica.StationZoneProvider;
 
 public class TimeUtils {
-  private PeriodFormatter HHMM_PERIOD = new PeriodFormatterBuilder().maximumParsedDigits(2).appendHours()
-      .appendMinutes().toFormatter();
-
-  public Period parsePeriod(String protoHhMmField) {
-    return HHMM_PERIOD.parsePeriod(protoHhMmField);
-  }
-
   private DateTimeFormatter HHMM_LOCALTIME = DateTimeFormat.forPattern("HHmm");
 
   public LocalTime parseLocalTime(String protoHhMmField) {

@@ -19,7 +19,10 @@
 
 package crewtools.flica.pojo;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -31,11 +34,10 @@ import com.google.common.collect.ImmutableSet;
 
 import crewtools.flica.Proto;
 import crewtools.flica.Proto.Equipment;
-import crewtools.flica.Proto.Leg;
 import crewtools.flica.Proto.LegType;
 import crewtools.util.Period;
 
-public class Section implements Comparable<Section> {
+public class Section implements Comparable<Section>, Iterable<Leg> {
   private final Logger logger = Logger.getLogger(Section.class.getName());
 
   public Section(Proto.Section protoSection, LocalDate date, 
@@ -48,6 +50,10 @@ public class Section implements Comparable<Section> {
     this.duty = duty;
     this.startDuty = startDuty;
     this.endDuty = endDuty;
+    this.legs = new ArrayList<>();
+    for (int i = 0; i < protoSection.getLegCount(); ++i) {
+      legs.add(new Leg(protoSection.getLeg(i), startDuty, i));
+    }
   }
   
   public Section copyWithDateOffset(int daysBetween) {
@@ -65,6 +71,7 @@ public class Section implements Comparable<Section> {
   public Period duty;
   private DateTime startDuty;
   private DateTime endDuty;
+  private List<Leg> legs;
 
   // TODO: define this list.
   private static final Set<LegType> UNDROPPABLE_LEG_TYPES = ImmutableSet.of(
@@ -73,7 +80,7 @@ public class Section implements Comparable<Section> {
       LegType.PCR);
 
   public boolean isDroppable() {
-    for (Leg leg : protoSection.getLegList()) {
+    for (Proto.Leg leg : protoSection.getLegList()) {
       if (UNDROPPABLE_LEG_TYPES.contains(leg.getLegType())) {
         return false;
       }
@@ -83,7 +90,7 @@ public class Section implements Comparable<Section> {
 
   public Set<String> getAllTurnAirports() {
     Set<String> airports = new HashSet<>();
-    for (Leg leg : protoSection.getLegList()) {
+    for (Proto.Leg leg : protoSection.getLegList()) {
       airports.add(leg.getArrivalAirportCode());
       airports.add(leg.getDepartureAirportCode());
     }
@@ -94,7 +101,7 @@ public class Section implements Comparable<Section> {
     if (protoSection.getLegCount() == 0) {
       return false;
     }
-    for (Leg leg : protoSection.getLegList()) {
+    for (Proto.Leg leg : protoSection.getLegList()) {
       if (leg.getIsDeadhead()) {
         continue;
       }
@@ -140,6 +147,10 @@ public class Section implements Comparable<Section> {
     return protoSection.getLegCount();
   }
   
+  public List<Leg> getLegs() {
+    return legs;
+  }
+
   @Override
   public boolean equals(Object that) {
     if (that == null) { return false; }
@@ -168,5 +179,22 @@ public class Section implements Comparable<Section> {
         .add("startDuty", startDuty)
         .add("endDuty", endDuty)
         .toString();
+  }
+
+  @Override
+  public Iterator<Leg> iterator() {
+    return new Iterator<Leg>() {
+      private Iterator<Leg> iterator = legs.iterator();
+
+      @Override
+      public boolean hasNext() {
+        return iterator.hasNext();
+      }
+
+      @Override
+      public Leg next() {
+        return iterator.next();
+      }
+    };
   }
 }

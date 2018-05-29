@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableSet;
 import crewtools.flica.Proto;
 import crewtools.flica.Proto.LegType;
 import crewtools.flica.Proto.ScheduleType;
+import crewtools.flica.pojo.Leg;
 import crewtools.flica.pojo.Pairing;
 import crewtools.flica.pojo.Section;
 import crewtools.flica.pojo.Trip;
@@ -119,31 +120,37 @@ public class PairingAdapter {
     List<Section> sections = new ArrayList<>();
     Stats tripStats = new Stats();
 
-    // Start date is the date of departure.  The show time can be the day prior.
-    LocalDate legDate = LocalDate.parse(protoTrip.getStartDate());
+    // The date of departure. The show time can be the day prior.
+    LocalDate departureDate = LocalDate.parse(protoTrip.getStartDate());
     
     for (int sectionIndex = 0; sectionIndex < protoTrip.getSectionCount(); ++sectionIndex) {
       Proto.Section protoSection = protoTrip.getSection(sectionIndex);
       Stats sectionStats = new Stats();
-      List<Proto.Leg> protoLegs = filterLegs(protoSection, LegType.TEST);
-      for (int i = 0; i < protoLegs.size(); ++i) {
-        Proto.Leg protoLeg = protoLegs.get(i);
-        Period legBlock = Period.fromText(protoLeg.getBlockDuration());
-        if (!protoLeg.getLegType().equals(LegType.TRAINING_LEG)) {
+      // List<Proto.Leg> protoLegs = filterLegs(protoSection, LegType.TEST);
+      List<Leg> legs = filterLegs(getLegs(protoSection, departureDate), LegType.TEST);
+      for (int i = 0; i < legs.size(); ++i) {
+        Leg leg = legs.get(i);
+        Period legBlock = leg.getBlockDuration();
+        if (!leg.getLegType().equals(LegType.TRAINING_LEG)) {
           sectionStats.addCredit(legBlock);
           // If this is a non-deadhead taxi leg (will likely be at the end of the day),
           // don't add the block.
           // TODO is this legal?
-          if (protoLeg.getIsDeadhead()) {
+          if (leg.isDeadhead()) {
             sectionStats.addDeadhead(legBlock);
-          } else if (!protoLeg.getLegType().equals(LegType.TAXI)) {
+          } else if (!leg.getLegType().equals(LegType.TAXI)) {
             sectionStats.addBlock(legBlock);
           }
         }
-        verifyBlockTime(protoLeg, legDate, legBlock, getIsSectionAllDeadhead(protoSection));
+        verifyBlockTime(departureDate + " " + protoTrip.getPairingName(),
+            leg,
+            departureDate,
+            legBlock,
+            getIsSectionAllDeadhead(legs));
       }
 
-      sectionStats.flightDuty = calculateFlightDuty(protoSection, legDate);
+      sectionStats.flightDuty = calculateFlightDuty(protoTrip, protoSection, legs,
+          departureDate);
 
       // Deadheads are paid the greater of the scheduled or actual duration of the flight.
       // TODO verify: credit can always be larger than block.
@@ -160,12 +167,13 @@ public class PairingAdapter {
       DateTime startDuty = null;
       DateTime endDuty = null;
       if (protoSection.getLegCount() > 0) {
-        Proto.Leg lastLeg = protoSection.getLeg(protoSection.getLegCount() - 1);
-        LocalTime calculatedLocalDutyEndTime = timeHelper.getArrivalLocalTime(lastLeg);
+        Leg lastLeg = legs.get(legs.size() - 1);
+        LocalTime calculatedLocalDutyEndTime = lastLeg.getArrivalLocalTime();
+
         // Ignore a final TAXi leg unless it is marked DH.
         // Sometimes they are, sometimes not.
         // TODO is this legal?
-        if (!lastLeg.getLegType().equals(LegType.TAXI) || lastLeg.getIsDeadhead()) {
+        if (!lastLeg.getLegType().equals(LegType.TAXI) || lastLeg.isDeadhead()) {
           calculatedLocalDutyEndTime =
               calculatedLocalDutyEndTime.plusMinutes(MINUTES_OF_DUTY_AFTER_LAST_FLIGHT);
         }
@@ -176,8 +184,8 @@ public class PairingAdapter {
         }
 
         // calculate section duty stats
-        startDuty = timeHelper.getLocalDutyStartDateTime(protoSection, legDate);
-        endDuty = timeHelper.getLocalDutyEndDateTime(protoSection, legDate);
+        startDuty = timeHelper.getLocalDutyStartDateTime(protoSection, departureDate);
+        endDuty = timeHelper.getLocalDutyEndDateTime(protoSection, departureDate);
         sectionStats.duty = new Period(startDuty, endDuty);
       }
 
@@ -191,11 +199,12 @@ public class PairingAdapter {
       tripStats.add(sectionStats);
 
       sections.add( 
-          new Section(protoSection, legDate, sectionStats.block, sectionStats.credit,
+          new Section(protoSection, departureDate, sectionStats.block,
+              sectionStats.credit,
               sectionStats.duty, startDuty, endDuty));
 
       if (!isNextSectionSameDate(protoTrip, sectionIndex)) {
-        legDate = legDate.plusDays(1);
+        departureDate = departureDate.plusDays(1);
       }
     }
     verifyPeriod("trip block", tripStats.block, Period.fromText(protoTrip.getBlockDuration()));
@@ -233,7 +242,7 @@ public class PairingAdapter {
 
   void verifyPeriod(String description, Period calculatedValue, Period protoValue) {
     if (!calculatedValue.equals(protoValue)) {
-      logger.fine(String.format("%s: calculated %s but proto was %s",
+      logger.warning(String.format("%s: calculated %s but proto was %s",
           description, calculatedValue, protoValue));
     }
   }
@@ -246,35 +255,27 @@ public class PairingAdapter {
     }
   }
 
-  boolean getIsSectionAllDeadhead(Proto.Section protoSection) {
-    for (Proto.Leg protoLeg : filterLegs(protoSection, LegType.TEST)) {
-      if (!protoLeg.getIsDeadhead()) {
+  boolean getIsSectionAllDeadhead(List<Leg> legs) {
+    for (Leg leg : filterLegs(legs, LegType.TEST)) {
+      if (!leg.isDeadhead()) {
         return false;
       }
     }
     return true;
   }
 
-  boolean isAnyDeadheads(List<Proto.Leg> legs) {
-    for (Proto.Leg leg : legs) {
-      if (leg.getIsDeadhead()) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   public static final int MINUTES_OF_DUTY_AFTER_LAST_FLIGHT = 15;
   public static final int MINUTES_OF_DUTY_BEFORE_FIRST_FLIGHT = 45;
 
-  Period calculateFlightDuty(Proto.Section protoSection, LocalDate legDate) {
+  Period calculateFlightDuty(Proto.Trip trip, Proto.Section protoSection,
+      List<Leg> legs, LocalDate legDate) {
     Period flightDuty = Period.ZERO;
 
-    List<Proto.Leg> legs = filterLegs(protoSection, LegType.TEST, LegType.TAXI, LegType.TRAINING_LEG);
+    legs = filterLegs(legs, LegType.TEST, LegType.TAXI, LegType.TRAINING_LEG);
 
     int numRemainingFlightLegs = 0;
-    for (Proto.Leg leg : legs) {
-      if (!leg.getIsDeadhead()) {
+    for (Leg leg : legs) {
+      if (!leg.isDeadhead()) {
         numRemainingFlightLegs++;
       }
     }
@@ -288,23 +289,24 @@ public class PairingAdapter {
     // For a day that begins with a DH, it is included in the FDP.
 
     for (int i = 0; i < legs.size(); ++i) {
-      Proto.Leg leg = legs.get(i);
-      if (!leg.getIsDeadhead()) {
+      Leg leg = legs.get(i);
+      if (!leg.isDeadhead()) {
         numRemainingFlightLegs--;
       }
-      if (!leg.getIsDeadhead() || numRemainingFlightLegs > 0) {
+      if (!leg.isDeadhead() || numRemainingFlightLegs > 0) {
         if (i > 0) {
           // Add in ground time between flight legs.
-          Proto.Leg prevLeg = legs.get(i - 1);
-          DateTime startGroundTime = timeHelper.getArrivalDateTime(prevLeg, legDate);
-          DateTime endGroundTime = timeHelper.getDepartureDateTime(leg, legDate);
+          Leg prevLeg = legs.get(i - 1);
+          DateTime startGroundTime = prevLeg.getArrivalTime();
+          DateTime endGroundTime = legs.get(i).getDepartureTime();
           Period groundTime = new Period(startGroundTime, endGroundTime);
           flightDuty = flightDuty.plus(groundTime);
         }
         DateTime startFlightDuty = i == 0
             ? timeHelper.getLocalDutyStartDateTime(protoSection, legDate)
-            : timeHelper.getDepartureDateTime(leg, legDate);
-        DateTime endFlightDuty = timeHelper.getArrivalDateTime(leg, legDate);
+            : legs.get(i).getDepartureTime();
+
+        DateTime endFlightDuty = legs.get(i).getArrivalTime();
         Period flightDutyPeriod = new Period(startFlightDuty, endFlightDuty);
         flightDuty = flightDuty.plus(flightDutyPeriod);
       }
@@ -313,31 +315,32 @@ public class PairingAdapter {
     return flightDuty;
   }
 
-  private void verifyBlockTime(Proto.Leg protoLeg, LocalDate legDate,
+  private void verifyBlockTime(String prefix, Leg leg,
+      LocalDate legDate,
       Period legBlock, boolean isSectionAllDeadhead) {
-    if (protoLeg.getLegType().equals(LegType.HOT_RESERVE)) {
+    if (leg.getLegType().equals(LegType.HOT_RESERVE)) {
       verifyPeriod("Hot Reserve block", Period.ZERO, legBlock);
       return;
     }
-    DateTime departureTime = timeHelper.getDepartureDateTime(protoLeg, legDate);
-    DateTime arrivalTime = timeHelper.getArrivalDateTime(protoLeg, legDate);
+    DateTime departureTime = leg.getDepartureTime();
+    DateTime arrivalTime = leg.getArrivalTime();
     Period calculatedBlock = new Period(departureTime, arrivalTime);
     // Deadhead block time does not propagate to section and trip totals.
     // If a day is exclusively deadheads, leg block will be >= dep - arr.
     // Otherwise, a deadhead leg block will be (dep - arr) / 2.
-    if (!protoLeg.getIsDeadhead()) {
+    if (!leg.isDeadhead()) {
       // Training legs are worth 3.75 hours
-      if (protoLeg.getLegType().equals(LegType.TRAINING_LEG)) {
+      if (leg.getLegType().equals(LegType.TRAINING_LEG)) {
         verifyPeriod("training leg block", legBlock, CONTRACTUAL_TRAINING_LEG_BLOCK_PERIOD);
-      } else if (!protoLeg.getLegType().equals(LegType.STANDBY_2)) {
-        verifyPeriod("leg block", calculatedBlock, legBlock);
+      } else if (!leg.getLegType().equals(LegType.STANDBY_2)) {
+        verifyPeriod(prefix + " leg block", calculatedBlock, legBlock);
       }
     } else {
       if (isSectionAllDeadhead) {
         // we should be payed at least calculated, but possbly more.
         verifyPeriodGreaterThanOrEquals("DH leg block", legBlock, calculatedBlock);
       } else {
-        if (protoLeg.getLegType().equals(LegType.TAXI)) {
+        if (leg.getLegType().equals(LegType.TAXI)) {
           // Taxi deadheads are often blocked at 12 minutes but allocated 1 minute.
           verifyPeriodGreaterThanOrEquals("DH taxi leg block", legBlock, calculatedBlock);
         } else {
@@ -347,17 +350,26 @@ public class PairingAdapter {
     }
   }
 
-  List<Proto.Leg> filterLegs(Proto.Section section, LegType...excludedLegTypes) {
-    List<Proto.Leg> legs = new ArrayList<>();
+  List<Leg> filterLegs(List<Leg> input, LegType... excludedLegTypes) {
+    List<Leg> legs = new ArrayList<>();
     ImmutableSet<LegType> filterSet = ImmutableSet.copyOf(excludedLegTypes);
-    for (Proto.Leg leg : section.getLegList()) {
+    for (Leg leg : input) {
       if (!filterSet.contains(leg.getLegType())) {
         legs.add(leg);
       }
     }
     return legs;
   }
-  
+
+  List<Leg> getLegs(Proto.Section protoSection, LocalDate legDate) {
+    List<Leg> legs = new ArrayList<>();
+    DateTime startDuty = timeHelper.getLocalDutyStartDateTime(protoSection, legDate);
+    for (int i = 0; i < protoSection.getLegCount(); ++i) {
+      legs.add(new Leg(protoSection.getLeg(i), startDuty, i));
+    }
+    return legs;
+  }
+
   Set<LocalDate> getDates(Proto.Trip protoTrip, List<Section> sections) {
     ImmutableSet.Builder<LocalDate> result = ImmutableSet.builder();
     if (!protoTrip.hasScheduleType()) {

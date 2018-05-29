@@ -87,6 +87,10 @@ public class Period implements Comparable<Period> {
   public int getHours() {
     return minutes / 60;
   }
+
+  public int getTotalMinutes() {
+    return minutes;
+  }
   
   public String toHhMmString() {
     Preconditions.checkState(minutes >= 0);

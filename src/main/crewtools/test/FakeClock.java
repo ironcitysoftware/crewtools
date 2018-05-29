@@ -23,15 +23,21 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 import crewtools.util.Clock;
-import crewtools.util.SystemClock;
 
 public class FakeClock implements Clock {
   private final LocalDate today;
+  private DateTime now;
   
   public FakeClock(LocalDate today) {
     this.today = today;
+    this.now = today.toDateTimeAtStartOfDay();
   }
   
+  public FakeClock(DateTime now) {
+    this.today = now.toLocalDate();
+    this.now = now;
+  }
+
   @Override
   public LocalDate today() {
     return today;
@@ -39,6 +45,10 @@ public class FakeClock implements Clock {
   
   @Override
   public DateTime now() {
-    return today.toDateTimeAtStartOfDay();
+    return now;
+  }
+
+  public void setNow(DateTime now) {
+    this.now = now;
   }
 }

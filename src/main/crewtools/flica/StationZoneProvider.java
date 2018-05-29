@@ -26,39 +26,52 @@ import com.google.common.collect.ImmutableSet;
 // TODO: productionize.
 public class StationZoneProvider {
   ImmutableSet<String> CENTRAL_TIMEZONE_STATIONS = ImmutableSet.<String>builder()
-      .add("RFD")
-      .add("TUL")
-      .add("OKC")
-      .add("ORD")
-      .add("MKE")
-      .add("HSV")
+      .add("AUS")
       .add("BHM")
-      .add("DSM")
-      .add("CID")
-      .add("GPT")
-      .add("PNS")
-      .add("VPS")
-      .add("JAN")
-      .add("XNA")
-      .add("MSN")
-      .add("MOB")
-      .add("STL")
       .add("BNA")
-      .add("PIA")
-      .add("EVV")
       .add("BTR")
+      .add("CID")
+      .add("DSM")
+      .add("EVV")
+      .add("GPT")
+      .add("HSV")
+      .add("JAN")
       .add("LIT")
-      .add("SAT")
+      .add("MCI")
       .add("MEM")
+      .add("MGM")
+      .add("MKE")
+      .add("MOB")
+      .add("MSN")
+      .add("MSP")
+      .add("MSY")
+      .add("OKC")
       .add("OMA")
+      .add("ORD")
+      .add("PIA")
+      .add("PNS")
+      .add("RFD")
+      .add("SAT")
+      .add("SHV")
+      .add("STL")
+      .add("TUL")
+      .add("VPS")
+      .add("XNA")
+      .build();
+
+  ImmutableSet<String> MOUNTAIN_TIMEZONE_STATIONS = ImmutableSet.<String>builder()
+      .add("RAP")
       .build();
 
   private static final DateTimeZone EASTERN = DateTimeZone.forID("America/New_York");
   private static final DateTimeZone CENTRAL = DateTimeZone.forID("America/Chicago");
+  private static final DateTimeZone MOUNTAIN = DateTimeZone.forID("America/Denver");
 
   public DateTimeZone getDateTimeZone(String station) {
     if (CENTRAL_TIMEZONE_STATIONS.contains(station)) {
       return CENTRAL;
+    } else if (MOUNTAIN_TIMEZONE_STATIONS.contains(station)) {
+      return MOUNTAIN;
     } else {
       return EASTERN;
     }

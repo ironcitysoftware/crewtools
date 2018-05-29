@@ -20,7 +20,7 @@
 package crewtools.flica.pojo;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -32,13 +32,14 @@ import org.joda.time.YearMonth;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Ordering;
 
 import crewtools.flica.Proto;
 import crewtools.util.Period;
 
 // Represents a month and blend.
 // TODO combine Schedule and ScheduleWrapper
-public class Schedule {
+public class Schedule implements Iterable<Leg> {
   private final Logger logger = Logger.getLogger(Schedule.class.getName());
 
   public final List<Trip> trips;
@@ -95,15 +96,18 @@ public class Schedule {
     return nonTripCreditInMonth;
   }
 
-  /** Returns trips with PairingKeys, that is, actual line flying. */
+  /**
+   * Returns trips with PairingKeys, that is, actual line flying,
+   * in the natural ordering of Trip (which is first by date).
+   */
   public Map<PairingKey, Trip> getTrips() {
-    Map<PairingKey, Trip> result = new HashMap<>();
-    trips.forEach(trip -> {
+    ImmutableMap.Builder<PairingKey, Trip> result = ImmutableMap.builder();
+    Ordering.natural().sortedCopy(trips).forEach(trip -> {
       if (!trip.hasScheduleType()) {
         result.put(trip.getPairingKey(), trip);  
       }
     });
-    return result;
+    return result.build();
   }
 
   public Schedule copyAndModify(List<Trip> adds, List<PairingKey> drops) {
@@ -195,5 +199,36 @@ public class Schedule {
         .stream()
         .map(trip -> trip.getPairingName())
         .collect(Collectors.joining(":"));
+  }
+
+  // TODO: consolidate with Trip.iterator()
+  @Override
+  public Iterator<Leg> iterator() {
+    return new Iterator<Leg>() {
+      private Iterator<Trip> tripIterator = trips.iterator();
+      private Iterator<Leg> legIterator = null;
+
+      @Override
+      public boolean hasNext() {
+        if (legIterator == null) {
+          if (!tripIterator.hasNext()) {
+            return false;
+          }
+          legIterator = tripIterator.next().iterator();
+        }
+        while (!legIterator.hasNext()) {
+          if (!tripIterator.hasNext()) {
+            return false;
+          }
+          legIterator = tripIterator.next().iterator();
+        }
+        return true;
+      }
+
+      @Override
+      public Leg next() {
+        return legIterator.next();
+      }
+    };
   }
 }
