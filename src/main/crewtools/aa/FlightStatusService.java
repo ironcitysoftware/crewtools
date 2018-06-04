@@ -24,10 +24,6 @@ import java.io.IOException;
 import org.apache.http.client.ClientProtocolException;
 import org.joda.time.LocalDate;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.protobuf.util.JsonFormat;
 
 import crewtools.aa.Proto.FlightStatusResponse;
@@ -50,7 +46,7 @@ public class FlightStatusService {
         Integer.parseInt(args[1]),
         Integer.parseInt(args[2]));
     System.out.printf("Flight %d on %s:\n", flightNumber, localDate);
-    new FlightStatusService().getFlightStatus(flightNumber, localDate);
+    System.out.print(new FlightStatusService().getFlightStatus(flightNumber, localDate));
   }
 
   // assets/network_config.json
@@ -61,7 +57,8 @@ public class FlightStatusService {
       + "departureMonth=%d&departureDay=%d&flightNumber=%d";
 
 
-  public void getFlightStatus(int flightNumber, LocalDate localDate) throws ClientProtocolException, IOException {
+  public FlightStatusResponse getFlightStatus(int flightNumber, LocalDate localDate)
+      throws ClientProtocolException, IOException {
     String url = String.format(FLIGHT_STATUS_URL_FORMAT_SPEC,
         API_VERSION,
         localDate.getMonthOfYear(),
@@ -69,14 +66,8 @@ public class FlightStatusService {
         flightNumber);
     String json = connection.retrieveUrl(url);
 
-    JsonParser parser = new JsonParser();
-    JsonObject jsonObject = parser.parse(json).getAsJsonObject();
-    Gson gson = new GsonBuilder().setPrettyPrinting().create();
-    String prettyJson = gson.toJson(jsonObject);
-    System.out.println(json);
-
     FlightStatusResponse.Builder builder = FlightStatusResponse.newBuilder();
     JsonFormat.parser().merge(json, builder);
-    System.out.println(builder.build());
+    return builder.build();
   }
 }

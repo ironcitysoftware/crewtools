@@ -147,7 +147,8 @@ public class FlicaService {
 
   // Month is 1-based
   // Year is either 201x or 1x
-  public String getSchedule(YearMonth yearMonth) throws ClientProtocolException, IOException {
+  public String getSchedule(YearMonth yearMonth)
+      throws ClientProtocolException, IOException {
     int year = yearMonth.getYear();
     if (year > 2000) {
       year -= 2000;

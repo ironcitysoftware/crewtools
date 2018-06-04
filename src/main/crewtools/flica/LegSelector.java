@@ -19,58 +19,27 @@
 
 package crewtools.flica;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.apache.http.client.ClientProtocolException;
 import org.joda.time.DateTime;
 import org.joda.time.ReadableInstant;
-import org.joda.time.YearMonth;
 
-import crewtools.flica.adapters.ScheduleAdapter;
-import crewtools.flica.parser.ScheduleParser;
+import crewtools.dashboard.ScheduleProvider;
+import crewtools.flica.parser.ParseException;
 import crewtools.flica.pojo.Leg;
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Schedule;
 import crewtools.flica.pojo.Section;
 import crewtools.flica.pojo.Trip;
 import crewtools.util.Clock;
-import crewtools.util.FlicaConfig;
-import crewtools.util.SystemClock;
 
 public class LegSelector {
   private static final Logger logger = Logger.getLogger(LegSelector.class.getName());
 
   private Clock clock;
-
-  public static void main(String args[]) throws Exception {
-    doIt(new YearMonth(2018, 5));
-  }
-
-  public static void doIt(YearMonth yearMonth) throws Exception {
-    FlicaConnection connection = new FlicaConnection(new FlicaConfig());
-    FlicaService service = new FlicaService(connection);
-
-    LegSelector selector = new LegSelector(new SystemClock());
-    Schedule thisMonth = getSchedule(service, yearMonth);
-    Leg currentLeg = selector.getCurrentLeg(thisMonth);
-    if (currentLeg != null) {
-      System.out.println("Current leg: " + currentLeg);
-    }
-    Schedule nextMonth = getSchedule(service, yearMonth.plusMonths(1));
-    Leg nextLeg = selector.getNextLeg(thisMonth, nextMonth);
-    if (nextLeg != null) {
-      System.out.println("Next leg: " + nextLeg);
-    }
-  }
-
-  private static Schedule getSchedule(FlicaService service, YearMonth yearMonth)
-      throws Exception {
-    String rawSchedule = service.getSchedule(yearMonth);
-    ScheduleParser scheduleParser = new ScheduleParser(rawSchedule);
-    Proto.Schedule protoSchedule = scheduleParser.parse();
-    ScheduleAdapter scheduleAdapter = new ScheduleAdapter();
-    return scheduleAdapter.adapt(protoSchedule);
-  }
 
   public LegSelector(Clock clock) {
     this.clock = clock;
@@ -123,15 +92,17 @@ public class LegSelector {
     return null;
   }
 
-  public Leg getNextLeg(Schedule schedule, Schedule nextMonthSchedule) {
+  public Leg getNextLeg(Schedule schedule, ScheduleProvider scheduleProvider)
+      throws ClientProtocolException, IOException, ParseException {
     DateTime now = clock.now();
     for (Leg leg : schedule) {
       if (!now.isAfter(leg.getArrivalTime())) {
         return leg;
       }
     }
-    if (nextMonthSchedule != null) {
-      for (Leg leg : nextMonthSchedule) {
+    schedule = scheduleProvider.getNextMonthSchedule();
+    if (schedule != null) {
+      for (Leg leg : schedule) {
         if (!now.isAfter(leg.getArrivalTime())) {
           return leg;
         }

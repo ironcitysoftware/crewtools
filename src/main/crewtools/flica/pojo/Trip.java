@@ -31,6 +31,7 @@ import org.joda.time.Interval;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
 
@@ -52,6 +53,7 @@ public class Trip implements Comparable<Trip>, Iterable<Leg> {
       Period tafb, Period duty,
       Set<LocalDate> departureDates,
       Proto.Trip proto) {
+    Preconditions.checkArgument(!departureDates.isEmpty());
     this.sections = sections;
     this.block = block;
     this.credit = credit;

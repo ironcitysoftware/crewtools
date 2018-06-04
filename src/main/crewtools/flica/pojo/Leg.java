@@ -57,6 +57,18 @@ public class Leg {
     return Period.fromText(protoLeg.getBlockDuration());
   }
 
+  public int getFlightNumber() {
+    return protoLeg.getFlightNumber();
+  }
+
+  public String getDepartureAirportCode() {
+    return protoLeg.getDepartureAirportCode();
+  }
+
+  public String getArrivalAirportCode() {
+    return protoLeg.getArrivalAirportCode();
+  }
+
   /**
    * It is possible that arrival and departure happen the next day;
    * (eg show between 23:15 and 23:59)

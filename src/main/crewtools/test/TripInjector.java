@@ -44,8 +44,6 @@ public class TripInjector extends Thread {
         .withLayover("GSP", Period.hours(16))
         .withLeg("GSP", "CLT", Period.hours(10).plus(Period.minutes(30)));
     Trip trip = builder.build();
-    System.out.println(trip.proto);;
-
     try {
       Thread.sleep(1000 * 10);
       queue.put(trip);

@@ -122,12 +122,13 @@ public class PairingAdapter {
 
     // The date of departure. The show time can be the day prior.
     LocalDate departureDate = LocalDate.parse(protoTrip.getStartDate());
+    LocalDate currentDate = departureDate;
     
     for (int sectionIndex = 0; sectionIndex < protoTrip.getSectionCount(); ++sectionIndex) {
       Proto.Section protoSection = protoTrip.getSection(sectionIndex);
       Stats sectionStats = new Stats();
       // List<Proto.Leg> protoLegs = filterLegs(protoSection, LegType.TEST);
-      List<Leg> legs = filterLegs(getLegs(protoSection, departureDate), LegType.TEST);
+      List<Leg> legs = filterLegs(getLegs(protoSection, currentDate), LegType.TEST);
       for (int i = 0; i < legs.size(); ++i) {
         Leg leg = legs.get(i);
         Period legBlock = leg.getBlockDuration();
@@ -142,15 +143,15 @@ public class PairingAdapter {
             sectionStats.addBlock(legBlock);
           }
         }
-        verifyBlockTime(departureDate + " " + protoTrip.getPairingName(),
+        verifyBlockTime(currentDate + " " + protoTrip.getPairingName(),
             leg,
-            departureDate,
+            currentDate,
             legBlock,
             getIsSectionAllDeadhead(legs));
       }
 
       sectionStats.flightDuty = calculateFlightDuty(protoTrip, protoSection, legs,
-          departureDate);
+          currentDate);
 
       // Deadheads are paid the greater of the scheduled or actual duration of the flight.
       // TODO verify: credit can always be larger than block.
@@ -184,8 +185,8 @@ public class PairingAdapter {
         }
 
         // calculate section duty stats
-        startDuty = timeHelper.getLocalDutyStartDateTime(protoSection, departureDate);
-        endDuty = timeHelper.getLocalDutyEndDateTime(protoSection, departureDate);
+        startDuty = timeHelper.getLocalDutyStartDateTime(protoSection, currentDate);
+        endDuty = timeHelper.getLocalDutyEndDateTime(protoSection, currentDate);
         sectionStats.duty = new Period(startDuty, endDuty);
       }
 
@@ -199,12 +200,12 @@ public class PairingAdapter {
       tripStats.add(sectionStats);
 
       sections.add( 
-          new Section(protoSection, departureDate, sectionStats.block,
+          new Section(protoSection, currentDate, sectionStats.block,
               sectionStats.credit,
               sectionStats.duty, startDuty, endDuty));
 
       if (!isNextSectionSameDate(protoTrip, sectionIndex)) {
-        departureDate = departureDate.plusDays(1);
+        currentDate = currentDate.plusDays(1);
       }
     }
     verifyPeriod("trip block", tripStats.block, Period.fromText(protoTrip.getBlockDuration()));
@@ -215,7 +216,7 @@ public class PairingAdapter {
 
     Period tafb = Period.fromText(protoTrip.getTimeAwayFromBaseDuration());
 
-    Set<LocalDate> dates = getDates(protoTrip, sections);
+    Set<LocalDate> dates = getDates(protoTrip, sections, departureDate);
     
     Period credit = tripStats.credit;
     if (sections.isEmpty()) {
@@ -370,7 +371,8 @@ public class PairingAdapter {
     return legs;
   }
 
-  Set<LocalDate> getDates(Proto.Trip protoTrip, List<Section> sections) {
+  Set<LocalDate> getDates(Proto.Trip protoTrip, List<Section> sections,
+      LocalDate defaultDate) {
     ImmutableSet.Builder<LocalDate> result = ImmutableSet.builder();
     if (!protoTrip.hasScheduleType()) {
       for (Section section : sections) {
@@ -390,6 +392,8 @@ public class PairingAdapter {
           result.add(i);
         }
       }
+    } else {
+      result.add(defaultDate);
     }
     return result.build();
   }
