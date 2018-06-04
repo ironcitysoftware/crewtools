@@ -20,6 +20,7 @@
 package crewtools.flica;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -92,9 +93,10 @@ public class LegSelector {
     return null;
   }
 
-  public Leg getNextLeg(Schedule schedule, ScheduleProvider scheduleProvider)
+  public Leg getNextLeg(ScheduleProvider scheduleProvider)
       throws ClientProtocolException, IOException, ParseException {
     DateTime now = clock.now();
+    Schedule schedule = scheduleProvider.getCurrentMonthSchedule();
     for (Leg leg : schedule) {
       if (!now.isAfter(leg.getArrivalTime())) {
         return leg;
@@ -104,6 +106,30 @@ public class LegSelector {
     if (schedule != null) {
       for (Leg leg : schedule) {
         if (!now.isAfter(leg.getArrivalTime())) {
+          return leg;
+        }
+      }
+    }
+    return null;
+  }
+
+  public Leg getPreviousLeg(ScheduleProvider scheduleProvider)
+      throws ClientProtocolException, IOException, ParseException {
+    DateTime now = clock.now();
+    Schedule schedule = scheduleProvider.getCurrentMonthSchedule();
+    Iterator<Leg> iterator = schedule.reverseIterator();
+    while (iterator.hasNext()) {
+      Leg leg = iterator.next();
+      if (!now.isBefore(leg.getDepartureTime())) {
+        return leg;
+      }
+    }
+    schedule = scheduleProvider.getPreviousMonthSchedule();
+    if (schedule != null) {
+      iterator = schedule.reverseIterator();
+      while (iterator.hasNext()) {
+        Leg leg = iterator.next();
+        if (!now.isBefore(leg.getDepartureTime())) {
           return leg;
         }
       }

@@ -39,7 +39,9 @@ import crewtools.flica.Proto;
 import crewtools.flica.Proto.CrewPosition;
 import crewtools.flica.Proto.ScheduleType;
 import crewtools.flica.parser.ParseUtils;
+import crewtools.util.NestedIterator;
 import crewtools.util.Period;
+import crewtools.util.ReverseIterator;
 import crewtools.util.TimeUtils;
 
 /**
@@ -238,33 +240,16 @@ public class Trip implements Comparable<Trip>, Iterable<Leg> {
     return new Integer(proto.hashCode()).compareTo(that.proto.hashCode());
   }
 
-  // TODO: consolidate with Section.iterator
   @Override
   public Iterator<Leg> iterator() {
-    return new Iterator<Leg>() {
-      private Iterator<Section> sectionIterator = sections.iterator();
-      private Iterator<Leg> legIterator = null;
+    return new NestedIterator<Leg, Section>(sections.iterator());
+  }
 
+  public Iterator<Leg> reverseIterator() {
+    return new NestedIterator<Leg, Section>(new ReverseIterator<Section>(sections)) {
       @Override
-      public boolean hasNext() {
-        if (legIterator == null) {
-          if (!sectionIterator.hasNext()) {
-            return false;
-          }
-          legIterator = sectionIterator.next().iterator();
-        }
-        while (!legIterator.hasNext()) {
-          if (!sectionIterator.hasNext()) {
-            return false;
-          }
-          legIterator = sectionIterator.next().iterator();
-        }
-        return true;
-      }
-
-      @Override
-      public Leg next() {
-        return legIterator.next();
+      public Iterator<Leg> getIterator(Section section) {
+        return section.reverseIterator();
       }
     };
   }

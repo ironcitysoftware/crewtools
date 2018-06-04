@@ -36,6 +36,7 @@ import crewtools.flica.Proto;
 import crewtools.flica.Proto.Equipment;
 import crewtools.flica.Proto.LegType;
 import crewtools.util.Period;
+import crewtools.util.ReverseIterator;
 
 public class Section implements Comparable<Section>, Iterable<Leg> {
   private final Logger logger = Logger.getLogger(Section.class.getName());
@@ -183,18 +184,10 @@ public class Section implements Comparable<Section>, Iterable<Leg> {
 
   @Override
   public Iterator<Leg> iterator() {
-    return new Iterator<Leg>() {
-      private Iterator<Leg> iterator = legs.iterator();
+    return legs.iterator();
+  }
 
-      @Override
-      public boolean hasNext() {
-        return iterator.hasNext();
-      }
-
-      @Override
-      public Leg next() {
-        return iterator.next();
-      }
-    };
+  public Iterator<Leg> reverseIterator() {
+    return new ReverseIterator<Leg>(legs);
   }
 }

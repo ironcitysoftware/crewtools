@@ -43,10 +43,9 @@ public class DashboardAdaptor {
   public Dashboard adapt(DateTime now, Leg currentLeg, FlightStatusResponse currentFlight,
       Leg nextLeg,
       FlightStatusResponse nextFlight) {
-    // System.out.println("KRW\n" + nextFlight);
     FlightInfo currentFlightInfo = buildFlightInfo(now, currentLeg, currentFlight);
     FlightInfo nextFlightInfo = buildFlightInfo(now, nextLeg, nextFlight);
-    return new Dashboard(currentFlightInfo, nextFlightInfo);
+    return new Dashboard(now, getZulu(now), currentFlightInfo, nextFlightInfo);
   }
 
   private FlightInfo buildFlightInfo(DateTime now, Leg leg,
@@ -79,6 +78,9 @@ public class DashboardAdaptor {
     DateTime companyShow = leg.getDepartureTime()
         .minus(SHOW_TIME_PRIOR_TO_DEPARTURE_MINUTES);
 
+    // Actual departure time.
+    // System.out.println("KRW " + flight);
+
     // Estimated show time is inbound arrival minus 45 minutes.
     if (flight.hasPriorLegFlightInfo()) {
       PriorLegFlightInfo prior = flight.getPriorLegFlightInfo();
@@ -92,8 +94,10 @@ public class DashboardAdaptor {
     }
 
     return new TimeInfo(
-        getPrettyOffset(now, companyShow),
-        getZulu(companyShow));
+        companyShow.isBefore(now) ? "" : getPrettyOffset(now, companyShow),
+        companyShow.isBefore(now) ? "" : getZulu(companyShow),
+        "",
+        "");
   }
 
   private DateTimeFormatter HH_COLON_MM = DateTimeFormat.forPattern("HH:mm");

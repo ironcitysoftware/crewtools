@@ -52,7 +52,10 @@ public class DashboardService {
 
     LegSelector selector = new LegSelector(clock);
     Leg currentLeg = selector.getCurrentLeg(currentMonthSchedule);
-    Leg nextLeg = selector.getNextLeg(currentMonthSchedule, scheduleProvider);
+    if (currentLeg == null) {
+      currentLeg = selector.getPreviousLeg(scheduleProvider);
+    }
+    Leg nextLeg = selector.getNextLeg(scheduleProvider);
     FlightStatusResponse currentFlight = null;
     if (currentLeg != null) {
       currentFlight = flightStatusService.getFlightStatus(currentLeg.getFlightNumber(),

@@ -35,7 +35,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Ordering;
 
 import crewtools.flica.Proto;
+import crewtools.util.NestedIterator;
 import crewtools.util.Period;
+import crewtools.util.ReverseIterator;
 
 // Represents a month and blend.
 // TODO combine Schedule and ScheduleWrapper
@@ -201,33 +203,15 @@ public class Schedule implements Iterable<Leg> {
         .collect(Collectors.joining(":"));
   }
 
-  // TODO: consolidate with Trip.iterator()
   @Override
   public Iterator<Leg> iterator() {
-    return new Iterator<Leg>() {
-      private Iterator<Trip> tripIterator = trips.iterator();
-      private Iterator<Leg> legIterator = null;
+    return new NestedIterator<Leg, Trip>(trips.iterator());
+  }
 
-      @Override
-      public boolean hasNext() {
-        if (legIterator == null) {
-          if (!tripIterator.hasNext()) {
-            return false;
-          }
-          legIterator = tripIterator.next().iterator();
-        }
-        while (!legIterator.hasNext()) {
-          if (!tripIterator.hasNext()) {
-            return false;
-          }
-          legIterator = tripIterator.next().iterator();
-        }
-        return true;
-      }
-
-      @Override
-      public Leg next() {
-        return legIterator.next();
+  public Iterator<Leg> reverseIterator() {
+    return new NestedIterator<Leg, Trip>(new ReverseIterator<Trip>(trips)) {
+      @Override public Iterator<Leg> getIterator(Trip trip) {
+        return trip.reverseIterator();
       }
     };
   }

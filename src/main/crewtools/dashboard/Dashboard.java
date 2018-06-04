@@ -19,13 +19,28 @@
 
 package crewtools.dashboard;
 
+import org.joda.time.DateTime;
+
 public class Dashboard {
+  private final DateTime retrievedTime;
+  private final String prettyRetrievedTime;
   private final FlightInfo currentFlight;
   private final FlightInfo nextFlight;
 
-  Dashboard(FlightInfo currentFlight, FlightInfo nextFlight) {
+  Dashboard(DateTime retrievedTime, String prettyRetrievedTime, FlightInfo currentFlight,
+      FlightInfo nextFlight) {
+    this.retrievedTime = retrievedTime;
+    this.prettyRetrievedTime = prettyRetrievedTime;
     this.currentFlight = currentFlight;
     this.nextFlight = nextFlight;
+  }
+
+  public DateTime getRetrievedTime() {
+    return retrievedTime;
+  }
+
+  public String getPrettyRetrievedTime() {
+    return prettyRetrievedTime;
   }
 
   public FlightInfo getCurrentFlight() {
@@ -38,7 +53,8 @@ public class Dashboard {
 
   @Override
   public String toString() {
-    String result = "Current flight:\n";
+    String result = "At " + prettyRetrievedTime + "\n";
+    result += "Current/Previous flight:\n";
     if (currentFlight != null) {
       result += String.format("%3s  ->   %3s\n", currentFlight.getOriginAirport(),
           currentFlight.getDestinationAirport());

@@ -20,6 +20,9 @@
 package crewtools.dashboard;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.http.client.ClientProtocolException;
 import org.joda.time.DateTimeZone;
@@ -37,6 +40,8 @@ public class ScheduleProvider {
   private final Clock clock;
   private final FlicaService flicaService;
 
+  private Map<YearMonth, Schedule> cache = Collections.synchronizedMap(new HashMap<>());
+
   private static final DateTimeZone EASTERN_TIME_ZONE = DateTimeZone
       .forID("America/New_York");
 
@@ -45,6 +50,11 @@ public class ScheduleProvider {
     this.flicaService = flicaService;
   }
 
+  public Schedule getPreviousMonthSchedule()
+      throws ClientProtocolException, IOException, ParseException {
+    return getSchedule(getYearMonthEasternTime().minusMonths(1));
+  }
+  
   public Schedule getCurrentMonthSchedule()
       throws ClientProtocolException, IOException, ParseException {
     return getSchedule(getYearMonthEasternTime());
@@ -61,10 +71,15 @@ public class ScheduleProvider {
 
   private Schedule getSchedule(YearMonth yearMonth)
       throws ClientProtocolException, IOException, ParseException {
+    if (cache.containsKey(yearMonth)) {
+      return cache.get(yearMonth);
+    }
     String rawSchedule = flicaService.getSchedule(yearMonth);
     ScheduleParser scheduleParser = new ScheduleParser(rawSchedule);
     Proto.Schedule protoSchedule = scheduleParser.parse();
     ScheduleAdapter scheduleAdapter = new ScheduleAdapter();
-    return scheduleAdapter.adapt(protoSchedule);
+    Schedule schedule = scheduleAdapter.adapt(protoSchedule);
+    cache.put(yearMonth, schedule);
+    return schedule;
   }
 }
