@@ -114,7 +114,7 @@ public class ScheduleBuilder {
         credit,
         Period.ZERO,
         Period.ZERO,
-        ImmutableSet.of() /* days */,
+        ImmutableSet.of(date) /* days */,
         tripProto));
   }
 
