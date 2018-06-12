@@ -91,7 +91,6 @@ public class ScheduleWrapper {
 
   private void populate(Schedule schedule, YearMonth yearMonth) {
     Collection<PairingKey> allBaggageTrips = identifyBaggageTrips(schedule);
-    logger.info("baggage trips: " + allBaggageTrips);
     Period nonBaggageCreditThisMonth = Period.ZERO;
     for (Trip trip : schedule.trips) {
       if (trip.hasScheduleType()) {
@@ -126,6 +125,7 @@ public class ScheduleWrapper {
     // creditInMonthMap does not include baggage.
     this.minRequiredCredit = getSmallestDroppableCredit(creditInMonthMap).minus(overage);
     logger.info("Minimum credit for an added trip: " + minRequiredCredit);
+    logger.info("Baggage trips: " + baggageTrips);
   }
   
   // Credits should be ordered from smallest to largest period.
@@ -369,8 +369,6 @@ public class ScheduleWrapper {
   }
 
   public void populate(crewtools.rpc.Proto.ScheduleNode.Builder builder) {
-    for (PairingKey key : creditInMonthMap.keySet()) {
-      builder.addTrip(key.toShortString());
-    }
+    schedule.getTrips().keySet().forEach(trip -> builder.addTrip(trip.toShortString()));
   }
 }
