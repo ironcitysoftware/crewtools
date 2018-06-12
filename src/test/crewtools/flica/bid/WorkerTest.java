@@ -88,11 +88,12 @@ public class WorkerTest {
     wrapper = new ScheduleWrapper(
         schedule,
         TripBuilder.DEFAULT_YEAR_MONTH,
-        FAKE_CLOCK);
+        FAKE_CLOCK,
+        BidConfig.getDefaultInstance());
     tree.setRootScheduleWrapper(wrapper);
     worker = new Worker(queue, service, tree, TripBuilder.DEFAULT_YEAR_MONTH, ROUND,
         FAKE_CLOCK, stats,
-        BidConfig.newBuilder().addFavoriteOvernight("SFO").build());
+        BidConfig.newBuilder().addFavoriteOvernight("SFO").build(), false);
   }
   
   @Test
@@ -147,7 +148,8 @@ public class WorkerTest {
     ScheduleWrapper newWrapper = new ScheduleWrapper(
         newSchedule,
         TripBuilder.DEFAULT_YEAR_MONTH,
-        FAKE_CLOCK);
+        FAKE_CLOCK,
+        BidConfig.getDefaultInstance());
     tree.setRootScheduleWrapper(newWrapper);
     
     verify(service).submitSwap(

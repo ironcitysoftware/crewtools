@@ -127,7 +127,6 @@ public class PairingAdapter {
     for (int sectionIndex = 0; sectionIndex < protoTrip.getSectionCount(); ++sectionIndex) {
       Proto.Section protoSection = protoTrip.getSection(sectionIndex);
       Stats sectionStats = new Stats();
-      // List<Proto.Leg> protoLegs = filterLegs(protoSection, LegType.TEST);
       List<Leg> legs = filterLegs(getLegs(protoSection, currentDate), LegType.TEST);
       for (int i = 0; i < legs.size(); ++i) {
         Leg leg = legs.get(i);

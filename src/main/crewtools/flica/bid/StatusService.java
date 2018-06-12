@@ -29,6 +29,8 @@ import java.net.UnknownHostException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.joda.time.YearMonth;
+
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Trip;
 import crewtools.rpc.Proto.AutobidderRequest;
@@ -116,7 +118,8 @@ public class StatusService extends Thread {
 
     private void populateExplanation(String keyString, ScoreExplanation.Builder builder)
         throws Exception {
-      PairingKey key = PairingKey.parseShort(keyString);
+      PairingKey key = PairingKey.parseShort(keyString,
+          YearMonth.parse(bidConfig.getYearMonth()));
       Trip trip = trips.getTrip(key);
       TripScore score = new TripScore(trip, bidConfig);
       for (String line : score.getScoreExplanation()) {

@@ -87,4 +87,9 @@ message BidConfig {
 
   // Enable experimental feature of considering long sits in scoring.
   optional bool enable_efficiency_score = 9;
+
+  // The autobidder will select the least-credit trips as baggage.
+  // Override this behavior by explicitly specifying baggage trips.
+  // 17May:L1234
+  repeated string baggage_pairing_key = 10;
 }

@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableList;
 
 import crewtools.flica.parser.ParseException;
 import crewtools.flica.pojo.PairingKey;
+import crewtools.rpc.Proto.BidConfig;
 import crewtools.test.FakeClock;
 import crewtools.test.ScheduleBuilder;
 import crewtools.test.TripBuilder;
@@ -65,7 +66,7 @@ public class ScheduleWrapperTreeTest {
     return new ScheduleWrapper(
         new ScheduleBuilder().build(name),
         TripBuilder.DEFAULT_YEAR_MONTH,
-        FAKE_CLOCK);
+        FAKE_CLOCK, BidConfig.getDefaultInstance());
   }
 
   @Test

@@ -48,11 +48,13 @@ public class Worker extends Thread {
   private final Clock clock;
   private final RuntimeStats stats;
   private final BidConfig bidConfig;
+  private final boolean debug;
   private int numSwaps;
   
   public Worker(BlockingQueue<Trip> queue, FlicaService service,
       ScheduleWrapperTree tree, YearMonth yearMonth,
-      int round, Clock clock, RuntimeStats stats, BidConfig bidConfig) {
+      int round, Clock clock, RuntimeStats stats, BidConfig bidConfig,
+      boolean debug) {
     this.queue = queue;
     this.service = service;
     this.tree = tree;
@@ -61,8 +63,9 @@ public class Worker extends Thread {
     this.clock = clock;
     this.stats = stats;
     this.bidConfig = bidConfig;
+    this.debug = debug;
     this.numSwaps = 0;
-    this.setName("autobidder worker");
+    this.setName("Autobidder Worker");
     this.setDaemon(false);
   }
   
@@ -151,14 +154,17 @@ public class Worker extends Thread {
           Transition transition = new Transition(adds, drops);
           
           try {
-            String html = service.submitSwap(round, yearMonth, clock.today(), adds, drops);
-            logger.info("Result from SWAP " + numSwaps + ": " + html);
-            SwapResponseParser swapResponseParser = new SwapResponseParser(html);
-            if (swapResponseParser.parse() == SwapResponseParser.Status.DUPLICATE) {
-              logger.info("Ignoring duplicate swap request");
-              return;
+            if (!debug) {
+              String html = service.submitSwap(round, yearMonth, clock.today(), adds,
+                  drops);
+              logger.info("Result from SWAP " + numSwaps + ": " + html);
+              SwapResponseParser swapResponseParser = new SwapResponseParser(html);
+              if (swapResponseParser.parse() == SwapResponseParser.Status.DUPLICATE) {
+                logger.info("Ignoring duplicate swap request");
+                return;
+              }
+              logger.info("Swap response parsed.");
             }
-            logger.info("Swap response parsed.");
             stats.recordSwap(transition.toString());
             logger.info("Stats recorded.");
             add(wrapper, transition, wrapper.mutate(ImmutableList.of(trip), drops));

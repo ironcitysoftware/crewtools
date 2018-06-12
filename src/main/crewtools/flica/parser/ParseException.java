@@ -22,7 +22,7 @@ package crewtools.flica.parser;
 public class ParseException extends Exception {
   private static final long serialVersionUID = -4862268926624997942L;
 
-  ParseException(String message) {
+  public ParseException(String message) {
     super(message);
   }
 

@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableSet;
 import crewtools.flica.bid.ScheduleWrapper.OverlapEvaluation;
 import crewtools.flica.pojo.Schedule;
 import crewtools.flica.pojo.Trip;
+import crewtools.rpc.Proto.BidConfig;
 import crewtools.test.FakeClock;
 import crewtools.test.ScheduleBuilder;
 import crewtools.test.TripBuilder;
@@ -56,7 +57,8 @@ public class ScheduleWrapperTest {
         .build();
 
     ScheduleWrapper wrapper = new ScheduleWrapper(
-        schedule, TripBuilder.DEFAULT_YEAR_MONTH, FAKE_CLOCK);
+        schedule, TripBuilder.DEFAULT_YEAR_MONTH, FAKE_CLOCK,
+        BidConfig.getDefaultInstance());
 
     Trip betterTrip = new TripBuilder()
         .withDayOfMonth(7)
@@ -90,7 +92,8 @@ public class ScheduleWrapperTest {
         .build();
 
     ScheduleWrapper wrapper = new ScheduleWrapper(
-        schedule, TripBuilder.DEFAULT_YEAR_MONTH, FAKE_CLOCK);
+        schedule, TripBuilder.DEFAULT_YEAR_MONTH, FAKE_CLOCK,
+        BidConfig.getDefaultInstance());
 
     Trip betterTrip = new TripBuilder()
         .withDayOfMonth(2)
@@ -124,7 +127,8 @@ public class ScheduleWrapperTest {
         .build();
 
     ScheduleWrapper wrapper = new ScheduleWrapper(
-        schedule, TripBuilder.DEFAULT_YEAR_MONTH, FAKE_CLOCK);
+        schedule, TripBuilder.DEFAULT_YEAR_MONTH, FAKE_CLOCK,
+        BidConfig.getDefaultInstance());
 
     Trip betterTrip = new TripBuilder()
         .withDayOfMonth(9)
@@ -179,7 +183,8 @@ public class ScheduleWrapperTest {
         .build();
 
     ScheduleWrapper wrapper = new ScheduleWrapper(
-        schedule, TripBuilder.DEFAULT_YEAR_MONTH, FAKE_CLOCK);
+        schedule, TripBuilder.DEFAULT_YEAR_MONTH, FAKE_CLOCK,
+        BidConfig.getDefaultInstance());
 
     assertEquals(ImmutableList.of(trip4.getPairingKey(), trip1.getPairingKey()),
         wrapper.identifyBaggageTrips(schedule));

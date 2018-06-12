@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.joda.time.LocalDate;
+import org.joda.time.YearMonth;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -63,10 +64,11 @@ public class PairingKey implements Comparable<PairingKey> {
   private static final DateTimeFormatter DATE_MONTH = DateTimeFormat.forPattern("ddMMM");
 
   // 17May:L1234
-  public static PairingKey parseShort(String key) {
+  public static PairingKey parseShort(String key, YearMonth yearMonth) {
     List<String> parts = Splitter.on(":").splitToList(key);
-    Preconditions.checkState(parts.size() == 2, "2018-1-1:L1234, not " + key);
-    LocalDate date = DATE_MONTH.parseLocalDate(parts.get(0));
+    Preconditions.checkState(parts.size() == 2, "31Jan:L1234, not " + key);
+    LocalDate date = DATE_MONTH.parseLocalDate(parts.get(0))
+        .withYear(yearMonth.getYear());
     return new PairingKey(date, parts.get(1));
   }
 

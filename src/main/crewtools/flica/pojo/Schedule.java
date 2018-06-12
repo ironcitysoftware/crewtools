@@ -26,8 +26,6 @@ import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import org.joda.time.Days;
-import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
 import com.google.common.base.Preconditions;
@@ -68,6 +66,7 @@ public class Schedule implements Iterable<Leg> {
       Period creditInMonth = trip.getCreditInMonth(yearMonth);
       totalCreditInMonth = totalCreditInMonth.plus(creditInMonth);
       if (trip.hasScheduleType()) {
+        // vacation, training...
         nonTripCreditInMonth = nonTripCreditInMonth.plus(creditInMonth);
       } else {
         tripCreditsInMonth.put(trip.getPairingKey(), creditInMonth);
@@ -154,30 +153,7 @@ public class Schedule implements Iterable<Leg> {
     }
     return new Schedule(newTrips, newBlockTime, newCreditTime, yearMonth, newProto.build());
   }
-  
-  // One cannot swap a trip less than 48 hours in advance.
-  private static final Days SWAP_PRE_PERIOD = Days.TWO;
 
-  public List<Trip> getFutureTrips(LocalDate today) {
-    List<Trip> result = new ArrayList<>();
-    for (Trip trip : trips) {
-      if (trip.getFirstSection().getDepartureDate().isAfter(today.plus(SWAP_PRE_PERIOD))) {
-        result.add(trip);
-      }
-    }
-    return result;
-  }
-
-  public List<Trip> getPastTrips(LocalDate today) {
-    List<Trip> result = new ArrayList<>();
-    for (Trip trip : trips) {
-      if (!trip.getFirstSection().getDepartureDate().isAfter(today.plus(SWAP_PRE_PERIOD))) {
-        result.add(trip);
-      }
-    }
-    return result;
-  }
-  
   @Override
   public int hashCode() {
     return proto.hashCode();

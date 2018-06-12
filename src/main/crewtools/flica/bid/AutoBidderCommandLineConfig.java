@@ -40,12 +40,14 @@ public class AutoBidderCommandLineConfig {
   private final int round;
   private final boolean cache;
   private final boolean useProto;
+  private final boolean debug;
 
   public AutoBidderCommandLineConfig(String args[]) {
     Iterator<String> argIterator = Arrays.asList(args).iterator();
     int round = 0;
     boolean cache = false;
     boolean useProto = false;
+    boolean debug = false;
     while (argIterator.hasNext()) {
       List<String> parameter = EQUALS.splitToList(argIterator.next());
       String arg = parameter.get(0);
@@ -65,6 +67,8 @@ public class AutoBidderCommandLineConfig {
         cache = true;
       } else if (arg.equals("proto")) {
         useProto = true;
+      } else if (arg.equals("debug")) {
+        debug = true;
       } else {
         System.err.println("Unrecognized argument " + arg);
         System.exit(-1);
@@ -77,6 +81,7 @@ public class AutoBidderCommandLineConfig {
     this.round = round;
     this.cache = cache;
     this.useProto = useProto;
+    this.debug = debug;
   }
 
   public Duration getScheduleRefreshInterval() {
@@ -145,5 +150,9 @@ public class AutoBidderCommandLineConfig {
 
   public boolean getUseProto() {
     return useProto;
+  }
+
+  public boolean isDebug() {
+    return debug;
   }
 }

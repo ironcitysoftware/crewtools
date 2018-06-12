@@ -45,7 +45,8 @@ import crewtools.util.ReverseIterator;
 import crewtools.util.TimeUtils;
 
 /**
- * A trip is a pairing associated with a particular date.
+ * A trip is a pairing or event associated with a particular set of date.
+ * This includes training, vacation, pairing, etc.
  */
 public class Trip implements Comparable<Trip>, Iterable<Leg> {
   private final TimeUtils timeUtils = new TimeUtils();

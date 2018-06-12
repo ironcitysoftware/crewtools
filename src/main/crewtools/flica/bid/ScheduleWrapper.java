@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import org.joda.time.Duration;
 import org.joda.time.Interval;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
@@ -40,6 +41,7 @@ import com.google.common.collect.Ordering;
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Schedule;
 import crewtools.flica.pojo.Trip;
+import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.Clock;
 import crewtools.util.Period;
 
@@ -61,6 +63,7 @@ public class ScheduleWrapper {
   private final Schedule schedule;
   private final YearMonth yearMonth;
   private final Clock clock;
+  private final BidConfig bidConfig;
   
   private Set<Interval> nonTripIntervals;
   private Map<PairingKey, Period> creditInMonthMap;  // least first
@@ -71,7 +74,8 @@ public class ScheduleWrapper {
   public ScheduleWrapper(
       Schedule schedule,
       YearMonth yearMonth,
-      Clock clock) {
+      Clock clock,
+      BidConfig bidConfig) {
     this.trips = new HashMap<>();  // Trips (not vacation or training)
     this.droppableSchedule = new HashMap<>();
     this.nonTripIntervals = new HashSet<>();
@@ -81,16 +85,19 @@ public class ScheduleWrapper {
     this.schedule = schedule;
     this.yearMonth = yearMonth;
     this.clock = clock;
+    this.bidConfig = bidConfig;
     populate(schedule, yearMonth);
   }
 
   private void populate(Schedule schedule, YearMonth yearMonth) {
     Collection<PairingKey> allBaggageTrips = identifyBaggageTrips(schedule);
+    logger.info("baggage trips: " + allBaggageTrips);
     Period nonBaggageCreditThisMonth = Period.ZERO;
     for (Trip trip : schedule.trips) {
       if (trip.hasScheduleType()) {
         // Vacation, training, etc.
         mergeNonTripInterval(trip.getInterval());
+        nonBaggageCreditThisMonth = nonBaggageCreditThisMonth.plus(trip.credit);
       } else {
         logger.info("Scheduled trip " + trip.getPairingKey());
         if (!allBaggageTrips.contains(trip.getPairingKey())) {
@@ -106,10 +113,11 @@ public class ScheduleWrapper {
         }
       }
     }
+    logger.info("Non-trip intervals: " + nonTripIntervals);
+    logger.info("non-baggage credit this month: " + nonBaggageCreditThisMonth);
     this.creditInMonthMap = crewtools.util.Collections.sortByValueAscending(creditInMonthMap);
     Period overage = nonBaggageCreditThisMonth.minus(SIXTY_FIVE);
     logger.info("(ordered) credit this month: " + creditInMonthMap);
-    logger.info("non-baggage credit this month: " + nonBaggageCreditThisMonth);
     logger.info("non-baggage credit overage this month: " + overage);
     // This period is the minimum period of a trip we care about in opentime.
     // That is, there exists a droppable trip on our schedule such that dropping
@@ -238,7 +246,7 @@ public class ScheduleWrapper {
     
     Schedule newSchedule = schedule.copyAndModify(adds, dropKeys);
     ScheduleWrapper newWrapper = new ScheduleWrapper(
-        newSchedule, yearMonth, clock);
+        newSchedule, yearMonth, clock, bidConfig);
     return newWrapper;
   }
   
@@ -259,41 +267,67 @@ public class ScheduleWrapper {
         break;
       }
       nonTripIntervals.remove(abut);
-      if (interval.getStart().equals(abut.getEnd())) {
+      if (interval.getStart().minusMinutes(1).equals(abut.getEnd())) {
         interval = new Interval(abut.getStart(), interval.getEnd());
       } else {
-        Preconditions.checkState(interval.getEnd().equals(abut.getStart()));
+        Preconditions
+            .checkState(interval.getEnd().plusMinutes(1).equals(abut.getStart()));
         interval = new Interval(interval.getStart(), abut.getEnd());
       }
     }
     nonTripIntervals.add(interval);
   }
 
+  private static final long ONE_MINUTE = Duration.standardMinutes(1).getMillis();
+
   private Interval findAbuttingNonTripIntervalOrNull(Interval interval) {
     for (Interval existingInterval : nonTripIntervals) {
-      if (existingInterval.abuts(interval)) {
+      if (isAdjacent(interval, existingInterval)) {
         return existingInterval;
       }
     }
     return null;
   }
 
+  private boolean isAdjacent(Interval left, Interval right) {
+    // RIGHT.LEFT
+    long delta = left.getStartMillis() - right.getEndMillis();
+    if (delta >= 0) {
+      return delta <= ONE_MINUTE;
+    }
+    // LEFT.RIGHT
+    delta = right.getStartMillis() - left.getEndMillis();
+    if (delta >= 0) {
+      return delta <= ONE_MINUTE;
+    }
+    return false;
+  }
+
   /**
    * Returns the set of the smallest-credit trips beyond the minimum
    * month credit. These are trips which we desire to drop.
-   * TODO: Could make this configurable.
    */
   Collection<PairingKey> identifyBaggageTrips(Schedule schedule) {
     List<PairingKey> baggageKeys = new ArrayList<>();
-    Map<PairingKey, Period> sortedTripCreditsInMonth =
-        crewtools.util.Collections.sortByValueDescending(
-            schedule.getTripCreditInMonth());
-    Period totalCredit = schedule.getNonTripCreditInMonth();
-    for (PairingKey key : sortedTripCreditsInMonth.keySet()) {
-      if (totalCredit.isLessThan(SIXTY_FIVE)) {
-        totalCredit = totalCredit.plus(sortedTripCreditsInMonth.get(key));
-      } else {
+    if (bidConfig.getBaggagePairingKeyCount() > 0) {
+      // manual
+      for (String keyText : bidConfig.getBaggagePairingKeyList()) {
+        PairingKey key = PairingKey.parseShort(keyText,
+            YearMonth.parse(bidConfig.getYearMonth()));
         baggageKeys.add(key);
+      }
+    } else {
+      // automatic
+      Map<PairingKey, Period> sortedTripCreditsInMonth = crewtools.util.Collections
+          .sortByValueDescending(
+              schedule.getTripCreditInMonth());
+      Period totalCredit = schedule.getNonTripCreditInMonth();
+      for (PairingKey key : sortedTripCreditsInMonth.keySet()) {
+        if (totalCredit.isLessThan(SIXTY_FIVE)) {
+          totalCredit = totalCredit.plus(sortedTripCreditsInMonth.get(key));
+        } else {
+          baggageKeys.add(key);
+        }
       }
     }
     return baggageKeys;

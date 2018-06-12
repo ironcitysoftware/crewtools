@@ -60,7 +60,7 @@ public class AutoBidder {
 
     FlicaConnection connection = new FlicaConnection(new FlicaConfig());
     FlicaService service;
-    if (cmdLine.useCache() || cmdLine.getUseProto()) {
+    if (cmdLine.useCache()) {
       service = new CachingFlicaService(connection);
     } else {
       service = new FlicaService(connection);
@@ -88,14 +88,20 @@ public class AutoBidder {
 
     ScheduleLoaderThread scheduleLoaderThread = new ScheduleLoaderThread(
         cmdLine.getScheduleRefreshInterval(), yearMonth,
-        tree, trips, service);
+        tree, trips, service, bidConfig);
     scheduleLoaderThread.start();
     scheduleLoaderThread.blockCurrentThreadUntilInitialRunIsComplete();
 
     BlockingQueue<Trip> queue = new LinkedBlockingQueue<Trip>();
     Worker worker = new Worker(queue, service, tree, yearMonth,
-        cmdLine.getRound(), clock, stats, bidConfig);
+        cmdLine.getRound(), clock, stats, bidConfig, cmdLine.isDebug());
     worker.start();
+
+    if (cmdLine.isDebug()) {
+      DebugTripProvider debugTripProvider = new DebugTripProvider(queue);
+      debugTripProvider.start();
+      return;
+    }
 
     SMTPServer smtpServer = new SMTPServer(
         (context) -> {
