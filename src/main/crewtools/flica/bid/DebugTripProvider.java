@@ -21,6 +21,8 @@ package crewtools.flica.bid;
 
 import java.util.Queue;
 
+import org.joda.time.LocalDate;
+
 import crewtools.flica.pojo.Trip;
 import crewtools.test.TripBuilder;
 import crewtools.util.Period;
@@ -34,7 +36,7 @@ public class DebugTripProvider extends Thread {
 
   public void run() {
     Trip trip = new TripBuilder()
-        .withDayOfMonth(23)
+        .withLocalDate(LocalDate.parse("2018-7-22"))
         .withLeg("CLT", "FAY", Period.hours(6))
         .withLayover("FAY", Period.hours(15))
         .withLeg("FAY", "CHS", Period.hours(6))
