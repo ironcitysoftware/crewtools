@@ -51,6 +51,7 @@ message Status {
 message ScheduleNode {
   repeated string trip = 1;
   repeated ScheduleNode child = 2;
+  optional string credit = 3;
 }
 
 // TODO better home

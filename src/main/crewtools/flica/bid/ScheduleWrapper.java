@@ -67,6 +67,7 @@ public class ScheduleWrapper {
   private Set<Interval> nonTripIntervals;
   private Map<PairingKey, Period> creditInMonthMap;  // least first
   private Period minRequiredCredit;
+  private Period baggageCredit;
   
   private static final Period SIXTY_FIVE = Period.hours(65);
  
@@ -99,11 +100,13 @@ public class ScheduleWrapper {
   private void populate(Schedule schedule, YearMonth yearMonth) {
     Collection<PairingKey> allBaggageTrips = identifyBaggageTrips(schedule);
     Period nonBaggageCreditThisMonth = Period.ZERO;
+    Period baggageCreditThisMonth = Period.ZERO;
     for (Trip trip : schedule.trips) {
       if (trip.hasScheduleType()) {
         // Vacation, training, etc.
         mergeNonTripInterval(trip.getInterval());
-        nonBaggageCreditThisMonth = nonBaggageCreditThisMonth.plus(trip.credit);
+        nonBaggageCreditThisMonth = nonBaggageCreditThisMonth
+            .plus(trip.getCreditInMonth(yearMonth));
       } else {
         logger.info("Scheduled trip " + trip.getPairingKey());
         if (!allBaggageTrips.contains(trip.getPairingKey())) {
@@ -116,6 +119,8 @@ public class ScheduleWrapper {
           nonBaggageCreditThisMonth = nonBaggageCreditThisMonth.plus(tripCredit);
         } else {
           baggageTrips.add(trip.getPairingKey());
+          baggageCreditThisMonth = baggageCreditThisMonth
+              .plus(trip.getCreditInMonth(yearMonth));
         }
       }
     }
@@ -133,6 +138,7 @@ public class ScheduleWrapper {
     this.minRequiredCredit = getSmallestDroppableCredit(creditInMonthMap).minus(overage);
     logger.info("Minimum credit for an added trip: " + minRequiredCredit);
     logger.info("Baggage trips: " + baggageTrips);
+    this.baggageCredit = baggageCreditThisMonth;
   }
   
   // Credits should be ordered from smallest to largest period.
@@ -163,12 +169,14 @@ public class ScheduleWrapper {
     Period tripCredit = trip.getCreditInMonth(yearMonth);
     Period newCredit = schedule.getCreditInMonth()
         .minus(creditInMonthMap.get(scheduledTrip))
+        .minus(baggageCredit)
         .plus(tripCredit);
     boolean result = SIXTY_FIVE.compareTo(newCredit) <= 0;
-    logger.info("If we drop " + scheduledTrip + " and add " 
+    logger.info("If we drop " + scheduledTrip + " (and baggage) and add "
         + trip.getPairingName() + " for " + tripCredit + ", is it OK? " + result
         + "\nTotalCreditInMonth:" + schedule.getCreditInMonth()
         + " - scheduledTrip:" + creditInMonthMap.get(scheduledTrip)
+        + " - baggageCredit:" + baggageCredit
         + " + tripCredit:" + tripCredit
         + " = " + newCredit);
     return result;
@@ -377,5 +385,6 @@ public class ScheduleWrapper {
 
   public void populate(crewtools.rpc.Proto.ScheduleNode.Builder builder) {
     schedule.getTrips().keySet().forEach(trip -> builder.addTrip(trip.toShortString()));
+    builder.setCredit(schedule.getCreditInMonth().toString());
   }
 }

@@ -80,7 +80,7 @@ public class DebugInjector extends Thread {
             PairingKey.parse("2018-7-10:L7493"),
             PairingKey.parse("2018-7-23:L7462"),
             PairingKey.parse("2018-7-30:L7630")));
-    tree.markApproved(transition);
+    // tree.markApproved(transition);
 
     trip = new TripBuilder()
         .withLocalDate(LocalDate.parse("2018-7-25"))
@@ -92,6 +92,6 @@ public class DebugInjector extends Thread {
         .withLayover("BTV", Period.hours(13))
         .withLeg("BTV", "CLT", Period.hours(3))
         .build();
-    queue.offer(trip);
+    // queue.offer(trip);
   }
 }
