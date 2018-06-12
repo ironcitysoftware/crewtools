@@ -124,6 +124,9 @@ public class Worker extends Thread {
       }
 
       for (Trip scheduledTrip : overlap.droppable) {
+        if (trip.equals(scheduledTrip)) {
+          continue;
+        }
         if (!wrapper.meetsMinimumCredit(scheduledTrip.getPairingKey(), trip, yearMonth)) {
           logger.info("Unable to swap with scheduled trip " 
               + scheduledTrip.getPairingName() + " due to MinCredit");
@@ -167,9 +170,7 @@ public class Worker extends Thread {
               logger.info("Swap response parsed.");
             }
             stats.recordSwap(transition.toString());
-            logger.info("Stats recorded.");
             add(wrapper, transition, wrapper.mutate(ImmutableList.of(trip), drops));
-            logger.info("Transition added.");
             numSwaps++;
           } catch (Throwable e) {
             e.printStackTrace();
