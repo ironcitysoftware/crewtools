@@ -77,21 +77,21 @@ public class DebugInjector extends Thread {
         ImmutableList.of(
             PairingKey.parse("2018-7-24:L2018-07-24")),
         ImmutableList.of(
-            PairingKey.parse("2018-7-10:L7493"),
+            PairingKey.parse("2018-7-17:L7350"),
             PairingKey.parse("2018-7-23:L7462"),
             PairingKey.parse("2018-7-30:L7630")));
-    // tree.markApproved(transition);
+    tree.markApproved(transition);
 
     trip = new TripBuilder()
         .withLocalDate(LocalDate.parse("2018-7-25"))
-        .withLeg("CLT", "FAY", Period.hours(6))
-        .withLayover("FAY", Period.hours(15))
-        .withLeg("FAY", "GSP", Period.hours(6))
-        .withLayover("CHS", Period.hours(12))
+        .withLeg("CLT", "GSP", Period.hours(6))
+        .withLayover("GSP", Period.hours(15))
+        .withLeg("GSP", "GSP", Period.hours(6))
+        .withLayover("GSP", Period.hours(12))
         .withLeg("GSP", "BTV", Period.hours(6))
         .withLayover("BTV", Period.hours(13))
         .withLeg("BTV", "CLT", Period.hours(3))
         .build();
-    // queue.offer(trip);
+    queue.offer(trip);
   }
 }

@@ -70,7 +70,7 @@ public class ScheduleWrapper {
   private Period baggageCredit;
   
   private static final Period SIXTY_FIVE = Period.hours(65);
- 
+
   public ScheduleWrapper(
       Schedule schedule,
       YearMonth yearMonth,
