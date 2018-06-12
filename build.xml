@@ -126,4 +126,11 @@
     <delete file="${aa-proto.java}" />
     <delete file="${rpc-proto.java}" />
   </target>
+
+  <target name="jar">
+    <delete file="bin/crewtools.jar" />
+    <jar destfile="bin/crewtools.jar" 
+         basedir="bin">
+    </jar>
+  </target>
 </project>
