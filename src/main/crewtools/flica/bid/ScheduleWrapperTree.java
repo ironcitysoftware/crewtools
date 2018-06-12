@@ -153,11 +153,7 @@ public class ScheduleWrapperTree {
   }
   
   void removeAssociatedTransitions(Collection<ScheduleWrapper> wrappers) {
-    for (Entry<Transition, ScheduleWrapper> entry : transitions.entrySet()) {
-      if (wrappers.contains(entry.getValue())) {
-        transitions.remove(entry.getKey());
-      }
-    }
+    transitions.entrySet().removeIf(entry -> wrappers.contains(entry.getValue()));
   }
 
   void removeUnassociatedTransitions(Collection<ScheduleWrapper> wrappers) {
@@ -179,8 +175,8 @@ public class ScheduleWrapperTree {
     }
     logger.info("Transition approved: " + transition);
     ScheduleWrapper survivor = transitions.get(transition);
-    // whereever this node appears as a child, remove all other children.
 
+    // whereever this node appears as a child, remove all other children.
     Set<ScheduleWrapper> toRemove = new HashSet<>();
     for (Map.Entry<ScheduleWrapper, Collection<ScheduleWrapper>> entry : nodes.asMap().entrySet()) {
       if (entry.getValue().contains(survivor) && entry.getValue().size() > 1) {
