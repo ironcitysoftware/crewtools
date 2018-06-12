@@ -143,7 +143,8 @@ public class Worker extends Thread {
           + " (" + potentialNewTrip.getPoints() + ") is better than "
           + scheduledTrip.getPairingName() + " (" + existingTrip.getPoints() + ")");
           logger.info("SWAP!!!! DROP " + scheduledTrip.getPairingName()
-              + " FOR " + trip.getPairingName());
+              + " and any baggage " + wrapper.getBaggage() + " FOR "
+              + trip.getPairingName());
           List<PairingKey> adds = ImmutableList.of(trip.getPairingKey());
           
           List<PairingKey> drops = ImmutableList.<PairingKey>builder()
