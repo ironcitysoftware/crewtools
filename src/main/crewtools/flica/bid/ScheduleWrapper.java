@@ -52,8 +52,7 @@ public class ScheduleWrapper {
   /**
    * Potential opentime trips which overlap this date will be discarded.
    */
-  private static final Set<LocalDate> REQUIRED_DAYS_OFF = ImmutableSet.of(
-  );
+  private final Set<LocalDate> requiredDaysOff;
 
   // subset of schedule
   // only contains future, droppable trips.
@@ -86,6 +85,14 @@ public class ScheduleWrapper {
     this.yearMonth = yearMonth;
     this.clock = clock;
     this.bidConfig = bidConfig;
+
+    // Computes required days off.
+    ImmutableSet.Builder<LocalDate> builder = ImmutableSet.builder();
+    for (int dayOfMonth : bidConfig.getDesiredDayOffList()) {
+      builder.add(yearMonth.toLocalDate(dayOfMonth));
+    }
+    this.requiredDaysOff = builder.build();
+
     populate(schedule, yearMonth);
   }
 
@@ -188,7 +195,7 @@ public class ScheduleWrapper {
       }
 
       // Hard-and-fast days off.
-      if (overlaps(trip.getDepartureDates(), REQUIRED_DAYS_OFF)) {
+      if (overlaps(trip.getDepartureDates(), requiredDaysOff)) {
         overlapsUndroppable = true;
         droppable = ImmutableSet.of();
         return;
