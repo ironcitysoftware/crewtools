@@ -81,5 +81,17 @@ public class DebugInjector extends Thread {
             PairingKey.parse("2018-7-23:L7462"),
             PairingKey.parse("2018-7-30:L7630")));
     tree.markApproved(transition);
+
+    trip = new TripBuilder()
+        .withLocalDate(LocalDate.parse("2018-7-25"))
+        .withLeg("CLT", "FAY", Period.hours(6))
+        .withLayover("FAY", Period.hours(15))
+        .withLeg("FAY", "GSP", Period.hours(6))
+        .withLayover("CHS", Period.hours(12))
+        .withLeg("GSP", "BTV", Period.hours(6))
+        .withLayover("BTV", Period.hours(13))
+        .withLeg("BTV", "CLT", Period.hours(3))
+        .build();
+    queue.offer(trip);
   }
 }

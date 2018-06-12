@@ -77,7 +77,7 @@ public class AutoBidder {
     }));
 
     Clock clock = new SystemClock();
-    ScheduleWrapperTree tree = new ScheduleWrapperTree();
+    ScheduleWrapperTree tree = new ScheduleWrapperTree(bidConfig);
 
     RuntimeStats stats = new RuntimeStats(clock, tree);
 

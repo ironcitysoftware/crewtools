@@ -36,6 +36,7 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 
 import crewtools.flica.pojo.PairingKey;
+import crewtools.rpc.Proto.BidConfig;
 import crewtools.rpc.Proto.ScheduleNode;
 import crewtools.rpc.Proto.Status;
 
@@ -51,6 +52,11 @@ public class ScheduleWrapperTree {
   
   private ScheduleWrapper root;
   private final Set<PairingKey> processedKeys = new HashSet<>();
+  private final BidConfig bidConfig;
+
+  public ScheduleWrapperTree(BidConfig bidConfig) {
+    this.bidConfig = bidConfig;
+  }
   
   public abstract class Visitor {
     public abstract void visit(ScheduleWrapper wrapper);
@@ -175,6 +181,11 @@ public class ScheduleWrapperTree {
     }
     logger.info("Transition approved: " + transition);
     ScheduleWrapper survivor = transitions.get(transition);
+
+    if (bidConfig.getEnableRerootOnApprovedTransition()) {
+      setRootScheduleWrapper(survivor);
+      return;
+    }
 
     // whereever this node appears as a child, remove all other children.
     Set<ScheduleWrapper> toRemove = new HashSet<>();

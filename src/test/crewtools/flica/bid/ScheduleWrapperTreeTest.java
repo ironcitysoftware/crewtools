@@ -71,7 +71,7 @@ public class ScheduleWrapperTreeTest {
 
   @Test
   public void testReRootSameSchedule() throws ParseException {
-    ScheduleWrapperTree tree = new ScheduleWrapperTree();
+    ScheduleWrapperTree tree = new ScheduleWrapperTree(BidConfig.getDefaultInstance());
     ScheduleWrapper wrapper = newScheduleWrapper("test");
     tree.setRootScheduleWrapper(wrapper);
     int oldHash = tree.hashCode();
@@ -81,7 +81,7 @@ public class ScheduleWrapperTreeTest {
   
   @Test
   public void testSingleLevelReRoot() throws ParseException {
-    ScheduleWrapperTree tree = new ScheduleWrapperTree();
+    ScheduleWrapperTree tree = new ScheduleWrapperTree(BidConfig.getDefaultInstance());
     ScheduleWrapper oldRoot = newScheduleWrapper("oldRoot");
     tree.setRootScheduleWrapper(oldRoot);
     ScheduleWrapper left = newScheduleWrapper("leftChild");
@@ -91,14 +91,15 @@ public class ScheduleWrapperTreeTest {
 
     tree.setRootScheduleWrapper(left);
 
-    ScheduleWrapperTree expectedTree = new ScheduleWrapperTree();
+    ScheduleWrapperTree expectedTree = new ScheduleWrapperTree(
+        BidConfig.getDefaultInstance());
     expectedTree.setRootScheduleWrapper(left);
     assertEquals(expectedTree, tree);
   }
 
   @Test
   public void testMultiLevelReRoot() throws ParseException {
-    ScheduleWrapperTree tree = new ScheduleWrapperTree();
+    ScheduleWrapperTree tree = new ScheduleWrapperTree(BidConfig.getDefaultInstance());
     ScheduleWrapper oldRoot = newScheduleWrapper("oldRoot");
     tree.setRootScheduleWrapper(oldRoot);
     ScheduleWrapper left = newScheduleWrapper("leftChild");
@@ -118,7 +119,8 @@ public class ScheduleWrapperTreeTest {
 
     tree.setRootScheduleWrapper(right);
 
-    ScheduleWrapperTree expectedTree = new ScheduleWrapperTree();
+    ScheduleWrapperTree expectedTree = new ScheduleWrapperTree(
+        BidConfig.getDefaultInstance());
     expectedTree.setRootScheduleWrapper(right);
     expectedTree.visit(new Adder(expectedTree, right, rightleft));
     expectedTree.visit(new Adder(expectedTree, right, rightright));

@@ -83,7 +83,7 @@ public class WorkerTest {
     schedule = new ScheduleBuilder().withTrips(firstTrip, secondTrip, thirdTrip).build();
     queue = new ArrayBlockingQueue<>(5);
     service = Mockito.mock(FlicaService.class);
-    tree = new ScheduleWrapperTree();
+    tree = new ScheduleWrapperTree(BidConfig.getDefaultInstance());
     stats = new RuntimeStats(FAKE_CLOCK, tree);
     wrapper = new ScheduleWrapper(
         schedule,
@@ -159,7 +159,8 @@ public class WorkerTest {
         ImmutableList.of(betterTrip.getPairingKey()),
         ImmutableList.of(thirdTrip.getPairingKey()));
     
-    ScheduleWrapperTree expectedTree = new ScheduleWrapperTree();
+    ScheduleWrapperTree expectedTree = new ScheduleWrapperTree(
+        BidConfig.getDefaultInstance());
     expectedTree.setRootScheduleWrapper(newWrapper);
     assertEquals(expectedTree, tree);
   }
