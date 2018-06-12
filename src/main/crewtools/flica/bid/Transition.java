@@ -19,6 +19,8 @@
 
 package crewtools.flica.bid;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -29,8 +31,10 @@ public class Transition {
   private final List<PairingKey> dropTrips;
   
   public Transition(List<PairingKey> addTrips, List<PairingKey> dropTrips) {
-    this.addTrips = addTrips;
-    this.dropTrips = dropTrips;
+    this.addTrips = new ArrayList<>(addTrips);
+    this.dropTrips = new ArrayList<>(dropTrips);
+    Collections.sort(this.addTrips);
+    Collections.sort(this.dropTrips);
   }
   
   @Override
@@ -47,13 +51,12 @@ public class Transition {
       return false;
     }
     Transition that = (Transition) o;
-    return Objects.equals(addTrips, that.addTrips)
-        && Objects.equals(dropTrips, that.dropTrips);
+    return addTrips.equals(that.addTrips)
+        && dropTrips.equals(that.dropTrips);
   }
 
   @Override
   public String toString() {
     return String.format("Add %s; Drop %s", addTrips, dropTrips);
   }
-
 }
