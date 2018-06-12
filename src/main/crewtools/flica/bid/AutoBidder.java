@@ -98,7 +98,7 @@ public class AutoBidder {
     worker.start();
 
     if (cmdLine.isDebug()) {
-      DebugTripProvider debugTripProvider = new DebugTripProvider(queue);
+      DebugInjector debugTripProvider = new DebugInjector(queue, tree);
       debugTripProvider.start();
       return;
     }
