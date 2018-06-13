@@ -67,7 +67,7 @@ public abstract class PeriodicDaemonThread extends Thread {
     int numFailures = 0;
 
     while (true) {
-      if (doPeriodicWork()) {
+      if (!doPeriodicWork()) {
         safeSleep(prefix, FAILURE_DURATION);
         numFailures++;
         if (numFailures < getMaximumNumFailuresBeforeSleeping()) {

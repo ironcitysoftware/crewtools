@@ -78,6 +78,10 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
     logger.info("Refreshing opentime");
     try {
       List<PairingKey> trips = getOpentimeTrips(service, yearMonth, cmdLine.getRound());
+      if (trips == null) {
+        logger.info("Opentime not yet published");
+        return false;
+      }
       for (PairingKey tripKey : trips) {
         Trip trip = tripDatabase.getTrip(tripKey);
         logger.info("Adding " + tripKey + " from opentime refresh");
@@ -106,6 +110,9 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
     OpenTimeParser openTimeParser = new OpenTimeParser(
         yearMonth.getYear(), rawOpenTime);
     List<FlicaTask> tasks = openTimeParser.parse();
+    if (!openTimeParser.isPublished()) {
+      return null;
+    }
     List<PairingKey> openTimeTrips = new ArrayList<>();
     for (FlicaTask task : tasks) {
       openTimeTrips.add(new PairingKey(task.pairingDate, task.pairingName));
