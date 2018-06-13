@@ -34,6 +34,11 @@ public abstract class PeriodicDaemonThread extends Thread {
   private final Duration interval;
   private final AtomicBoolean initialRunComplete;
   
+  public enum WorkResult {
+    COMPLETE,
+    INCOMPLETE
+  }
+
   public PeriodicDaemonThread(Duration initialDelay, Duration interval) {
     this.initialDelay = initialDelay;
     this.interval = interval;
@@ -67,7 +72,7 @@ public abstract class PeriodicDaemonThread extends Thread {
     int numFailures = 0;
 
     while (true) {
-      if (!doPeriodicWork()) {
+      if (doPeriodicWork() == WorkResult.INCOMPLETE) {
         safeSleep(prefix, FAILURE_DURATION);
         numFailures++;
         if (numFailures < getMaximumNumFailuresBeforeSleeping()) {
@@ -104,8 +109,8 @@ public abstract class PeriodicDaemonThread extends Thread {
   }
 
   /**
-   * Returns true if the work succeeded.
-   * If false is returned, the thread will sleep FAILURE_INTERVAL and retry.
+   * Returns COMPLETE if the work succeeded.
+   * If INCOMPLETE is returned, the thread will sleep FAILURE_INTERVAL and retry.
    */
-  protected abstract boolean doPeriodicWork();
+  protected abstract WorkResult doPeriodicWork();
 }

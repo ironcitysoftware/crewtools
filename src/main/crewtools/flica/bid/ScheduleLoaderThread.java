@@ -58,7 +58,7 @@ public class ScheduleLoaderThread extends PeriodicDaemonThread {
   }
   
   @Override
-  public boolean doPeriodicWork() {
+  public WorkResult doPeriodicWork() {
     logger.info("Refreshing schedule");
     try {
       Schedule schedule = getSchedule(service, yearMonth);
@@ -66,14 +66,14 @@ public class ScheduleLoaderThread extends PeriodicDaemonThread {
       ScheduleWrapper scheduleWrapper = new ScheduleWrapper(
           schedule, yearMonth, new SystemClock(), bidConfig);
       tree.setRootScheduleWrapper(scheduleWrapper);
-      return true;
+      return WorkResult.COMPLETE;
     } catch (Exception e) {
       if (shouldDebug(e)) {
         e.printStackTrace();
         logger.log(Level.WARNING, "Unable to refresh schedule", e);
       }
       logger.warning(e.toString());
-      return false;
+      return WorkResult.INCOMPLETE;
     }
   }
 

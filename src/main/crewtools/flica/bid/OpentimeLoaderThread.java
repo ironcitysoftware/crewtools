@@ -74,13 +74,13 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
   }
 
   @Override
-  public boolean doPeriodicWork() {
+  public WorkResult doPeriodicWork() {
     logger.info("Refreshing opentime");
     try {
       List<PairingKey> trips = getOpentimeTrips(service, yearMonth, cmdLine.getRound());
       if (trips == null) {
         logger.info("Opentime not yet published");
-        return false;
+        return WorkResult.INCOMPLETE;
       }
       for (PairingKey tripKey : trips) {
         Trip trip = tripDatabase.getTrip(tripKey);
@@ -88,12 +88,12 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
         stats.incrementOpentimeTrip();
         queue.add(trip);
       }
-      return true;
+      return WorkResult.COMPLETE;
     } catch (URISyntaxException | IOException | ParseException e) {
       logger.severe(e.getMessage());
       e.printStackTrace();
       logger.log(Level.SEVERE, "Error refreshing opentime", e);
-      return false;
+      return WorkResult.INCOMPLETE;
     }
   }
 
