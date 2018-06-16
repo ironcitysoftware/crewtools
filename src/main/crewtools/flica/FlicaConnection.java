@@ -166,7 +166,7 @@ public class FlicaConnection {
   }
 
   public void disconnect() throws IOException {
-    retrieveUrl(FLICA_LOGOUT_URL);    
+    retrieveUrl(FLICA_LOGOUT_URL);
   }
   
   private ResponseBody retrieveUrlInternal(HttpUrl url) throws IOException {
