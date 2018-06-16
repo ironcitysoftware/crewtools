@@ -38,7 +38,7 @@ public class Dashboard {
   Dashboard(Clock clock, FlightInfo currentFlight,
       FlightInfo nextFlight) {
     this.clock = clock;
-    this.retrievedTime = clock.now().minusHours(1);
+    this.retrievedTime = clock.now();
     this.currentFlight = currentFlight;
     this.nextFlight = nextFlight;
     this.flights = new ArrayList<>();
