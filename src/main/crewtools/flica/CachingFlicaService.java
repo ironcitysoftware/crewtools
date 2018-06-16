@@ -26,7 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.logging.Logger;
 
-import org.apache.http.client.ClientProtocolException;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
@@ -61,7 +60,7 @@ public class CachingFlicaService extends FlicaService {
   @Override
   public String getBidAward(final AwardDomicile domicile, final Rank rank,
       final int round, final YearMonth yearMonth)
-      throws ClientProtocolException, IOException {
+      throws IOException {
     File file = new File(DIR, "get-bid-award-" + domicile + rank + round + yearMonth + ".txt");
     if (file.exists()) {
       return Files.toString(file, StandardCharsets.UTF_8);
@@ -74,7 +73,7 @@ public class CachingFlicaService extends FlicaService {
   }
 
   @Override
-  public String getSchedule(YearMonth yearMonth) throws ClientProtocolException, IOException {
+  public String getSchedule(YearMonth yearMonth) throws IOException {
     File file = new File(DIR, "schedule-" + yearMonth + ".txt");
     if (file.exists()) {
       return Files.toString(file, StandardCharsets.UTF_8);
@@ -88,7 +87,7 @@ public class CachingFlicaService extends FlicaService {
 
   @Override
   public String getAllPairings(AwardDomicile domicile, Rank rank, int round, YearMonth yearMonth)
-      throws ClientProtocolException, IOException, URISyntaxException {
+      throws IOException, URISyntaxException {
     File file = new File(DIR, "all-pairings-" + domicile + rank + round + yearMonth + ".txt");
     if (file.exists()) {
       return Files.toString(file, StandardCharsets.UTF_8);
@@ -102,7 +101,7 @@ public class CachingFlicaService extends FlicaService {
 
   @Override
   public String getAllLines(AwardDomicile domicile, Rank rank, 
-      int round, YearMonth yearMonth) throws URISyntaxException, ClientProtocolException, IOException {
+      int round, YearMonth yearMonth) throws URISyntaxException, IOException {
     File file = new File(DIR, "all-lines-" + domicile + rank + round + yearMonth + ".txt");
     if (file.exists()) {
       return Files.toString(file, StandardCharsets.UTF_8);
@@ -116,7 +115,7 @@ public class CachingFlicaService extends FlicaService {
 
   @Override
   public String getOpenTime(AwardDomicile domicile, Rank rank, 
-      int round, YearMonth yearMonth) throws URISyntaxException, ClientProtocolException, IOException {
+      int round, YearMonth yearMonth) throws URISyntaxException, IOException {
     File file = new File(DIR, "opentime-" + domicile + rank + round + yearMonth + ".txt");
     if (file.exists()) {
       return Files.toString(file, StandardCharsets.UTF_8);
@@ -129,7 +128,8 @@ public class CachingFlicaService extends FlicaService {
   }
 
   @Override
-  public String getPairingDetail(String pairingName, LocalDate date) throws URISyntaxException, ClientProtocolException, IOException {
+  public String getPairingDetail(String pairingName, LocalDate date)
+      throws URISyntaxException, IOException {
     File file = new File(DIR, "pairing-detail-" + pairingName + date + ".txt");
     if (file.exists()) {
       return Files.toString(file, StandardCharsets.UTF_8);
@@ -143,7 +143,7 @@ public class CachingFlicaService extends FlicaService {
 
   @Override
   public String getReserveGrid(AwardDomicile awardDomicile, Rank rank,
-      int round, YearMonth yearMonth) throws URISyntaxException, ClientProtocolException, IOException {
+      int round, YearMonth yearMonth) throws URISyntaxException, IOException {
     File file = new File(DIR, "reserve-grid-" + awardDomicile + rank + round + yearMonth + ".txt");
     if (file.exists()) {
       return Files.toString(file, StandardCharsets.UTF_8);
@@ -157,14 +157,14 @@ public class CachingFlicaService extends FlicaService {
   
   @Override
   public String submitLineBid(int round, YearMonth yearMonth,
-      List<String> lines) throws URISyntaxException, ClientProtocolException, IOException {
+      List<String> lines) throws URISyntaxException, IOException {
     connectIfNecessary();
     return super.submitLineBid(round, yearMonth, lines);
   }
 
   @Override
   public String getOpentimeRequests(int round, YearMonth yearMonth)
-      throws URISyntaxException, ClientProtocolException, IOException {
+      throws URISyntaxException, IOException {
     File file = new File(DIR, "swap-requests-" + round + yearMonth + ".txt");
     if (file.exists()) {
       return Files.toString(file, StandardCharsets.UTF_8);
@@ -180,7 +180,7 @@ public class CachingFlicaService extends FlicaService {
   public byte[] getDocument(AwardDomicile awardDomicile, Rank rank,
       int round, YearMonth yearMonth,
       int documentId, String title)
-          throws URISyntaxException, ClientProtocolException, IOException {
+      throws URISyntaxException, IOException {
     File file = new File(DIR, "document-" + awardDomicile + rank + 
         round + yearMonth + documentId + title + ".txt");
     if (file.exists()) {

@@ -635,7 +635,7 @@ public class JsonFormat {
 
     @SuppressWarnings("rawtypes")
     private void printRepeatedFieldValue(FieldDescriptor field, Object value) throws IOException {
-      generator.print("[ ");  // KRW match format with space
+      generator.print("[ ");  // match format with space
       boolean printedElement = false;
       for (Object element : (List) value) {
         if (printedElement) {
@@ -646,9 +646,9 @@ public class JsonFormat {
         printSingleFieldValue(field, element);
       }
       if (printedElement) {
-        generator.print(" ");  // KRW match format with space
+        generator.print(" ");  // match format with space
       }
-      generator.print("]");  // KRW match format with space
+      generator.print("]");  // match format with space
     }
 
     private void printSingleFieldValue(FieldDescriptor field, Object value) throws IOException {

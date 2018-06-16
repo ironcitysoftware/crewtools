@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import org.apache.http.client.ClientProtocolException;
 import org.joda.time.YearMonth;
 
 import crewtools.flica.AwardDomicile;
@@ -75,7 +74,8 @@ public class TripDatabase {
     );
   }
   
-  public Trip getTrip(PairingKey key) throws ClientProtocolException, URISyntaxException, IOException, ParseException {
+  public Trip getTrip(PairingKey key)
+      throws URISyntaxException, IOException, ParseException {
     if (!trips.containsKey(key)) {
       Trip trip = getIndividualPairingDetails(key);
       trips.put(key, trip);
@@ -111,7 +111,8 @@ public class TripDatabase {
     return trips;
   }
   
-  private Trip getIndividualPairingDetails(PairingKey key) throws ClientProtocolException, URISyntaxException, IOException, ParseException {
+  private Trip getIndividualPairingDetails(PairingKey key)
+      throws URISyntaxException, IOException, ParseException {
     String rawPairingDetail = service.getPairingDetail(key.getPairingName(), key.getPairingDate());
     IndividualPairingParser parser = new IndividualPairingParser(key, rawPairingDetail);
     PairingAdapter pairingAdapter = new PairingAdapter();

@@ -32,8 +32,8 @@
   <path id="main-classpath">
     <path location="lib/gson-2.8.0.jar" />
     <path location="lib/guava-21.0.jar" />
-    <path location="lib/httpclient-4.5.3.jar" />
-    <path location="lib/httpcore-4.4.6.jar" />
+    <path location="lib/okhttp-3.10.0.jar" />
+    <path location="lib/okio-1.14.1.jar" />
     <path location="lib/javax.mail.jar" />
     <path location="lib/joda-time-2.2.jar" />
     <path location="lib/jsoup-1.10.2.jar" />
@@ -93,12 +93,12 @@
 
   <target name="build" depends="build-flica-proto,build-aa-proto,build-rpc-proto">
     <mkdir dir="${bin}" />
-    <javac srcdir="src/main" includes="**" destdir="${bin}" includeantruntime="false" >
+    <javac srcdir="src/main" includes="**" destdir="${bin}" includeantruntime="false" debug="true" >
       <classpath>
         <path refid="main-classpath"/>
       </classpath>
     </javac>
-    <javac srcdir="src/test" includes="**" destdir="${bin}" includeantruntime="false" >
+    <javac srcdir="src/test" includes="**" destdir="${bin}" includeantruntime="false" debug="true" >
       <classpath>
         <path refid="test-classpath"/>
       </classpath>

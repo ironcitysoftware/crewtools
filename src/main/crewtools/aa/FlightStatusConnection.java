@@ -22,73 +22,53 @@ package crewtools.aa;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-import org.apache.http.HttpRequest;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.CookieStore;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultRedirectStrategy;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
+import crewtools.util.SimpleCookieJar;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 public class FlightStatusConnection {
   private final Logger logger = Logger.getLogger(FlightStatusConnection.class.getName());
 
-  private final CookieStore cookieStore;
-  private final CloseableHttpClient httpclient;
   private final Authenticator authenticator;
   private final DeviceIdFactory deviceIdGenerator;
   private final UserAgentFactory userAgentFactory;
+  private final OkHttpClient httpclient;
+  private final SimpleCookieJar cookieJar = new SimpleCookieJar();
 
   private static final String ACCEPT_HEADER =
       "application/vnd.aa.mobile.app+json;version=31.0";
 
-  private static class DisableRedirectStrategy extends DefaultRedirectStrategy {
-    @Override
-    protected boolean isRedirectable(final String method) {
-      return false;
-    }
-  }
-
   public FlightStatusConnection(UniqueIdProvider uniqueIdProvider) {
-    this.cookieStore = new BasicCookieStore();
-    this.userAgentFactory = new UserAgentFactory();
-    this.httpclient = HttpClients.custom()
-        .setDefaultCookieStore(cookieStore)
-        .setUserAgent(userAgentFactory.getUserAgent())
-        .setDefaultRequestConfig(RequestConfig.custom()
-            .setCookieSpec(CookieSpecs.STANDARD)
-            .build())
-        .setRedirectStrategy(new DisableRedirectStrategy())
+    this.httpclient = new OkHttpClient().newBuilder()
+        .followRedirects(false)
+        .followSslRedirects(false)
+        .cookieJar(cookieJar)
         .build();
+    this.userAgentFactory = new UserAgentFactory();
     this.authenticator = new Authenticator();
     this.deviceIdGenerator = new DeviceIdFactory(uniqueIdProvider);
   }
 
-  void addStandardHeaders(HttpRequest request) {
+  void addStandardHeaders(Request.Builder request) {
     long currentMillis = System.currentTimeMillis();
     String deviceId = deviceIdGenerator.getDeviceId();
-    request.setHeader("accept", ACCEPT_HEADER);
-    request.setHeader("Version", UserAgentFactory.AA_APP_VERSION);
-    request.setHeader("Auth-Token",
+    request.header("accept", ACCEPT_HEADER);
+    request.header("Version", UserAgentFactory.AA_APP_VERSION);
+    request.header("Auth-Token",
         authenticator.getAuthToken(currentMillis, deviceId));
-    request.setHeader("Device-ID", deviceId);
-    request.setHeader("Timestamp", Long.toString(currentMillis));
+    request.header("Device-ID", deviceId);
+    request.header("Timestamp", Long.toString(currentMillis));
+    request.header("User-Agent", userAgentFactory.getUserAgent());
   }
 
-  public String retrieveUrl(String url) throws ClientProtocolException, IOException {
-    HttpGet httpGet = new HttpGet(url);
-    addStandardHeaders(httpGet);
-    CloseableHttpResponse response = httpclient.execute(httpGet);
-    try {
-      return EntityUtils.toString(response.getEntity());
-    } finally {
-      response.close();
-    }
+  public String retrieveUrl(HttpUrl url) throws IOException {
+    Request.Builder request = new Request.Builder()
+        .url(url);
+    addStandardHeaders(request);
+    Response response = httpclient.newCall(request.build()).execute();
+    return response.body().string();
   }
 }
 

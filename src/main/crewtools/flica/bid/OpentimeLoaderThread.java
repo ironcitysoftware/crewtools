@@ -27,7 +27,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.http.client.ClientProtocolException;
 import org.joda.time.Duration;
 import org.joda.time.YearMonth;
 
@@ -104,7 +103,7 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
   }
 
   private List<PairingKey> getOpentimeTrips(FlicaService service, YearMonth yearMonth,
-      int round) throws ClientProtocolException, URISyntaxException, IOException, ParseException {
+      int round) throws URISyntaxException, IOException, ParseException {
     String rawOpenTime = service.getOpenTime(
         AwardDomicile.CLT, Rank.FIRST_OFFICER, round, yearMonth);
     OpenTimeParser openTimeParser = new OpenTimeParser(

@@ -164,9 +164,10 @@ public class PairingAdapter {
       // If the plane leaves in < 45 minutes, you don't get paid extra.
 
       // verify local duty end time
-      DateTime startDuty = null;
-      DateTime endDuty = null;
-      if (protoSection.getLegCount() > 0) {
+      DateTime startDuty = timeHelper.getLocalDutyStartDateTime(protoSection,
+          currentDate);
+      DateTime endDuty = timeHelper.getLocalDutyEndDateTime(protoSection, currentDate);
+      if (!legs.isEmpty()) {
         Leg lastLeg = legs.get(legs.size() - 1);
         LocalTime calculatedLocalDutyEndTime = lastLeg.getArrivalLocalTime();
 
@@ -184,8 +185,6 @@ public class PairingAdapter {
         }
 
         // calculate section duty stats
-        startDuty = timeHelper.getLocalDutyStartDateTime(protoSection, currentDate);
-        endDuty = timeHelper.getLocalDutyEndDateTime(protoSection, currentDate);
         sectionStats.duty = new Period(startDuty, endDuty);
       }
 
@@ -242,7 +241,7 @@ public class PairingAdapter {
 
   void verifyPeriod(String description, Period calculatedValue, Period protoValue) {
     if (!calculatedValue.equals(protoValue)) {
-      logger.warning(String.format("%s: calculated %s but proto was %s",
+      logger.fine(String.format("%s: calculated %s but proto was %s",
           description, calculatedValue, protoValue));
     }
   }
@@ -250,7 +249,7 @@ public class PairingAdapter {
   void verifyPeriodGreaterThanOrEquals(String description, Period first, Period second) {
     // TODO to be precise we need to convert to a duration
     if (first.compareTo(second) < 0) {
-        logger.warning(String.format("%s: expected %s >= %s",
+      logger.fine(String.format("%s: expected %s >= %s",
             description, second, first));
     }
   }
@@ -332,7 +331,8 @@ public class PairingAdapter {
       // Training legs are worth 3.75 hours
       if (leg.getLegType().equals(LegType.TRAINING_LEG)) {
         verifyPeriod("training leg block", legBlock, CONTRACTUAL_TRAINING_LEG_BLOCK_PERIOD);
-      } else if (!leg.getLegType().equals(LegType.STANDBY_2)) {
+      } else if (!leg.getLegType().equals(LegType.STANDBY_2)
+          && !leg.getGroundDuration().equals("DIS")) {
         verifyPeriod(prefix + " leg block", calculatedBlock, legBlock);
       }
     } else {

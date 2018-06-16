@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import org.apache.http.client.ClientProtocolException;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
@@ -128,7 +127,8 @@ public class SubmitSapBid {
     return openTimeTrips;
   }
   
-  private Schedule getSchedule(FlicaService service, YearMonth yearMonth) throws ClientProtocolException, IOException, ParseException {
+  private Schedule getSchedule(FlicaService service, YearMonth yearMonth)
+      throws IOException, ParseException {
     String rawSchedule = service.getSchedule(yearMonth);
     ScheduleParser scheduleParser = new ScheduleParser(rawSchedule);
     Proto.Schedule protoSchedule = scheduleParser.parse();

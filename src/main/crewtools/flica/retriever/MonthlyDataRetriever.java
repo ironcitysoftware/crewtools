@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.logging.Logger;
 
-import org.apache.http.client.ClientProtocolException;
 import org.joda.time.YearMonth;
 
 import crewtools.flica.AwardDomicile;
@@ -76,7 +75,7 @@ public class MonthlyDataRetriever {
   }
 
   private void getLinesForAllDomiciles(FlicaService service)
-      throws ParseException, ClientProtocolException, URISyntaxException, IOException {
+      throws ParseException, URISyntaxException, IOException {
     for (AwardDomicile awardDomicile : AwardDomicile.values()) {
       File outputFile = new File(dataReader.getLineFilename(yearMonth, awardDomicile));
       if (outputFile.exists()) {
@@ -94,7 +93,7 @@ public class MonthlyDataRetriever {
   }
 
   private void getPairingsForAllDomiciles(FlicaService service)
-      throws ClientProtocolException, IOException, URISyntaxException, ParseException {
+      throws IOException, URISyntaxException, ParseException {
     for (AwardDomicile awardDomicile : AwardDomicile.values()) {
       File outputFile = new File(dataReader.getPairingFilename(yearMonth, awardDomicile));
       if (outputFile.exists()) {

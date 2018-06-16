@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import org.apache.http.client.ClientProtocolException;
 import org.joda.time.DateTime;
 import org.joda.time.ReadableInstant;
 
@@ -94,7 +93,7 @@ public class LegSelector {
   }
 
   public Leg getNextLeg(ScheduleProvider scheduleProvider)
-      throws ClientProtocolException, IOException, ParseException {
+      throws IOException, ParseException {
     DateTime now = clock.now();
     Schedule schedule = scheduleProvider.getCurrentMonthSchedule();
     for (Leg leg : schedule) {
@@ -114,7 +113,7 @@ public class LegSelector {
   }
 
   public Leg getPreviousLeg(ScheduleProvider scheduleProvider)
-      throws ClientProtocolException, IOException, ParseException {
+      throws IOException, ParseException {
     DateTime now = clock.now();
     Schedule schedule = scheduleProvider.getCurrentMonthSchedule();
     Iterator<Leg> iterator = schedule.reverseIterator();

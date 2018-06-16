@@ -305,6 +305,18 @@ message ThinLineList {
   optional string year_month = 2;  // 2017-04
 }
 
+// Cookie serialization.
+
+message Session {
+  repeated Cookie cookie = 1;
+  optional int64 creation_time_millis = 2;
+}
+
+message Cookie {
+  optional string name = 1;
+  optional string value = 2;
+}
+
 // Seniority list
 
 message SeniorityList {

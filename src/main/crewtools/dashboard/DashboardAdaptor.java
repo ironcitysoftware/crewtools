@@ -22,114 +22,162 @@ package crewtools.dashboard;
 import java.util.List;
 
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.Interval;
+import org.joda.time.Hours;
 import org.joda.time.Minutes;
-import org.joda.time.Period;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 
+import crewtools.aa.Proto;
+import crewtools.aa.Proto.AirportInfo;
 import crewtools.aa.Proto.FisFlightStatus;
-import crewtools.aa.Proto.Flight;
 import crewtools.aa.Proto.FlightStatusResponse;
 import crewtools.aa.Proto.PriorLegFlightInfo;
 import crewtools.flica.pojo.Leg;
+import crewtools.util.Clock;
 
 public class DashboardAdaptor {
   private static final Minutes SHOW_TIME_PRIOR_TO_DEPARTURE_MINUTES = Minutes.minutes(45);
-  private static final DateTimeZone EASTERN_TIMEZONE = DateTimeZone
-      .forID("America/New_York");
+  private static final Hours PREVIOUS_FLIGHT_EXPIRY = Hours.hours(6);
 
-  public Dashboard adapt(DateTime now, Leg currentLeg, FlightStatusResponse currentFlight,
+  public Dashboard adapt(
+      Clock clock,
+      Leg currentLeg,
+      FlightStatusResponse currentFlightStatusResponse,
       Leg nextLeg,
-      FlightStatusResponse nextFlight) {
-    FlightInfo currentFlightInfo = buildFlightInfo(now, currentLeg, currentFlight);
-    FlightInfo nextFlightInfo = buildFlightInfo(now, nextLeg, nextFlight);
-    return new Dashboard(now, getZulu(now), currentFlightInfo, nextFlightInfo);
+      FlightStatusResponse nextFlightStatusResponse) {
+    Proto.Flight currentFlight = getFlight(currentLeg, currentFlightStatusResponse);
+    Flight currentFlightPojo = new Flight(currentFlight);
+    if (currentFlightPojo.hasActualArrivalTime()
+        && currentFlightPojo.getActualArrivalTime()
+            .isBefore(clock.now().minus(PREVIOUS_FLIGHT_EXPIRY))) {
+      // Previous flight is old enough that we don't care about it.
+      currentLeg = null;
+      currentFlightStatusResponse = null;
+      currentFlight = null;
+    }
+    Proto.Flight nextFlight = getFlight(nextLeg, nextFlightStatusResponse);
+    TimeInfo currentFlightTimeInfo = buildCurrentFlightTimeInfo(clock, currentLeg,
+        currentFlight);
+    TimeInfo nextFlightTimeInfo = buildNextFlightTimeInfo(clock, currentLeg, nextLeg,
+        currentFlight, nextFlight);
+    FlightInfo currentFlightInfo = buildFlightInfo(currentFlightTimeInfo, currentFlight);
+    FlightInfo nextFlightInfo = buildFlightInfo(nextFlightTimeInfo, nextFlight);
+    return new Dashboard(clock.now(), currentFlightInfo, nextFlightInfo);
   }
 
-  private FlightInfo buildFlightInfo(DateTime now, Leg leg,
-      FlightStatusResponse statusWrapper) {
-    if (statusWrapper == null) {
+  private Proto.Flight getFlight(Leg leg, FlightStatusResponse flightStatusResponse) {
+    if (flightStatusResponse == null) {
       return null;
     }
-    if (!statusWrapper.hasFisFlightStatus()) {
+    if (!flightStatusResponse.hasFisFlightStatus()) {
       return null;
     }
-    FisFlightStatus status = statusWrapper.getFisFlightStatus();
+    FisFlightStatus status = flightStatusResponse.getFisFlightStatus();
     if (status.getFlightCount() > 1 && leg == null) {
       return null;
     }
-    Flight flight = status.getFlightCount() == 1
+    return status.getFlightCount() == 1
         ? status.getFlight(0)
         : findFlight(leg, status.getFlightList());
-    TimeInfo timeInfo = buildTimeInfo(now, leg, flight);
+  }
+
+  private FlightInfo buildFlightInfo(TimeInfo timeInfo, Proto.Flight flight) {
+    if (flight == null) {
+      return null;
+    }
     return new FlightInfo(
+        String.format("JIA%s", flight.getFlightNumber()),
         flight.getOriginAirportCode(),
-        flight.getFlightStatus().getOriginInfo().getGate(),
+        getGate(flight.getFlightStatus().getOriginInfo()),
         flight.getDestinationAirportCode(),
-        flight.getFlightStatus().getDestinationInfo().getGate(),
+        getGate(flight.getFlightStatus().getDestinationInfo()),
         getShortAircraftType(flight.getAircraftType()),
+        flight.getFlightStatus().getCancelled(),
         timeInfo);
   }
 
-  private TimeInfo buildTimeInfo(DateTime now, Leg leg, Flight flight) {
+  private String getGate(AirportInfo info) {
+    if (info.hasTerminal()) {
+      return String.format("%s/%s", info.getTerminal(), info.getGate());
+    } else {
+      return info.getGate();
+    }
+  }
+
+  private TimeInfo buildCurrentFlightTimeInfo(Clock clock, Leg leg,
+      Proto.Flight protoFlight) {
+    if (protoFlight == null) {
+      return null;
+    }
     // Company show time is FLICA departure time minus 45 minutes.
     DateTime companyShow = leg.getDepartureTime()
         .minus(SHOW_TIME_PRIOR_TO_DEPARTURE_MINUTES);
 
-    // Actual departure time.
-    // System.out.println("KRW " + flight);
-
-    // Estimated show time is inbound arrival minus 45 minutes.
-    if (flight.hasPriorLegFlightInfo()) {
-      PriorLegFlightInfo prior = flight.getPriorLegFlightInfo();
+    // Estimated show time is inbound arrival.
+    DateTime estimatedShow = null;
+    if (protoFlight.hasPriorLegFlightInfo()) {
+      PriorLegFlightInfo prior = protoFlight.getPriorLegFlightInfo();
       String stringTime = prior.hasArrivalActualTime()
           && !prior.getArrivalActualTime().isEmpty()
-          ? prior.getArrivalActualTime()
-          : prior.getArrivalEstimatedTime();
-      // TODO: I believe the times are always local, but the zone is always Eastern.
-      // Check this out.
-      DateTime Time = DateTime.parse(stringTime).withZoneRetainFields(EASTERN_TIMEZONE);
+              ? prior.getArrivalActualTime()
+              : prior.getArrivalEstimatedTime();
+      DateTime inboundArrival = DateTime.parse(stringTime);
+      if (inboundArrival.isAfter(companyShow)) {
+        estimatedShow = inboundArrival;
+      }
     }
-
+    
+    Flight flight = new Flight(protoFlight);
     return new TimeInfo(
-        companyShow.isBefore(now) ? "" : getPrettyOffset(now, companyShow),
-        companyShow.isBefore(now) ? "" : getZulu(companyShow),
-        "",
-        "");
+        clock,
+        companyShow,
+        estimatedShow,
+        flight.getScheduledDepartureTime(),
+        flight.hasActualDepartureTime() ? flight.getActualDepartureTime() : null,
+        flight.getScheduledArrivalTime(),
+        flight.hasActualArrivalTime() ? flight.getActualArrivalTime() : null);
   }
 
-  private DateTimeFormatter HH_COLON_MM = DateTimeFormat.forPattern("HH:mm");
-
-  private String getZulu(DateTime dateTime) {
-    return HH_COLON_MM.print(dateTime.withZone(DateTimeZone.UTC)) + "Z";
-  }
-
-  private String getPrettyOffset(DateTime now, DateTime then) {
-    Interval interval = new Interval(now, then);
-    Period period = interval.toPeriod();
-    int hours = period.getHours() + 24 * period.getDays();
-    int minutes = period.getMinutes();
-    if (hours > 0) {
-      return String.format("%s%dh%dm",
-          then.isBefore(now) ? "-" : "",
-          hours,
-          minutes);
-    } else {
-      return String.format("%s%dm",
-          then.isBefore(now) ? "-" : "",
-          minutes);
+  private TimeInfo buildNextFlightTimeInfo(Clock clock, Leg currentLeg, Leg nextLeg,
+      Proto.Flight currentFlight, Proto.Flight nextFlight) {
+    if (nextFlight == null) {
+      return null;
     }
+    // Company show time is FLICA departure time minus 45 minutes.
+    DateTime companyShow = nextLeg.getDepartureTime()
+        .minus(SHOW_TIME_PRIOR_TO_DEPARTURE_MINUTES);
+
+    // Estimated show time is inbound arrival.
+    DateTime estimatedShow = null;
+    if (nextFlight.hasPriorLegFlightInfo()) {
+      PriorLegFlightInfo prior = nextFlight.getPriorLegFlightInfo();
+      String stringTime = prior.hasArrivalActualTime()
+          && !prior.getArrivalActualTime().isEmpty()
+              ? prior.getArrivalActualTime()
+              : prior.getArrivalEstimatedTime();
+      DateTime inboundArrival = DateTime.parse(stringTime);
+      if (inboundArrival.isAfter(companyShow)) {
+        estimatedShow = inboundArrival;
+      }
+    }
+
+    Flight flight = new Flight(nextFlight);
+    return new TimeInfo(
+        clock,
+        companyShow,
+        estimatedShow,
+        flight.getScheduledDepartureTime(),
+        flight.hasActualDepartureTime() ? flight.getActualDepartureTime() : null,
+        flight.getScheduledArrivalTime(),
+        flight.hasActualArrivalTime() ? flight.getActualArrivalTime() : null);
   }
+
 
   /**
    * FisFlightStatus will have multiple flights if the same flight number
    * is used for the flight both to and from the outstation, for example.
    * Matches origin/destination to select the right one.
    */
-  private Flight findFlight(Leg leg, List<Flight> flights) {
-    for (Flight flight : flights) {
+  private Proto.Flight findFlight(Leg leg, List<Proto.Flight> flights) {
+    for (Proto.Flight flight : flights) {
       if (flight.getOriginAirportCode().equals(leg.getDepartureAirportCode())
           && flight.getDestinationAirportCode().equals(leg.getArrivalAirportCode())) {
         return flight;
@@ -144,6 +192,8 @@ public class DashboardAdaptor {
         return "RJ9";
       case "Canadair Regional Jet 700":
         return "RJ7";
+      case "Canadair Regional Jet":
+        return "RJ2";
       default:
         return longAircraftType;
     }

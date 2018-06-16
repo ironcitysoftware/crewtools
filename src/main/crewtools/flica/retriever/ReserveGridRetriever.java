@@ -33,7 +33,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import crewtools.flica.AwardDomicile;
-import crewtools.flica.CachingFlicaService;
 import crewtools.flica.FlicaConnection;
 import crewtools.flica.FlicaService;
 import crewtools.flica.Proto.Rank;

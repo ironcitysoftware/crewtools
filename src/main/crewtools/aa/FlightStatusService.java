@@ -21,12 +21,12 @@ package crewtools.aa;
 
 import java.io.IOException;
 
-import org.apache.http.client.ClientProtocolException;
 import org.joda.time.LocalDate;
 
 import com.google.protobuf.util.JsonFormat;
 
 import crewtools.aa.Proto.FlightStatusResponse;
+import okhttp3.HttpUrl;
 
 public class FlightStatusService {
   private final FlightStatusConnection connection;
@@ -58,13 +58,13 @@ public class FlightStatusService {
 
 
   public FlightStatusResponse getFlightStatus(int flightNumber, LocalDate localDate)
-      throws ClientProtocolException, IOException {
+      throws IOException {
     String url = String.format(FLIGHT_STATUS_URL_FORMAT_SPEC,
         API_VERSION,
         localDate.getMonthOfYear(),
         localDate.getDayOfMonth(),
         flightNumber);
-    String json = connection.retrieveUrl(url);
+    String json = connection.retrieveUrl(HttpUrl.parse(url));
 
     FlightStatusResponse.Builder builder = FlightStatusResponse.newBuilder();
     JsonFormat.parser().merge(json, builder);

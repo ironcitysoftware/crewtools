@@ -69,7 +69,7 @@ public class AutoBidder {
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       try {
         logger.info("Logging out of FLICA");
-        service.logout();
+        connection.disconnect();
         logger.info("Logged out of FLICA");
       } catch (IOException e) {
         logger.log(Level.SEVERE, "Error logging out", e);

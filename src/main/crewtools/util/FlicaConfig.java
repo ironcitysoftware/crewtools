@@ -52,4 +52,8 @@ public class FlicaConfig {
   public String getInterestingEmployeeId() {
     return Preconditions.checkNotNull(props.getProperty("interestingEmployeeId"));
   }
+
+  public String getSessionCacheFile() {
+    return props.getProperty("sessionCacheFile");
+  }
 }

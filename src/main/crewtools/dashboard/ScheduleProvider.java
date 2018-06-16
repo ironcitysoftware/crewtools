@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.http.client.ClientProtocolException;
 import org.joda.time.DateTimeZone;
 import org.joda.time.YearMonth;
 
@@ -51,17 +50,17 @@ public class ScheduleProvider {
   }
 
   public Schedule getPreviousMonthSchedule()
-      throws ClientProtocolException, IOException, ParseException {
+      throws IOException, ParseException {
     return getSchedule(getYearMonthEasternTime().minusMonths(1));
   }
   
   public Schedule getCurrentMonthSchedule()
-      throws ClientProtocolException, IOException, ParseException {
+      throws IOException, ParseException {
     return getSchedule(getYearMonthEasternTime());
   }
 
   public Schedule getNextMonthSchedule()
-      throws ClientProtocolException, IOException, ParseException {
+      throws IOException, ParseException {
     return getSchedule(getYearMonthEasternTime().plusMonths(1));
   }
 
@@ -70,7 +69,7 @@ public class ScheduleProvider {
   }
 
   private Schedule getSchedule(YearMonth yearMonth)
-      throws ClientProtocolException, IOException, ParseException {
+      throws IOException, ParseException {
     if (cache.containsKey(yearMonth)) {
       return cache.get(yearMonth);
     }

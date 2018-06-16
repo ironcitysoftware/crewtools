@@ -45,6 +45,10 @@ public class Leg {
     this.timeUtils = new TimeUtils();
   }
 
+  public String getGroundDuration() {
+    return protoLeg.getGroundDuration();
+  }
+
   public Proto.LegType getLegType() {
     return protoLeg.getLegType();
   }

@@ -21,9 +21,6 @@ package crewtools.dashboard;
 
 import java.io.IOException;
 
-import org.apache.http.client.ClientProtocolException;
-import org.joda.time.DateTime;
-
 import crewtools.aa.FlightStatusService;
 import crewtools.aa.Proto.FlightStatusResponse;
 import crewtools.flica.FlicaService;
@@ -45,8 +42,7 @@ public class DashboardService {
     this.dashboardAdaptor = new DashboardAdaptor();
   }
 
-  public Dashboard getDashboard(Clock clock) throws ClientProtocolException, IOException, ParseException {
-    DateTime now = clock.now();
+  public Dashboard getDashboard(Clock clock) throws IOException, ParseException {
     ScheduleProvider scheduleProvider = new ScheduleProvider(clock, flicaService);
     Schedule currentMonthSchedule = scheduleProvider.getCurrentMonthSchedule();
 
@@ -67,6 +63,6 @@ public class DashboardService {
           nextLeg.getDepartureTime().toLocalDate());
     }
 
-    return dashboardAdaptor.adapt(now, currentLeg, currentFlight, nextLeg, nextFlight);
+    return dashboardAdaptor.adapt(clock, currentLeg, currentFlight, nextLeg, nextFlight);
   }
 }

@@ -19,143 +19,214 @@
 
 package crewtools.flica;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
+import java.net.HttpURLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpStatus;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.CookieStore;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.util.EntityUtils;
+import org.joda.time.DateTime;
+import org.joda.time.Minutes;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Multimap;
+import com.google.common.io.Files;
+import com.google.protobuf.TextFormat;
 
+import crewtools.util.Clock;
 import crewtools.util.FlicaConfig;
+import crewtools.util.SimpleCookieJar;
+import crewtools.util.SystemClock;
+import okhttp3.Cookie;
+import okhttp3.FormBody;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 public class FlicaConnection {
   private final String username;
   private final String password;
-  private final CloseableHttpClient httpclient;
-  private final CookieStore cookieStore = new BasicCookieStore();
+  private final OkHttpClient httpclient;
+  private final SimpleCookieJar cookieJar = new SimpleCookieJar();
   private final Logger logger = Logger.getLogger(FlicaConnection.class.getName());
+  private final Clock clock;
+  private DateTime sessionCreationTime;
+  private File sessionCacheFile;
 
+  // TODO: determine correct value.
+  private static final Minutes SESSION_DURATION = Minutes.minutes(30);
+
+  private static final String USER_AGENT_KEY = "User-Agent";
   private static final String CHROME_USER_AGENT =
       "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36";
-  private static final String FLICA_LOGIN_URL = "https://jia.flica.net/public/flicaLogon.cgi";
-  private static final String FLICA_LOGOUT_URL = "https://jia.flica.net/logoff";
+  private static final HttpUrl FLICA_LOGIN_URL = HttpUrl
+      .parse("https://jia.flica.net/public/flicaLogon.cgi");
+  private static final HttpUrl FLICA_LOGOUT_URL = HttpUrl
+      .parse("https://jia.flica.net/logoff");
 
-  public FlicaConnection(FlicaConfig config) {
+  public FlicaConnection(FlicaConfig config) throws IOException {
     this(config.getFlicaUsername(), config.getFlicaPassword());
+    this.sessionCacheFile = new File(config.getSessionCacheFile());
+    if (sessionCacheFile.exists()) {
+      setSession(Files.toString(sessionCacheFile, StandardCharsets.UTF_8));
+    }
   }
 
   public FlicaConnection(String username, String password) {
     this.username = username;
     this.password = password;
-    this.httpclient = HttpClients.custom()
-        .setDefaultCookieStore(cookieStore)
-        .setUserAgent(CHROME_USER_AGENT)
-        .disableRedirectHandling()
+    this.httpclient = new OkHttpClient().newBuilder()
+        .followRedirects(false)
+        .followSslRedirects(false)
+        .cookieJar(cookieJar)
         .build();
+    this.clock = new SystemClock();
   }
 
-  public void connect() throws ClientProtocolException, IOException {
-    HttpPost httpPost = new HttpPost(FLICA_LOGIN_URL);
-    List<NameValuePair> nvps = new ArrayList<>();
-    nvps.add(new BasicNameValuePair("UserId", username));
-    nvps.add(new BasicNameValuePair("Password", password));
-    nvps.add(new BasicNameValuePair("Cookies", "1"));
-    nvps.add(new BasicNameValuePair("PCookies", "1"));
-    httpPost.setEntity(new UrlEncodedFormEntity(nvps));
-    CloseableHttpResponse response = httpclient.execute(httpPost);
-    try {
-      Preconditions.checkState(response.getStatusLine().getStatusCode() == HttpStatus.SC_OK,
-          response);
-      HttpEntity entity = response.getEntity();
-      EntityUtils.consume(entity);
-    } finally {
-      response.close();
+  private boolean isExpired(DateTime sessionCreationTime) {
+    return sessionCreationTime == null
+        || sessionCreationTime.plus(SESSION_DURATION).isBefore(clock.now());
+  }
+
+  public String getSession() throws IOException {
+    if (isExpired(sessionCreationTime)) {
+      return "";
     }
+    Proto.Session.Builder builder = Proto.Session.newBuilder();
+    for (okhttp3.Cookie c : cookieJar.loadForRequest(FLICA_LOGIN_URL)) {
+      builder.addCookieBuilder().setName(c.name()).setValue(c.value());
+    }
+    builder.setCreationTimeMillis(sessionCreationTime.getMillis());
+    StringWriter writer = new StringWriter();
+    TextFormat.print(builder.build(), writer);
+    return writer.toString();
   }
 
-  public void disconnect() throws ClientProtocolException, IOException {
+  public void setSession(String session) throws IOException {
+    String existingSession = getSession();
+    if (existingSession.equals(session)) {
+      return;
+    }
+
+    Proto.Session.Builder builder = Proto.Session.newBuilder();
+    TextFormat.getParser().merge(session, builder);
+    if (builder.hasCreationTimeMillis()) {
+      DateTime sessionCreationTime = new DateTime(builder.getCreationTimeMillis());
+      if (isExpired(sessionCreationTime)) {
+        logger.info("Cowardly refusing to set an expired session.");
+        return;
+      }
+    }
+
+    List<okhttp3.Cookie> cookies = new ArrayList<>();
+    for (Proto.Cookie c : builder.getCookieList()) {
+      cookies.add(new Cookie.Builder()
+          .name(c.getName())
+          .value(c.getValue())
+          .domain(FLICA_LOGIN_URL.host())
+          .build());
+    }
+    cookieJar.saveFromResponse(FLICA_LOGIN_URL, cookies);
+    sessionCreationTime = new DateTime(builder.getCreationTimeMillis());
+  }
+
+  public boolean connect() throws IOException {
+    if (!isExpired(sessionCreationTime)) {
+      logger.info("Ignoring connect() due to active session");
+      // TODO: this unfortunately overloads the response bit.
+      return true;
+    }
+    RequestBody form = new FormBody.Builder()
+        .add("UserId", username)
+        .add("Password", password)
+        .add("Cookies", "1")
+        .add("PCookies", "1")
+        .build();
+    Request request = new Request.Builder()
+        .url(FLICA_LOGIN_URL)
+        .header(USER_AGENT_KEY, CHROME_USER_AGENT)
+        .post(form)
+        .build();
+    Response response = httpclient.newCall(request).execute();
+    if (response.code() != HttpURLConnection.HTTP_OK) {
+      return false;
+    }
+    sessionCreationTime = clock.now();
+    if (sessionCacheFile != null) {
+      logger.info("Writing session to " + sessionCacheFile);
+      Files.write(getSession(), sessionCacheFile, StandardCharsets.UTF_8);
+    }
+    return true;
+  }
+
+  public void disconnect() throws IOException {
     retrieveUrl(FLICA_LOGOUT_URL);    
   }
   
-  public String retrieveUrl(String url) throws ClientProtocolException, IOException {
-    HttpGet httpGet = new HttpGet(url);
-    CloseableHttpResponse response = httpclient.execute(httpGet);
-    try {
-      logger.info("First Request Status: " + response.getStatusLine().toString());
-      if (response.getStatusLine().getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY) {
-        logger.info("(Re)Logging in");
-        connect();
-        response = httpclient.execute(httpGet);
-        logger.info("Second Request Status: " + response.getStatusLine().toString());
-      }
-      logger.info("ContentLength=" + response.getEntity().getContentLength());
-      return EntityUtils.toString(response.getEntity());
-    } finally {
-      response.close();
+  private ResponseBody retrieveUrlInternal(HttpUrl url) throws IOException {
+    logger.info("url = [" + url.toString() + "]");
+    Request request = new Request.Builder()
+        .url(url)
+        .header(USER_AGENT_KEY, CHROME_USER_AGENT)
+        .build();
+    Response response = httpclient.newCall(request).execute();
+    logger.info("First Request Status: " + response.message());
+    if (response.code() == HttpURLConnection.HTTP_MOVED_TEMP) {
+      logger.info("(Re)Logging in");
+      Preconditions.checkState(connect(), "connect failed");
+      response = httpclient.newCall(request).execute();
+      logger.info("Second Request Status: " + response.message());
     }
-  }
-  
-  public byte[] retrieveUrlBytes(String url) throws ClientProtocolException, IOException {
-    HttpGet httpGet = new HttpGet(url);
-    CloseableHttpResponse response = httpclient.execute(httpGet);
-    try {
-      // TODO auto-login on 302
-      return EntityUtils.toByteArray(response.getEntity());
-    } finally {
-      response.close();
-    }
+    return response.body();
   }
 
-  public String postUrl(String url, Multimap<String, String> data) throws ClientProtocolException, IOException {
-    HttpPost httpPost = new HttpPost(url);
-    List<NameValuePair> nvps = new ArrayList<>();
-    for (String key : data.keySet()) {
-      for (String value : data.get(key)) {
-        nvps.add(new BasicNameValuePair(key, value));
-      }
-    }
-    httpPost.setEntity(new UrlEncodedFormEntity(nvps));
-    CloseableHttpResponse response = httpclient.execute(httpPost);
-    try {
-      // TODO auto-login on 302
-      return EntityUtils.toString(response.getEntity());
-    } finally {
-      response.close();
-    }
+  public String retrieveUrl(HttpUrl url) throws IOException {
+    return retrieveUrlInternal(url).string();
   }
 
-  public String postUrlWithReferer(String url, String referer, Multimap<String, String> data) throws ClientProtocolException, IOException {
-    HttpPost httpPost = new HttpPost(url);
-    List<NameValuePair> nvps = new ArrayList<>();
+  public byte[] retrieveUrlBytes(HttpUrl url) throws IOException {
+    return retrieveUrlInternal(url).bytes();
+  }
+
+  public String postUrl(HttpUrl url, Multimap<String, String> data) throws IOException {
+    FormBody.Builder form = new FormBody.Builder();
     for (String key : data.keySet()) {
       for (String value : data.get(key)) {
-        nvps.add(new BasicNameValuePair(key, value));
+        form.add(key, value);
       }
     }
-    httpPost.setEntity(new UrlEncodedFormEntity(nvps));
-    httpPost.setHeader("Referer", referer);
-    CloseableHttpResponse response = httpclient.execute(httpPost);
-    try {
-      // TODO auto-login on 302
-      return EntityUtils.toString(response.getEntity());
-    } finally {
-      response.close();
+    // TODO auto-login on 302
+    Request request = new Request.Builder()
+        .url(FLICA_LOGIN_URL)
+        .header(USER_AGENT_KEY, CHROME_USER_AGENT)
+        .post(form.build())
+        .build();
+    Response response = httpclient.newCall(request).execute();
+    return response.body().string();
+  }
+
+  public String postUrlWithReferer(HttpUrl url, String referer,
+      Multimap<String, String> data) throws IOException {
+    FormBody.Builder form = new FormBody.Builder();
+    for (String key : data.keySet()) {
+      for (String value : data.get(key)) {
+        form.add(key, value);
+      }
     }
+    // TODO auto-login on 302
+    Request request = new Request.Builder()
+        .url(FLICA_LOGIN_URL)
+        .header(USER_AGENT_KEY, CHROME_USER_AGENT)
+        .header("Referer", referer)
+        .post(form.build())
+        .build();
+    Response response = httpclient.newCall(request).execute();
+    return response.body().string();
   }
 }

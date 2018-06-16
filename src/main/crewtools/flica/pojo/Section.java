@@ -52,8 +52,11 @@ public class Section implements Comparable<Section>, Iterable<Leg> {
     this.startDuty = startDuty;
     this.endDuty = endDuty;
     this.legs = new ArrayList<>();
-    for (int i = 0; i < protoSection.getLegCount(); ++i) {
-      legs.add(new Leg(protoSection.getLeg(i), startDuty, i));
+    int i = 0;
+    for (Proto.Leg leg : protoSection.getLegList()) {
+      if (!leg.hasLegType()) {
+        legs.add(new Leg(leg, startDuty, i++));
+      }
     }
   }
   
@@ -144,10 +147,12 @@ public class Section implements Comparable<Section>, Iterable<Leg> {
     return Period.fromText(protoSection.getLayoverDuration());
   }
   
+  /** Returns the number of actual flying legs. */
   public int getNumLegs() {
-    return protoSection.getLegCount();
+    return legs.size();
   }
   
+  /** Returns the actual flying legs. */
   public List<Leg> getLegs() {
     return legs;
   }

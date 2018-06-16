@@ -19,20 +19,30 @@
 
 package crewtools.dashboard;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.joda.time.DateTime;
 
 public class Dashboard {
+  private final Formatter formatter = new Formatter();
   private final DateTime retrievedTime;
-  private final String prettyRetrievedTime;
   private final FlightInfo currentFlight;
   private final FlightInfo nextFlight;
+  private final List<FlightInfo> flights;
 
-  Dashboard(DateTime retrievedTime, String prettyRetrievedTime, FlightInfo currentFlight,
+  Dashboard(DateTime retrievedTime, FlightInfo currentFlight,
       FlightInfo nextFlight) {
     this.retrievedTime = retrievedTime;
-    this.prettyRetrievedTime = prettyRetrievedTime;
     this.currentFlight = currentFlight;
     this.nextFlight = nextFlight;
+    this.flights = new ArrayList<>();
+    if (currentFlight != null) {
+      flights.add(currentFlight);
+    }
+    if (nextFlight != null) {
+      flights.add(nextFlight);
+    }
   }
 
   public DateTime getRetrievedTime() {
@@ -40,7 +50,7 @@ public class Dashboard {
   }
 
   public String getPrettyRetrievedTime() {
-    return prettyRetrievedTime;
+    return formatter.getZulu(retrievedTime);
   }
 
   public FlightInfo getCurrentFlight() {
@@ -51,19 +61,43 @@ public class Dashboard {
     return nextFlight;
   }
 
+  public List<FlightInfo> getFlights() {
+    return flights;
+  }
+
   @Override
   public String toString() {
-    String result = "At " + prettyRetrievedTime + "\n";
+    String result = "At " + getPrettyRetrievedTime() + "\n";
     result += "Current/Previous flight:\n";
     if (currentFlight != null) {
+      result += currentFlight.getFlightNumber();
+      if (currentFlight.isCanceled()) {
+        result += " : CANCELLED";
+      }
+      result += "\n";
       result += String.format("%3s  ->   %3s\n", currentFlight.getOriginAirport(),
           currentFlight.getDestinationAirport());
       result += String.format("%3s  %3s  %3s\n", currentFlight.getOriginGate(),
           currentFlight.getAircraftType(),
           currentFlight.getDestinationGate());
+      if (currentFlight.getTimeInfo().hasDeparture()) {
+        result += String.format("Depart %s %s\n",
+            currentFlight.getTimeInfo().getDepartureOffset(),
+            currentFlight.getTimeInfo().getDepartureZulu());
+      }
+      if (currentFlight.getTimeInfo().hasArrival()) {
+        result += String.format("Arrive %s %s\n",
+            currentFlight.getTimeInfo().getArrivalOffset(),
+            currentFlight.getTimeInfo().getArrivalZulu());
+      }
     }
     result += "---------------------\nNext flight:\n";
     if (nextFlight != null) {
+      result += nextFlight.getFlightNumber();
+      if (nextFlight.isCanceled()) {
+        result += " : CANCELLED";
+      }
+      result += "\n";
       result += String.format("%3s  ->   %3s\n", nextFlight.getOriginAirport(),
           nextFlight.getDestinationAirport());
       result += String.format("%3s  %3s  %3s\n", nextFlight.getOriginGate(),
@@ -72,7 +106,20 @@ public class Dashboard {
       result += String.format("AA  show: %s %s\n",
           nextFlight.getTimeInfo().getCompanyShowOffset(),
           nextFlight.getTimeInfo().getCompanyShowZulu());
-      // result += String.format("Est show: %s\n", nextFlight.getComputedShow();
+      if (nextFlight.getTimeInfo().hasEstimatedShow()) {
+        result += String.format("Est show: %s\n",
+            nextFlight.getTimeInfo().getEstimatedShowOffset(),
+            nextFlight.getTimeInfo().getEstimatedShowZulu());
+      }
+      if (nextFlight.getTimeInfo().hasDeparture()) {
+        result += String.format("Departed %s %s\n",
+            nextFlight.getTimeInfo().getDepartureOffset(),
+            nextFlight.getTimeInfo().getDepartureZulu());
+      } else {
+        result += String.format("Departs %s %s\n",
+            nextFlight.getTimeInfo().getScheduledDepartureOffset(),
+            nextFlight.getTimeInfo().getScheduledDepartureZulu());
+      }
     }
     return result;
   }

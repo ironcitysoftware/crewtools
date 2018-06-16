@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.concurrent.ArrayBlockingQueue;
 
-import org.apache.http.client.ClientProtocolException;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -114,7 +113,8 @@ public class WorkerTest {
   }
   
   @Test
-  public void testBetterTripSwapped() throws ParseException, ClientProtocolException, URISyntaxException, IOException {
+  public void testBetterTripSwapped()
+      throws ParseException, URISyntaxException, IOException {
     Trip betterTrip = new TripBuilder()
         .withName("LBetter")
         .withDayOfMonth(20)
@@ -133,7 +133,8 @@ public class WorkerTest {
   }
 
   @Test
-  public void testScheduleUpdate() throws ParseException, ClientProtocolException, URISyntaxException, IOException {
+  public void testScheduleUpdate()
+      throws ParseException, URISyntaxException, IOException {
     Trip betterTrip = new TripBuilder()
         .withName("LBetter")
         .withDayOfMonth(20)
