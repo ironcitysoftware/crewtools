@@ -124,7 +124,7 @@ public class DashboardAdaptor {
         estimatedShow = inboundArrival;
       }
     }
-    
+
     Flight flight = new Flight(protoFlight);
     return new TimeInfo(
         clock,
