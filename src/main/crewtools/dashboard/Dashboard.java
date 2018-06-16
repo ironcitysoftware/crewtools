@@ -23,17 +23,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.joda.time.DateTime;
+import org.joda.time.Minutes;
+
+import crewtools.util.Clock;
 
 public class Dashboard {
   private final Formatter formatter = new Formatter();
+  private final Clock clock;
   private final DateTime retrievedTime;
   private final FlightInfo currentFlight;
   private final FlightInfo nextFlight;
   private final List<FlightInfo> flights;
 
-  Dashboard(DateTime retrievedTime, FlightInfo currentFlight,
+  Dashboard(Clock clock, FlightInfo currentFlight,
       FlightInfo nextFlight) {
-    this.retrievedTime = retrievedTime;
+    this.clock = clock;
+    this.retrievedTime = clock.now().minusHours(1);
     this.currentFlight = currentFlight;
     this.nextFlight = nextFlight;
     this.flights = new ArrayList<>();
@@ -50,7 +55,13 @@ public class Dashboard {
   }
 
   public String getPrettyRetrievedTime() {
-    return formatter.getZulu(retrievedTime);
+    if (Minutes.minutesBetween(retrievedTime, clock.now()).getMinutes() > 0) {
+      return String.format("%s (aged %s)",
+          formatter.getZulu(retrievedTime),
+          formatter.getPrettyOffset(retrievedTime, clock.now()));
+    } else {
+      return formatter.getZulu(retrievedTime);
+    }
   }
 
   public FlightInfo getCurrentFlight() {

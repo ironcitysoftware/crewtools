@@ -60,7 +60,7 @@ public class DashboardAdaptor {
         currentFlight, nextFlight);
     FlightInfo currentFlightInfo = buildFlightInfo(currentFlightTimeInfo, currentFlight);
     FlightInfo nextFlightInfo = buildFlightInfo(nextFlightTimeInfo, nextFlight);
-    return new Dashboard(clock.now(), currentFlightInfo, nextFlightInfo);
+    return new Dashboard(clock, currentFlightInfo, nextFlightInfo);
   }
 
   private Proto.Flight getFlight(Leg leg, FlightStatusResponse flightStatusResponse) {
