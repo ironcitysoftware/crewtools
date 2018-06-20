@@ -72,9 +72,12 @@ public class FlicaConnection {
 
   public FlicaConnection(FlicaConfig config) throws IOException {
     this(config.getFlicaUsername(), config.getFlicaPassword());
-    this.sessionCacheFile = new File(config.getSessionCacheFile());
-    if (sessionCacheFile.exists()) {
-      setSession(Files.toString(sessionCacheFile, StandardCharsets.UTF_8));
+    String sessionCacheFilename = config.getSessionCacheFile();
+    if (sessionCacheFilename != null) {
+      this.sessionCacheFile = new File(sessionCacheFilename);
+      if (sessionCacheFile.exists()) {
+        setSession(Files.toString(sessionCacheFile, StandardCharsets.UTF_8));
+      }
     }
   }
 
