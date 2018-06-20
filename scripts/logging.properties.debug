@@ -1,0 +1,19 @@
+org.apache.commons.logging.Log = org.apache.commons.logging.impl.Jdk14Logger
+
+.level = INFO
+
+handlers=java.util.logging.ConsoleHandler
+java.util.logging.ConsoleHandler.formatter = java.util.logging.SimpleFormatter
+java.util.logging.ConsoleHandler.level = FINEST
+org.subethamail.smtp.server.SMTPServer.level = WARNING
+
+#org.apache.http.level = FINEST
+#com.flica2.SectionParser.level = FINE
+#com.flica2.ScheduleParser.level = FINE
+
+org.apache.http.level = FINEST
+org.apache.http.headers.level = FINEST
+crewtools.flica.bid.ThinLineScorer.level = FINEST
+#crewtools.flica.parser.LineParser.level = FINEST
+#crewtools.flica.parser.ScheduleParserHelper.level = FINE
+crewtools.flica.bid.FlicaMessageHandler.level = FINEST
