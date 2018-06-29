@@ -116,14 +116,18 @@ public class FlicaConnection {
   }
 
   /** Returns true if the session was successfully set. */
-  public boolean setSession(String session) throws IOException {
+  public boolean setSession(String session) {
     String existingSession = getSession();
     if (existingSession.equals(session)) {
       return true;
     }
 
     Proto.Session.Builder builder = Proto.Session.newBuilder();
-    TextFormat.getParser().merge(session, builder);
+    try {
+      TextFormat.getParser().merge(session, builder);
+    } catch (IOException unlikely) {
+      throw new IllegalStateException(unlikely);
+    }
     if (builder.hasCreationTimeMillis()) {
       DateTime sessionCreationTime = new DateTime(builder.getCreationTimeMillis());
       if (isExpired(sessionCreationTime)) {
