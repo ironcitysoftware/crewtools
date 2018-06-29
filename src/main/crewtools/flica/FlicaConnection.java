@@ -97,7 +97,7 @@ public class FlicaConnection {
         || sessionCreationTime.plus(SESSION_DURATION).isBefore(clock.now());
   }
 
-  public String getSession() throws IOException {
+  public String getSession() {
     if (isExpired(sessionCreationTime)) {
       return "";
     }
@@ -107,14 +107,19 @@ public class FlicaConnection {
     }
     builder.setCreationTimeMillis(sessionCreationTime.getMillis());
     StringWriter writer = new StringWriter();
-    TextFormat.print(builder.build(), writer);
+    try {
+      TextFormat.print(builder.build(), writer);
+    } catch (IOException impossible) {
+      throw new IllegalStateException(impossible);
+    }
     return writer.toString();
   }
 
-  public void setSession(String session) throws IOException {
+  /** Returns true if the session was successfully set. */
+  public boolean setSession(String session) throws IOException {
     String existingSession = getSession();
     if (existingSession.equals(session)) {
-      return;
+      return true;
     }
 
     Proto.Session.Builder builder = Proto.Session.newBuilder();
@@ -123,7 +128,7 @@ public class FlicaConnection {
       DateTime sessionCreationTime = new DateTime(builder.getCreationTimeMillis());
       if (isExpired(sessionCreationTime)) {
         logger.info("Cowardly refusing to set an expired session.");
-        return;
+        return false;
       }
     }
 
@@ -137,6 +142,7 @@ public class FlicaConnection {
     }
     cookieJar.saveFromResponse(FLICA_LOGIN_URL, cookies);
     sessionCreationTime = new DateTime(builder.getCreationTimeMillis());
+    return true;
   }
 
   public boolean connect() throws IOException {
