@@ -415,7 +415,7 @@ public class FlicaService {
   }  
 
   // self.location='/public/getdoc.dll/CLT-CRJ-FO_Document008.pdf?type=bc&bc=3211274';
-  private final Pattern DOC_ID = Pattern.compile("&bc=(\\d+)'");
+  private final Pattern DOC_ID = Pattern.compile("&bc=(\\d+)[&']");
   
   public byte[] getDocument(AwardDomicile awardDomicile, Rank rank,
       int round, YearMonth yearMonth,
@@ -443,7 +443,7 @@ public class FlicaService {
         String.format(SHOW_DOCUMENT_STAGE_TWO_FORMAT_SPEC,
             getCrewClass(awardDomicile, rank),
             documentId,
-            serverDocumentId));
+            Integer.parseInt(serverDocumentId)));
     return connection.retrieveUrlBytes(url);
   }
   
