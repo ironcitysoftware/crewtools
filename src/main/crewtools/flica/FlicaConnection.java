@@ -207,7 +207,7 @@ public class FlicaConnection {
     return retrieveUrlInternal(url).bytes();
   }
 
-  public String postUrl(HttpUrl url, Multimap<String, String> data) throws IOException {
+  public Response postUrl(HttpUrl url, Multimap<String, String> data) throws IOException {
     FormBody.Builder form = new FormBody.Builder();
     for (String key : data.keySet()) {
       for (String value : data.get(key)) {
@@ -216,12 +216,11 @@ public class FlicaConnection {
     }
     // TODO auto-login on 302
     Request request = new Request.Builder()
-        .url(FLICA_LOGIN_URL)
+        .url(url)
         .header(USER_AGENT_KEY, CHROME_USER_AGENT)
         .post(form.build())
         .build();
-    Response response = httpclient.newCall(request).execute();
-    return response.body().string();
+    return httpclient.newCall(request).execute();
   }
 
   public String postUrlWithReferer(HttpUrl url, String referer,

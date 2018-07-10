@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableMultimap;
 import crewtools.flica.Proto.Rank;
 import crewtools.flica.pojo.PairingKey;
 import okhttp3.HttpUrl;
+import okhttp3.Response;
 
 public class FlicaService {
   private final Logger logger = Logger.getLogger(FlicaService.class.getName());
@@ -379,7 +380,7 @@ public class FlicaService {
     }
   }
 
-  public String submitLineBid(int round, YearMonth yearMonth,
+  public Response submitLineBid(int round, YearMonth yearMonth,
       List<String> lines) throws URISyntaxException, IOException {
     String bidCloseId = getBidCloseId(round, yearMonth);
     HttpUrl url = new HttpUrl.Builder()

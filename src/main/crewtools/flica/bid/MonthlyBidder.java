@@ -50,6 +50,7 @@ import crewtools.flica.stats.DataReader;
 import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.FileUtils;
 import crewtools.util.FlicaConfig;
+import okhttp3.Response;
 
 public class MonthlyBidder {
   private final Logger logger = Logger.getLogger(MonthlyBidder.class.getName());
@@ -119,7 +120,8 @@ public class MonthlyBidder {
 
     if (cmdLine.submitBids()) {
       logger.info("Submitting bids!");
-      service.submitLineBid(/* round */ 1, yearMonth, bids);
+      Response response = service.submitLineBid(/* round */ 1, yearMonth, bids);
+      Preconditions.checkState(response.code() == 200, response.toString());
     } else {
       logger.info("--submit was not specified, so bids not submitted.");
     }
