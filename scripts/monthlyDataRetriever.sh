@@ -2,6 +2,7 @@
 
 CLASSPATH=bin
 CLASSPATH=$CLASSPATH:lib/commons-io-2.6.jar
+CLASSPATH=$CLASSPATH:lib/commons-logging-1.2.jar
 CLASSPATH=$CLASSPATH:lib/fontbox-2.0.6.jar
 CLASSPATH=$CLASSPATH:lib/guava-21.0.jar
 CLASSPATH=$CLASSPATH:lib/jempbox-1.8.13.jar
