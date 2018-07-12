@@ -44,7 +44,11 @@ import crewtools.util.FlicaConfig;
 /** Tool for inspecting scoring of arbitrary lines and trips. */
 public class Scorer {
   public static void main(String args[]) throws Exception {
-    Map<PairingKey, Trip> pairings = getAllPairings(YearMonth.parse("2018-5"));
+    if (args.length == 0) {
+      System.err.println("scorer.sh 2018-1-1:L1234 [2018-1-1:L1234]");
+      System.exit(-1);
+    }
+    Map<PairingKey, Trip> pairings = getAllPairings(YearMonth.parse("2018-8"));
     FlicaConnection connection = new FlicaConnection(new FlicaConfig());
     FlicaService service = new FlicaService(connection);
     BidConfig bidConfig = FileUtils.readBidConfig();

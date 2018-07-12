@@ -170,15 +170,16 @@ public class TripScore implements Comparable<TripScore> {
     }
 
     for (ScoreAdjustment scoreAdjustment : config.getScoreAdjustmentList()) {
+      int adjustment = scoreAdjustment.getScoreAdjustment();
       if (scoreAdjustment.getCrewEmployeeIdCount() > 0
           && trip.containsCrewmember(scoreAdjustment.getCrewEmployeeIdList())) {
-        goodPoints += scoreAdjustment.getScoreAdjustment();
-        scoreExplanation.add(String.format("%d for crew", scoreAdjustment));
+        goodPoints += adjustment;
+        scoreExplanation.add(String.format("%d for crew", adjustment));
       }
       if (scoreAdjustment.getSoftDayOffCount() > 0
           && trip.spansDaysOfMonth(scoreAdjustment.getSoftDayOffList())) {
-        goodPoints += scoreAdjustment.getScoreAdjustment();
-        scoreExplanation.add(String.format("%d for soft day off", scoreAdjustment));
+        goodPoints += adjustment;
+        scoreExplanation.add(String.format("%d for soft day off", adjustment));
       }
     }
 
