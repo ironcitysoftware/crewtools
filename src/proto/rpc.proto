@@ -75,7 +75,7 @@ message BidConfig {
 
   // Monthly bidding: lines will be disqualified from consideration
   // if any trips on that line span a desired day off.
-  repeated int32 desired_day_off = 5;
+  repeated int32 required_day_off = 5;
 
   // The minimum number of credit hours the contract allows per month.
   optional int32 minimum_credit_hours = 6;
@@ -96,4 +96,13 @@ message BidConfig {
 
   // Enable experimental feature for handling approved transitions.
   optional bool enable_reroot_on_approved_transition = 11;
+
+  // "New" way to adjust scoring.
+  repeated ScoreAdjustment score_adjustment = 12;
+}
+
+message ScoreAdjustment {
+  optional int32 score_adjustment = 1;
+  repeated int32 crew_employee_id = 2;
+  repeated int32 soft_day_off = 3;
 }

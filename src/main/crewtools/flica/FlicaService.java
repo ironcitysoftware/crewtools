@@ -50,9 +50,6 @@ public class FlicaService {
   private static final String DOMAIN =
       "https://jia.flica.net/";
   
-  private static final String BASE_URL =
-      DOMAIN + "full/";
-
   private static final String AWARD_BY_LINE_BASE_URL = "awardbyline.cgi";
 
   private static final String SCHEDULE_BY_MONTH_BASE_URL = "scheduledetail.cgi";

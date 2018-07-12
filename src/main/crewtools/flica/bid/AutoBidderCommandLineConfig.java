@@ -75,7 +75,7 @@ public class AutoBidderCommandLineConfig {
       }
     }
     if (round == 0) {
-      System.err.println("autobidder round=SAP|OPENTIME cache|proto");
+      System.err.println("autobidder round=SAP|OPENTIME|SBB cache|proto|debug");
       System.exit(-1);
     }
     this.round = round;

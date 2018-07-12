@@ -32,6 +32,7 @@ import org.joda.time.YearMonth;
 import com.google.common.io.Files;
 
 import crewtools.flica.Proto.Rank;
+import okhttp3.Response;
 
 public class CachingFlicaService extends FlicaService {
   private final Logger logger = Logger.getLogger(FlicaService.class.getName());
@@ -156,7 +157,7 @@ public class CachingFlicaService extends FlicaService {
   }
   
   @Override
-  public String submitLineBid(int round, YearMonth yearMonth,
+  public Response submitLineBid(int round, YearMonth yearMonth,
       List<String> lines) throws URISyntaxException, IOException {
     connectIfNecessary();
     return super.submitLineBid(round, yearMonth, lines);

@@ -89,7 +89,7 @@ public class ScheduleWrapper {
 
     // Computes required days off.
     ImmutableSet.Builder<LocalDate> builder = ImmutableSet.builder();
-    for (int dayOfMonth : bidConfig.getDesiredDayOffList()) {
+    for (int dayOfMonth : bidConfig.getRequiredDayOffList()) {
       builder.add(yearMonth.toLocalDate(dayOfMonth));
     }
     this.requiredDaysOff = builder.build();

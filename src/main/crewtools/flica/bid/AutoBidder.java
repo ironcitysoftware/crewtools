@@ -19,10 +19,8 @@
 
 package crewtools.flica.bid;
 
-import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.joda.time.Duration;
@@ -66,15 +64,6 @@ public class AutoBidder {
       service = new FlicaService(connection);
       service.connect();
     }
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      try {
-        logger.info("Logging out of FLICA");
-        connection.disconnect();
-        logger.info("Logged out of FLICA");
-      } catch (IOException e) {
-        logger.log(Level.SEVERE, "Error logging out", e);
-      }
-    }));
 
     Clock clock = new SystemClock();
     ScheduleWrapperTree tree = new ScheduleWrapperTree(bidConfig);

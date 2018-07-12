@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.Minutes;
 
 import com.google.common.base.Preconditions;
@@ -81,7 +82,7 @@ public class FlicaConnection {
     }
   }
 
-  public FlicaConnection(String username, String password) {
+  private FlicaConnection(String username, String password) {
     this.username = username;
     this.password = password;
     this.httpclient = new OkHttpClient().newBuilder()
@@ -97,13 +98,22 @@ public class FlicaConnection {
         || sessionCreationTime.plus(SESSION_DURATION).isBefore(clock.now());
   }
 
+  private static final int MAGIC_NO_EXPIRATION_YEAR = 9999;
+
+  /**
+   * Returns the current session as a serializable string, or "" for no session.
+   */
   public String getSession() {
     if (isExpired(sessionCreationTime)) {
       return "";
     }
     Proto.Session.Builder builder = Proto.Session.newBuilder();
     for (okhttp3.Cookie c : cookieJar.loadForRequest(FLICA_LOGIN_URL)) {
-      builder.addCookieBuilder().setName(c.name()).setValue(c.value());
+      Proto.Cookie.Builder cookieBuilder = builder.addCookieBuilder();
+      cookieBuilder.setName(c.name()).setValue(c.value());
+      if (new DateTime(c.expiresAt()).getYear() != MAGIC_NO_EXPIRATION_YEAR) {
+        cookieBuilder.setExpiration(c.expiresAt());
+      }
     }
     builder.setCreationTimeMillis(sessionCreationTime.getMillis());
     StringWriter writer = new StringWriter();
@@ -119,9 +129,11 @@ public class FlicaConnection {
   public boolean setSession(String session) {
     String existingSession = getSession();
     if (existingSession.equals(session)) {
+      logger.info("The saved session is equal to the current session.");
       return true;
     }
 
+    logger.info("Attempting to restore saved session");
     Proto.Session.Builder builder = Proto.Session.newBuilder();
     try {
       TextFormat.getParser().merge(session, builder);
@@ -138,14 +150,22 @@ public class FlicaConnection {
 
     List<okhttp3.Cookie> cookies = new ArrayList<>();
     for (Proto.Cookie c : builder.getCookieList()) {
-      cookies.add(new Cookie.Builder()
+      okhttp3.Cookie.Builder cookieBuilder = new Cookie.Builder()
           .name(c.getName())
           .value(c.getValue())
-          .domain(FLICA_LOGIN_URL.host())
-          .build());
+          .domain("flica.net")
+          .path("/")
+          .secure()
+          .httpOnly();
+      if (c.hasExpiration()) {
+        cookieBuilder.expiresAt(c.getExpiration());
+      }
+      cookies.add(cookieBuilder.build());
     }
     cookieJar.saveFromResponse(FLICA_LOGIN_URL, cookies);
     sessionCreationTime = new DateTime(builder.getCreationTimeMillis());
+    logger.info("Restored from " +
+        sessionCreationTime.withZone(DateTimeZone.forID("America/New_York")));
     return true;
   }
 
@@ -194,7 +214,8 @@ public class FlicaConnection {
       logger.info("(Re)Logging in");
       Preconditions.checkState(connect(), "connect failed");
       response = httpclient.newCall(request).execute();
-      logger.info("Second Request Status: " + response.message());
+      Preconditions.checkState(response.code() != HttpURLConnection.HTTP_MOVED_TEMP,
+          response.toString() + "\n" + response.body().string());
     }
     return response.body();
   }

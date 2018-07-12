@@ -315,6 +315,7 @@ message Session {
 message Cookie {
   optional string name = 1;
   optional string value = 2;
+  optional int64 expiration = 3;
 }
 
 // Seniority list

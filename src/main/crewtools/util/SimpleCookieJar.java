@@ -22,11 +22,13 @@ package crewtools.util;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Logger;
 
 import okhttp3.CookieJar;
 import okhttp3.HttpUrl;
 
 public class SimpleCookieJar implements CookieJar {
+  private final Logger logger = Logger.getLogger(CookieJar.class.getName());
   private final HashMap<String, List<okhttp3.Cookie>> cookieStore = new HashMap<>();
 
   @Override
@@ -39,5 +41,4 @@ public class SimpleCookieJar implements CookieJar {
     List<okhttp3.Cookie> cookies = cookieStore.get(url.host());
     return cookies != null ? cookies : new ArrayList<okhttp3.Cookie>();
   }
-
 }

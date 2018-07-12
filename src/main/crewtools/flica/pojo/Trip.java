@@ -157,6 +157,24 @@ public class Trip implements Comparable<Trip>, Iterable<Leg> {
     return false;
   }
 
+  public boolean containsCrewmember(List<Integer> employeeIds) {
+    for (Proto.CrewMember crewmember : proto.getCrewList()) {
+      if (employeeIds.contains(crewmember.getEmployeeId())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public boolean spansDaysOfMonth(List<Integer> daysOfMonthList) {
+    for (LocalDate date : getDepartureDates()) {
+      if (daysOfMonthList.contains(date.getDayOfMonth())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /** Does not include vacation. */
   public Period getCreditInMonth(YearMonth yearMonth) {
     Period outOfMonthCredit = Period.ZERO;
@@ -188,7 +206,8 @@ public class Trip implements Comparable<Trip>, Iterable<Leg> {
       return getFirstSection().getStart();
     } else if (proto.getScheduleType() == ScheduleType.VACATION
         || proto.getScheduleType() == ScheduleType.VACATION_START
-        || proto.getScheduleType() == ScheduleType.VACATION_END) {
+        || proto.getScheduleType() == ScheduleType.VACATION_END
+        || proto.getScheduleType() == ScheduleType.LONG_CALL_RESERVE) {
       // TODO Daylight savings?
       return LocalDate.parse(proto.getStartDate())
           .toDateTime(timeUtils.parseLocalTimeWithColon(proto.getStartTime()), EASTERN);
@@ -202,7 +221,8 @@ public class Trip implements Comparable<Trip>, Iterable<Leg> {
       return getLastSection().getEnd();
     } else if (proto.getScheduleType() == ScheduleType.VACATION
         || proto.getScheduleType() == ScheduleType.VACATION_START
-        || proto.getScheduleType() == ScheduleType.VACATION_END) {
+        || proto.getScheduleType() == ScheduleType.VACATION_END
+        || proto.getScheduleType() == ScheduleType.LONG_CALL_RESERVE) {
       // TODO Daylight savings?
       return LocalDate.parse(proto.getEndDate())
           .toDateTime(timeUtils.parseLocalTimeWithColon(proto.getEndTime()), EASTERN);

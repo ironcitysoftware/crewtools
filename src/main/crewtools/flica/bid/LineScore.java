@@ -180,7 +180,7 @@ public class LineScore {
           hasAnyGspOvernights = true;
         }
       }
-      if (spansDesiredDaysOff(trip)) {
+      if (trip.spansDaysOfMonth(bidConfig.getRequiredDayOffList())) {
         // A trip on this line spans a desired day off. Disqualify the line.
         return false;
       }
@@ -201,7 +201,7 @@ public class LineScore {
 
   private boolean spansDesiredDaysOff(Trip trip) {
     for (LocalDate date : trip.getDepartureDates()) {
-      if (bidConfig.getDesiredDayOffList().contains(date.getDayOfMonth())) {
+      if (bidConfig.getRequiredDayOffList().contains(date.getDayOfMonth())) {
         return true;
       }
     }

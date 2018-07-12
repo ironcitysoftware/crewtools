@@ -30,6 +30,7 @@ import org.joda.time.LocalTime;
 import crewtools.flica.pojo.Section;
 import crewtools.flica.pojo.Trip;
 import crewtools.rpc.Proto.BidConfig;
+import crewtools.rpc.Proto.ScoreAdjustment;
 import crewtools.util.Period;
 
 public class TripScore implements Comparable<TripScore> {
@@ -160,7 +161,6 @@ public class TripScore implements Comparable<TripScore> {
       goodPoints += factor;
     }
 
-    // TODO don't reward trips which span the weekend
     if (isPreferredStartDayOfWeek(trip.getFirstSection().date)) {
       goodPoints += 1;
       scoreExplanation.add("+1 for weekday start");
@@ -169,25 +169,40 @@ public class TripScore implements Comparable<TripScore> {
       scoreExplanation.add("-1 for weekend start");
     }
 
+    for (ScoreAdjustment scoreAdjustment : config.getScoreAdjustmentList()) {
+      if (scoreAdjustment.getCrewEmployeeIdCount() > 0
+          && trip.containsCrewmember(scoreAdjustment.getCrewEmployeeIdList())) {
+        goodPoints += scoreAdjustment.getScoreAdjustment();
+        scoreExplanation.add(String.format("%d for crew", scoreAdjustment));
+      }
+      if (scoreAdjustment.getSoftDayOffCount() > 0
+          && trip.spansDaysOfMonth(scoreAdjustment.getSoftDayOffList())) {
+        goodPoints += scoreAdjustment.getScoreAdjustment();
+        scoreExplanation.add(String.format("%d for soft day off", scoreAdjustment));
+      }
+    }
+
     this.points = goodPoints - badPoints;
     scoreExplanation.add("Final score: " + points);
   }
   
+  //@formatter:off
+
   private boolean isPreferredStartDayOfWeek(LocalDate date) {
     switch (date.getDayOfWeek()) {
-    case DateTimeConstants.SUNDAY: return false;
-    case DateTimeConstants.MONDAY: return true;
-    case DateTimeConstants.TUESDAY: return true;
-    case DateTimeConstants.WEDNESDAY: return true;
-      case DateTimeConstants.THURSDAY:
-        return false;
-      case DateTimeConstants.FRIDAY:
-        return false;
-    case DateTimeConstants.SATURDAY: return false;
-    default: throw new IllegalStateException("What day of week is this? " + date);
+      case DateTimeConstants.SUNDAY:    return false;
+      case DateTimeConstants.MONDAY:    return true;
+      case DateTimeConstants.TUESDAY:   return true;
+      case DateTimeConstants.WEDNESDAY: return true;
+      case DateTimeConstants.THURSDAY:  return false;
+      case DateTimeConstants.FRIDAY:    return false;
+      case DateTimeConstants.SATURDAY:  return false;
+      default: throw new IllegalStateException("What day of week is this? " + date);
     }
   }
   
+  //@formatter:on
+
   public int getNumFavoriteOvernights() {
     return numFavoriteOvernights;
   }
