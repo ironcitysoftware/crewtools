@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -33,14 +32,15 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Minutes;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Multimap;
+import com.google.common.io.Files;
 import com.google.protobuf.TextFormat;
 
 import crewtools.util.Clock;
 import crewtools.util.FlicaConfig;
 import crewtools.util.SimpleCookieJar;
 import crewtools.util.SystemClock;
-import jline.internal.Preconditions;
 import okhttp3.Cookie;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
