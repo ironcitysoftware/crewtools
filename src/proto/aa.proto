@@ -30,6 +30,15 @@ extend google.protobuf.FieldOptions {
 
 message FlightStatusResponse {
   optional FisFlightStatus fis_flight_status = 1 [(json_name)="FIS flight status"];
+  optional DecommissionMessage decommissionMessage = 2;
+}
+
+message DecommissionMessage {
+  optional string button_cancel = 1;
+  optional string store_url = 2;
+  optional string title = 3;
+  optional string message_text = 4 [(json_name)="message"];
+  optional string button_update = 5;
 }
 
 message FisFlightStatus {

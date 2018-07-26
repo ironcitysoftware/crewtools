@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -32,15 +33,14 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Minutes;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Multimap;
-import com.google.common.io.Files;
 import com.google.protobuf.TextFormat;
 
 import crewtools.util.Clock;
 import crewtools.util.FlicaConfig;
 import crewtools.util.SimpleCookieJar;
 import crewtools.util.SystemClock;
+import jline.internal.Preconditions;
 import okhttp3.Cookie;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
@@ -211,21 +211,31 @@ public class FlicaConnection {
     Response response = httpclient.newCall(request).execute();
     logger.info("First Request Status: " + response.message());
     if (response.code() == HttpURLConnection.HTTP_MOVED_TEMP) {
+      response.body().close();
       logger.info("(Re)Logging in");
       Preconditions.checkState(connect(), "connect failed");
       response = httpclient.newCall(request).execute();
-      Preconditions.checkState(response.code() != HttpURLConnection.HTTP_MOVED_TEMP,
-          response.toString() + "\n" + response.body().string());
+      Preconditions.checkState(response.code() != HttpURLConnection.HTTP_MOVED_TEMP);
     }
     return response.body();
   }
 
   public String retrieveUrl(HttpUrl url) throws IOException {
-    return retrieveUrlInternal(url).string();
+    ResponseBody body = retrieveUrlInternal(url);
+    try {
+      return body.string();
+    } finally {
+      body.close();
+    }
   }
 
   public byte[] retrieveUrlBytes(HttpUrl url) throws IOException {
-    return retrieveUrlInternal(url).bytes();
+    ResponseBody body = retrieveUrlInternal(url);
+    try {
+      return body.bytes();
+    } finally {
+      body.close();
+    }
   }
 
   public Response postUrl(HttpUrl url, Multimap<String, String> data) throws IOException {
@@ -254,12 +264,18 @@ public class FlicaConnection {
     }
     // TODO auto-login on 302
     Request request = new Request.Builder()
-        .url(FLICA_LOGIN_URL)
+        .url(url)
         .header(USER_AGENT_KEY, CHROME_USER_AGENT)
         .header("Referer", referer)
         .post(form.build())
         .build();
+
     Response response = httpclient.newCall(request).execute();
-    return response.body().string();
+    ResponseBody body = response.body();
+    try {
+      return body.string();
+    } finally {
+      body.close();
+    }
   }
 }

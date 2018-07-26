@@ -20,6 +20,7 @@
 package crewtools.aa;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 import org.joda.time.LocalDate;
 
@@ -29,6 +30,8 @@ import crewtools.aa.Proto.FlightStatusResponse;
 import okhttp3.HttpUrl;
 
 public class FlightStatusService {
+  private final Logger logger = Logger.getLogger(FlightStatusService.class.getName());
+
   private final FlightStatusConnection connection;
 
   public FlightStatusService() {
@@ -68,6 +71,10 @@ public class FlightStatusService {
 
     FlightStatusResponse.Builder builder = FlightStatusResponse.newBuilder();
     JsonFormat.parser().merge(json, builder);
-    return builder.build();
+    FlightStatusResponse response = builder.build();
+    if (response.hasDecommissionMessage()) {
+      logger.severe(response.toString());
+    }
+    return response;
   }
 }

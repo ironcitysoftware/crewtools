@@ -57,7 +57,7 @@ public class SubmitSapBid {
   private static final int FO_SBB_ROUND = 4;
 
   public void run(String args[]) throws Exception {
-    YearMonth yearMonth = YearMonth.parse("2018-3");
+    YearMonth yearMonth = YearMonth.parse("2018-8");
 
     FlicaConnection connection = new FlicaConnection(new FlicaConfig());
     FlicaService service = new FlicaService(connection);
