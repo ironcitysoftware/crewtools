@@ -23,8 +23,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
+import java.util.Set;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableSet;
 
 public class FlicaConfig {
   private static final String CONFIG_PROPERTIES_PATH = "/.crewtools";
@@ -55,5 +58,11 @@ public class FlicaConfig {
 
   public String getSessionCacheFile() {
     return props.getProperty("sessionCacheFile");
+  }
+
+  public Set<String> getDomiciles() {
+    return ImmutableSet.copyOf(
+        Splitter.on(',').omitEmptyStrings().trimResults().split(
+            Preconditions.checkNotNull(props.getProperty("domiciles"))));
   }
 }

@@ -22,6 +22,7 @@ package crewtools.flica.parser;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,6 +48,7 @@ import crewtools.flica.Proto.Status;
 public class SeniorityParser {
   private final Logger logger = Logger.getLogger(SeniorityParser.class.getName());
 
+  private final Set<String> domiciles;
   private final byte systemSeniorityPdf[];
   private final Splitter LINE_SPLITTER = Splitter.on("\n");
   
@@ -61,8 +63,9 @@ public class SeniorityParser {
   private static final Map<String, Status> STATUS_MAP =
       ParseUtils.getEnumValueMap(Status.class);
   
-  public SeniorityParser(byte systemSeniorityPdf[]) {
+  public SeniorityParser(byte systemSeniorityPdf[], Set<String> domiciles) {
     this.systemSeniorityPdf = systemSeniorityPdf;
+    this.domiciles = domiciles;
   }
   
   public SeniorityList parse() throws Exception {
@@ -82,7 +85,8 @@ public class SeniorityParser {
     PAGE_HEADER,
     LIST_HEADER,
     CREW_MEMBER,
-    PAGE_FOOTER
+    PAGE_FOOTER,
+    FINISHED
   }
   
   private ParseState state = ParseState.START;
@@ -96,7 +100,7 @@ public class SeniorityParser {
       + "(\\d{2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\\d{2})"
       + " ([A-Z0-9]+)? ?(FO|CA) ([A-Z]+)");
   private Pattern PAGE_FOOTER_PATTERN = Pattern.compile(
-      "(\\d+) (\\d{1,2})/(\\d{1,2})/(\\d{4})");
+      "((\\d+) )?(\\d{1,2})/(\\d{1,2})/(\\d{4})");
   
   private void parse(String line, SeniorityList.Builder builder) throws ParseException {
     if (line.isEmpty()) {
@@ -107,6 +111,13 @@ public class SeniorityParser {
       case PAGE_FOOTER:
         Matcher matcher = PAGE_HEADER_PATTERN.matcher(line);
         if (!matcher.matches()) {
+          // August 2018 started containing two lists - one old-style, one
+          // split out by domicile. Ignore the rest of the document when we
+          // start seeing a domicile page header.
+          if (domiciles.contains(line)) {
+            state = ParseState.FINISHED;
+            return;
+          }
           throw new ParseException("header [" + line + "] unmatched");
         }
         logger.info("Parsing new page");
@@ -144,6 +155,9 @@ public class SeniorityParser {
         }
         break;
         
+      case FINISHED:
+        return;
+
       default:
         throw new ParseException("unhandled state " + state);
     }
@@ -186,7 +200,7 @@ public class SeniorityParser {
   
   private String parsePdf() throws IOException, SAXException, TikaException {
     ByteArrayInputStream bais = new ByteArrayInputStream(systemSeniorityPdf);
-    BodyContentHandler handler = new BodyContentHandler();
+    BodyContentHandler handler = new BodyContentHandler(-1);
     Metadata metadata = new Metadata();
     PDFParser parser = new PDFParser();
     ParseContext parseContext = new ParseContext();

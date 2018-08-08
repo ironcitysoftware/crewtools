@@ -65,13 +65,14 @@ public class MonthlyDataRetriever {
   }
 
   public void run() throws Exception {
-    FlicaConnection connection = new FlicaConnection(new FlicaConfig());
+    FlicaConfig config = new FlicaConfig();
+    FlicaConnection connection = new FlicaConnection(config);
     FlicaService service = new FlicaService(connection);
     service.connect();
 
     getLinesForAllDomiciles(service);
     getPairingsForAllDomiciles(service);
-    getSeniority(service);
+    getSeniority(service, config);
   }
 
   private void getLinesForAllDomiciles(FlicaService service)
@@ -110,7 +111,7 @@ public class MonthlyDataRetriever {
     }
   }
 
-  public void getSeniority(FlicaService service) throws Exception {
+  public void getSeniority(FlicaService service, FlicaConfig config) throws Exception {
     File outputFile = new File(dataReader.getSeniorityFilename(yearMonth));
     if (outputFile.exists()) {
       logger.info("SKIP " + outputFile + " as it exists");
@@ -118,7 +119,7 @@ public class MonthlyDataRetriever {
     }
     byte pdf[] = service.getDocument(AwardDomicile.CLT, Rank.FIRST_OFFICER, ROUND_ONE, yearMonth, seniorityDocumentId,
         "SYSSEN");
-    SeniorityParser parser = new SeniorityParser(pdf);
+    SeniorityParser parser = new SeniorityParser(pdf, config.getDomiciles());
     SeniorityList list = parser.parse();
     list.writeTo(new FileOutputStream(outputFile));
     logger.info("Wrote " + outputFile);
