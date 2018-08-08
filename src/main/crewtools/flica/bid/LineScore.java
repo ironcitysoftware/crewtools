@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
 import org.joda.time.YearMonth;
 
@@ -199,15 +198,6 @@ public class LineScore {
     return numGspOvernights;
   }
 
-  private boolean spansDesiredDaysOff(Trip trip) {
-    for (LocalDate date : trip.getDepartureDates()) {
-      if (bidConfig.getRequiredDayOffList().contains(date.getDayOfMonth())) {
-        return true;
-      }
-    }
-    return false;
-  }
-  
   public Collection<Trip> getTrips() {
     return trips.values();
   }

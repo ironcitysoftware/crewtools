@@ -50,7 +50,7 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
       return -minTripEligible;
     }
     
-    // either are or are not N-trip eligible.
+    // both LineScores either are or are not N-trip eligible.
     
     int aPoints = 0;
     String aTrips = "";

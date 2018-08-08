@@ -105,4 +105,6 @@ message ScoreAdjustment {
   optional int32 score_adjustment = 1;
   repeated int32 crew_employee_id = 2;
   repeated int32 soft_day_off = 3;
+  optional bool prefer_weekdays = 4;
+  optional bool prefer_weekends = 5;
 }

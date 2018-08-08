@@ -21,11 +21,14 @@ package crewtools.flica.bid;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import org.joda.time.DateTimeConstants;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
+
+import com.google.common.collect.ImmutableSet;
 
 import crewtools.flica.pojo.Section;
 import crewtools.flica.pojo.Trip;
@@ -161,14 +164,6 @@ public class TripScore implements Comparable<TripScore> {
       goodPoints += factor;
     }
 
-    if (isPreferredStartDayOfWeek(trip.getFirstSection().date)) {
-      goodPoints += 1;
-      scoreExplanation.add("+1 for weekday start");
-    } else {
-      badPoints += 1;
-      scoreExplanation.add("-1 for weekend start");
-    }
-
     for (ScoreAdjustment scoreAdjustment : config.getScoreAdjustmentList()) {
       int adjustment = scoreAdjustment.getScoreAdjustment();
       if (scoreAdjustment.getCrewEmployeeIdCount() > 0
@@ -181,6 +176,18 @@ public class TripScore implements Comparable<TripScore> {
         goodPoints += adjustment;
         scoreExplanation.add(String.format("%d for soft day off", adjustment));
       }
+      if (scoreAdjustment.getPreferWeekdays()) {
+        int dayAdjustment = computeDayAdjustment(trip.getDepartureDates(), WEEKDAYS,
+            adjustment);
+        goodPoints += dayAdjustment;
+        scoreExplanation.add(String.format("%d for weekdays", dayAdjustment));
+      }
+      if (scoreAdjustment.getPreferWeekends()) {
+        int dayAdjustment = computeDayAdjustment(trip.getDepartureDates(), WEEKENDS,
+            adjustment);
+        goodPoints += dayAdjustment;
+        scoreExplanation.add(String.format("%d for weekends", dayAdjustment));
+      }
     }
 
     this.points = goodPoints - badPoints;
@@ -189,17 +196,27 @@ public class TripScore implements Comparable<TripScore> {
   
   //@formatter:off
 
-  private boolean isPreferredStartDayOfWeek(LocalDate date) {
-    switch (date.getDayOfWeek()) {
-      case DateTimeConstants.SUNDAY:    return false;
-      case DateTimeConstants.MONDAY:    return true;
-      case DateTimeConstants.TUESDAY:   return true;
-      case DateTimeConstants.WEDNESDAY: return true;
-      case DateTimeConstants.THURSDAY:  return false;
-      case DateTimeConstants.FRIDAY:    return false;
-      case DateTimeConstants.SATURDAY:  return false;
-      default: throw new IllegalStateException("What day of week is this? " + date);
+  private static final Set<Integer> WEEKDAYS = ImmutableSet.of(
+      DateTimeConstants.MONDAY,
+      DateTimeConstants.TUESDAY,
+      DateTimeConstants.WEDNESDAY,
+      DateTimeConstants.THURSDAY,
+      DateTimeConstants.FRIDAY);
+
+  private static final Set<Integer> WEEKENDS = ImmutableSet.of(
+      DateTimeConstants.FRIDAY,
+      DateTimeConstants.SATURDAY,
+      DateTimeConstants.SUNDAY);
+
+  private int computeDayAdjustment(
+      Set<LocalDate> tripDates, Set<Integer> preferredDaysOfWeek, int adjustment) {
+    int dayAdjustment = 0;
+    for (LocalDate tripDate : tripDates) {
+      if (preferredDaysOfWeek.contains(tripDate.getDayOfWeek())) {
+        dayAdjustment += adjustment;
+      }
     }
+    return dayAdjustment;
   }
   
   //@formatter:on
