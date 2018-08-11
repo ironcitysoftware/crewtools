@@ -52,8 +52,8 @@ public class FlightStatusService {
     System.out.print(new FlightStatusService().getFlightStatus(flightNumber, localDate));
   }
 
-  // assets/network_config.json
-  private static final int API_VERSION = 37;
+  // AA Version Upgrade: assets/network_config.json
+  private static final int API_VERSION = 39;
 
   private static final String FLIGHT_STATUS_URL_FORMAT_SPEC =
       "https://cdn.flyaa.aa.com/mws_v%d/flightstatus?"

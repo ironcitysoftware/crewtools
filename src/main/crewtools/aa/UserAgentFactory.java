@@ -21,8 +21,8 @@ package crewtools.aa;
 
 public class UserAgentFactory {
 
-  // AARequestInterceptor.versionName
-  public static final String AA_APP_VERSION = "5.0.6";
+  // AA Version Upgrade: AARequestInterceptor.versionName
+  public static final String AA_APP_VERSION = "5.8.0.1";
 
   private static final String AA_APP_VERSION_NAME = "Android";
 

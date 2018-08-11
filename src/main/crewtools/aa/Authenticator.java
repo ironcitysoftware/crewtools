@@ -28,8 +28,8 @@ public class Authenticator {
   private static final String SHA1 = "SHA-1";
   private static final String MD5 = "MD5";
 
-  // AARequestInterceptor.addAuthData
-  private static final String SALT_BASE = "d70X3cj^5_~J9_@$7_0XI%_";
+  // AA Version Upgrade: AARequestInterceptor.addAuthData
+  private static final String SALT_BASE = "~J90X@$8#_@*h_5d^_0X2a_";
 
   public String getAuthToken(long currentMillis, String deviceId) {
     deviceId = deviceId.toUpperCase();
