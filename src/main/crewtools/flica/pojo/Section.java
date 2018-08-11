@@ -21,7 +21,6 @@ package crewtools.flica.pojo;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -36,9 +35,8 @@ import crewtools.flica.Proto;
 import crewtools.flica.Proto.Equipment;
 import crewtools.flica.Proto.LegType;
 import crewtools.util.Period;
-import crewtools.util.ReverseIterator;
 
-public class Section implements Comparable<Section>, Iterable<Leg> {
+public class Section implements Comparable<Section> {
   private final Logger logger = Logger.getLogger(Section.class.getName());
 
   public Section(Proto.Section protoSection, LocalDate date, 
@@ -185,14 +183,5 @@ public class Section implements Comparable<Section>, Iterable<Leg> {
         .add("startDuty", startDuty)
         .add("endDuty", endDuty)
         .toString();
-  }
-
-  @Override
-  public Iterator<Leg> iterator() {
-    return legs.iterator();
-  }
-
-  public Iterator<Leg> reverseIterator() {
-    return new ReverseIterator<Leg>(legs);
   }
 }

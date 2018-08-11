@@ -19,24 +19,14 @@
 
 package crewtools.util;
 
-import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 
-public class ReverseIterator<T> implements Iterator<T> {
-  private ListIterator<T> iterator;
-
-  public ReverseIterator(List<T> list) {
-    iterator = list.listIterator(list.size());
+public class ListAndIndex<T> {
+  public ListAndIndex(List<T> list, int index) {
+    this.list = list;
+    this.index = index;
   }
 
-  @Override
-  public boolean hasNext() {
-    return iterator.hasPrevious();
-  }
-
-  @Override
-  public T next() {
-    return iterator.previous();
-  }
+  public final List<T> list;
+  public final int index;
 }

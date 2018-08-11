@@ -20,119 +20,75 @@
 package crewtools.flica;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.joda.time.ReadableInstant;
 
 import crewtools.dashboard.ScheduleProvider;
 import crewtools.flica.parser.ParseException;
 import crewtools.flica.pojo.Leg;
-import crewtools.flica.pojo.PairingKey;
-import crewtools.flica.pojo.Schedule;
-import crewtools.flica.pojo.Section;
-import crewtools.flica.pojo.Trip;
 import crewtools.util.Clock;
+import crewtools.util.ListAndIndex;
 
 public class LegSelector {
   private static final Logger logger = Logger.getLogger(LegSelector.class.getName());
 
   private Clock clock;
+  private ScheduleProvider scheduleProvider;
 
-  public LegSelector(Clock clock) {
+  public LegSelector(Clock clock, ScheduleProvider scheduleProvider) {
     this.clock = clock;
+    this.scheduleProvider = scheduleProvider;
   }
 
-  public Leg getCurrentLeg(Schedule schedule) {
-    Trip currentTrip = getCurrentTrip(schedule);
-    if (currentTrip != null) {
-      Section currentSection = getCurrentSection(currentTrip);
-      if (currentSection != null) {
-        Leg currentLeg = getCurrentLeg(currentSection);
-        if (currentLeg != null) {
-          return currentLeg;
-        }
+  public ListAndIndex<Leg> getRelevantLegs() throws IOException, ParseException {
+    List<Leg> result = new ArrayList<>();
+    LocalDate today = clock.today();
+    if (today.getDayOfMonth() == 1) {
+      result.addAll(scheduleProvider.getPreviousMonthSchedule().getLegs());
+    }
+    result.addAll(scheduleProvider.getCurrentMonthSchedule().getLegs());
+    if (today.plusDays(1).getDayOfMonth() == 1) {
+      result.addAll(scheduleProvider.getNextMonthSchedule().getLegs());
+    }
+    result.removeIf(leg -> !isRelevantLeg(leg));
+
+    return new ListAndIndex<>(result, getCurrentOrNextLegIndex(result));
+  }
+
+  private int getCurrentOrNextLegIndex(List<Leg> legs) {
+    for (int i = 0; i < legs.size(); ++i) {
+      if (isCurrentLeg(legs.get(i))) {
+        return i;
       }
     }
-    return null;
+    for (int i = 0; i < legs.size(); ++i) {
+      if (isNextLeg(legs.get(i))) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  private boolean isRelevantLeg(Leg leg) {
+    return isNowWithin(leg.getDepartureTime().minusHours(24),
+        leg.getArrivalTime().plusHours(24));
+  }
+
+  private boolean isCurrentLeg(Leg leg) {
+    return isNowWithin(leg.getDepartureTime(), leg.getArrivalTime());
+  }
+
+  private boolean isNextLeg(Leg leg) {
+    return leg.getDepartureTime().isAfter(clock.now());
   }
 
   private boolean isNowWithin(ReadableInstant start, ReadableInstant end) {
     DateTime now = clock.now();
     return !start.isAfter(now) && !end.isBefore(now);
-  }
-
-  public Trip getCurrentTrip(Schedule schedule) {
-    Map<PairingKey, Trip> trips = schedule.getTrips();
-    for (Trip trip : trips.values()) {
-      if (isNowWithin(trip.getDutyStart(), trip.getDutyEnd())) {
-        return trip;
-      }
-    }
-    return null;
-  }
-
-  public Section getCurrentSection(Trip trip) {
-    for (Section section : trip.getSections()) {
-      if (isNowWithin(section.getStart(), section.getEnd())) {
-        return section;
-      }
-    }
-    return null;
-  }
-
-  public Leg getCurrentLeg(Section section) {
-    for (Leg leg : section.getLegs()) {
-      if (isNowWithin(leg.getDepartureTime(), leg.getArrivalTime())) {
-        return leg;
-      }
-    }
-    return null;
-  }
-
-  public Leg getNextLeg(ScheduleProvider scheduleProvider)
-      throws IOException, ParseException {
-    DateTime now = clock.now();
-    Schedule schedule = scheduleProvider.getCurrentMonthSchedule();
-    for (Leg leg : schedule) {
-      if (!now.isAfter(leg.getArrivalTime())) {
-        return leg;
-      }
-    }
-    schedule = scheduleProvider.getNextMonthSchedule();
-    if (schedule != null) {
-      for (Leg leg : schedule) {
-        if (!now.isAfter(leg.getArrivalTime())) {
-          return leg;
-        }
-      }
-    }
-    return null;
-  }
-
-  public Leg getPreviousLeg(ScheduleProvider scheduleProvider)
-      throws IOException, ParseException {
-    DateTime now = clock.now();
-    Schedule schedule = scheduleProvider.getCurrentMonthSchedule();
-    Iterator<Leg> iterator = schedule.reverseIterator();
-    while (iterator.hasNext()) {
-      Leg leg = iterator.next();
-      if (!now.isBefore(leg.getDepartureTime())) {
-        return leg;
-      }
-    }
-    schedule = scheduleProvider.getPreviousMonthSchedule();
-    if (schedule != null) {
-      iterator = schedule.reverseIterator();
-      while (iterator.hasNext()) {
-        Leg leg = iterator.next();
-        if (!now.isBefore(leg.getDepartureTime())) {
-          return leg;
-        }
-      }
-    }
-    return null;
   }
 }

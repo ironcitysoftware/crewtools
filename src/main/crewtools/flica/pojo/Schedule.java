@@ -20,7 +20,6 @@
 package crewtools.flica.pojo;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -33,13 +32,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Ordering;
 
 import crewtools.flica.Proto;
-import crewtools.util.NestedIterator;
 import crewtools.util.Period;
-import crewtools.util.ReverseIterator;
 
 // Represents a month and blend.
 // TODO combine Schedule and ScheduleWrapper
-public class Schedule implements Iterable<Leg> {
+public class Schedule {
   private final Logger logger = Logger.getLogger(Schedule.class.getName());
 
   public final List<Trip> trips;
@@ -175,16 +172,11 @@ public class Schedule implements Iterable<Leg> {
         .collect(Collectors.joining(":"));
   }
 
-  @Override
-  public Iterator<Leg> iterator() {
-    return new NestedIterator<Leg, Trip>(trips.iterator());
-  }
-
-  public Iterator<Leg> reverseIterator() {
-    return new NestedIterator<Leg, Trip>(new ReverseIterator<Trip>(trips)) {
-      @Override public Iterator<Leg> getIterator(Trip trip) {
-        return trip.reverseIterator();
-      }
-    };
+  public List<Leg> getLegs() {
+    List<Leg> legs = new ArrayList<>();
+    for (Trip trip : trips) {
+      legs.addAll(trip.getLegs());
+    }
+    return legs;
   }
 }

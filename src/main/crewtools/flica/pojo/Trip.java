@@ -20,7 +20,6 @@
 package crewtools.flica.pojo;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -39,16 +38,14 @@ import crewtools.flica.Proto;
 import crewtools.flica.Proto.CrewPosition;
 import crewtools.flica.Proto.ScheduleType;
 import crewtools.flica.parser.ParseUtils;
-import crewtools.util.NestedIterator;
 import crewtools.util.Period;
-import crewtools.util.ReverseIterator;
 import crewtools.util.TimeUtils;
 
 /**
  * A trip is a pairing or event associated with a particular set of date.
  * This includes training, vacation, pairing, etc.
  */
-public class Trip implements Comparable<Trip>, Iterable<Leg> {
+public class Trip implements Comparable<Trip> {
   private final TimeUtils timeUtils = new TimeUtils();
   private final Logger logger = Logger.getLogger(Trip.class.getName());
   
@@ -261,17 +258,11 @@ public class Trip implements Comparable<Trip>, Iterable<Leg> {
     return new Integer(proto.hashCode()).compareTo(that.proto.hashCode());
   }
 
-  @Override
-  public Iterator<Leg> iterator() {
-    return new NestedIterator<Leg, Section>(sections.iterator());
-  }
-
-  public Iterator<Leg> reverseIterator() {
-    return new NestedIterator<Leg, Section>(new ReverseIterator<Section>(sections)) {
-      @Override
-      public Iterator<Leg> getIterator(Section section) {
-        return section.reverseIterator();
-      }
-    };
+  public List<Leg> getLegs() {
+    List<Leg> legs = new ArrayList<>();
+    for (Section section : sections) {
+      legs.addAll(section.getLegs());
+    }
+    return legs;
   }
 }

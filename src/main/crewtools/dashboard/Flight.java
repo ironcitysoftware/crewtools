@@ -57,7 +57,7 @@ public class Flight {
     // Scheduled arrival seems to be adjusted for actual departure time.
     // Try "un-adjusting".
     DateTime adjustedArrivalTime = DateTime.parse(flight.getArrivalDate());
-    if (hasActualDepartureTime()) {
+    if (false && hasActualDepartureTime()) {
       DateTime scheduledDeparture = getScheduledDepartureTime();
       DateTime actualDeparture = getActualDepartureTime();
       if (actualDeparture.isAfter(scheduledDeparture)) {

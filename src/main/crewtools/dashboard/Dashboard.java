@@ -19,7 +19,6 @@
 
 package crewtools.dashboard;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.joda.time.DateTime;
@@ -31,23 +30,14 @@ public class Dashboard {
   private final Formatter formatter = new Formatter();
   private final Clock clock;
   private final DateTime retrievedTime;
-  private final FlightInfo currentFlight;
-  private final FlightInfo nextFlight;
   private final List<FlightInfo> flights;
+  private final int currentOrNextFlightIndex;
 
-  Dashboard(Clock clock, FlightInfo currentFlight,
-      FlightInfo nextFlight) {
+  Dashboard(Clock clock, List<FlightInfo> flightInfos, int currentOrNextFlightIndex) {
     this.clock = clock;
     this.retrievedTime = clock.now();
-    this.currentFlight = currentFlight;
-    this.nextFlight = nextFlight;
-    this.flights = new ArrayList<>();
-    if (currentFlight != null) {
-      flights.add(currentFlight);
-    }
-    if (nextFlight != null) {
-      flights.add(nextFlight);
-    }
+    this.flights = flightInfos;
+    this.currentOrNextFlightIndex = currentOrNextFlightIndex;
   }
 
   public DateTime getRetrievedTime() {
@@ -64,12 +54,8 @@ public class Dashboard {
     }
   }
 
-  public FlightInfo getCurrentFlight() {
-    return currentFlight;
-  }
-
-  public FlightInfo getNextFlight() {
-    return nextFlight;
+  public int getCurrentFlightIndex() {
+    return currentOrNextFlightIndex;
   }
 
   public List<FlightInfo> getFlights() {
@@ -79,58 +65,62 @@ public class Dashboard {
   @Override
   public String toString() {
     String result = "At " + getPrettyRetrievedTime() + "\n";
-    result += "Current/Previous flight:\n";
-    if (currentFlight != null) {
-      result += currentFlight.getFlightNumber();
-      if (currentFlight.isCanceled()) {
-        result += " : CANCELLED";
+
+    for (int i = 0; i < flights.size(); ++i) {
+      FlightInfo flight = flights.get(i);
+      if (i == currentOrNextFlightIndex) {
+        result += "***************** Current/Next Flight:\n";
+      } else {
+        result += "Flight:\n";
       }
-      result += "\n";
-      result += String.format("%3s  ->   %3s\n", currentFlight.getOriginAirport(),
-          currentFlight.getDestinationAirport());
-      result += String.format("%3s  %3s  %3s\n", currentFlight.getOriginGate(),
-          currentFlight.getAircraftType(),
-          currentFlight.getDestinationGate());
-      if (currentFlight.getTimeInfo().hasDeparture()) {
-        result += String.format("Depart %s %s\n",
-            currentFlight.getTimeInfo().getDepartureOffset(),
-            currentFlight.getTimeInfo().getDepartureZulu());
-      }
-      if (currentFlight.getTimeInfo().hasArrival()) {
-        result += String.format("Arrive %s %s\n",
-            currentFlight.getTimeInfo().getArrivalOffset(),
-            currentFlight.getTimeInfo().getArrivalZulu());
+      result += toString(flight, i == currentOrNextFlightIndex);
+      if (i < flights.size() - 1) {
+        result += "--------------------------";
       }
     }
-    result += "---------------------\nNext flight:\n";
-    if (nextFlight != null) {
-      result += nextFlight.getFlightNumber();
-      if (nextFlight.isCanceled()) {
-        result += " : CANCELLED";
+    return result;
+  }
+
+  private String toString(FlightInfo flight, boolean isCurrentOrNext) {
+    String result = flight.getFlightNumber();
+    if (flight.isCanceled()) {
+      result += " : CANCELLED";
+    }
+    result += "\n";
+    result += String.format("%3s  ->   %3s\n", flight.getOriginAirport(),
+        flight.getDestinationAirport());
+    result += String.format("%3s  %3s  %3s\n", flight.getOriginGate(),
+        flight.getAircraftType(),
+        flight.getDestinationGate());
+
+    if (isCurrentOrNext && !flight.getTimeInfo().hasActualArrival()) {
+      result += String.format("Company show: %s %s\n",
+          flight.getTimeInfo().getCompanyShowOffset(),
+          flight.getTimeInfo().getCompanyShowZulu());
+      if (flight.getTimeInfo().hasEstimatedShow()) {
+        result += String.format("Inbound arrv: %s\n",
+            flight.getTimeInfo().getEstimatedShowOffset(),
+            flight.getTimeInfo().getEstimatedShowZulu());
       }
-      result += "\n";
-      result += String.format("%3s  ->   %3s\n", nextFlight.getOriginAirport(),
-          nextFlight.getDestinationAirport());
-      result += String.format("%3s  %3s  %3s\n", nextFlight.getOriginGate(),
-          nextFlight.getAircraftType(),
-          nextFlight.getDestinationGate());
-      result += String.format("AA  show: %s %s\n",
-          nextFlight.getTimeInfo().getCompanyShowOffset(),
-          nextFlight.getTimeInfo().getCompanyShowZulu());
-      if (nextFlight.getTimeInfo().hasEstimatedShow()) {
-        result += String.format("Est show: %s\n",
-            nextFlight.getTimeInfo().getEstimatedShowOffset(),
-            nextFlight.getTimeInfo().getEstimatedShowZulu());
-      }
-      if (nextFlight.getTimeInfo().hasDeparture()) {
-        result += String.format("Departed %s %s\n",
-            nextFlight.getTimeInfo().getDepartureOffset(),
-            nextFlight.getTimeInfo().getDepartureZulu());
-      } else {
-        result += String.format("Departs %s %s\n",
-            nextFlight.getTimeInfo().getScheduledDepartureOffset(),
-            nextFlight.getTimeInfo().getScheduledDepartureZulu());
-      }
+    }
+
+    if (flight.getTimeInfo().hasActualDeparture()) {
+      result += String.format("Departed %s %s\n",
+          flight.getTimeInfo().getDepartureOffset(),
+          flight.getTimeInfo().getDepartureZulu());
+    } else {
+      result += String.format("Departs %s%s\n",
+          isCurrentOrNext ? flight.getTimeInfo().getScheduledDepartureOffset() + " " : "",
+          flight.getTimeInfo().getScheduledDepartureZulu());
+    }
+    if (flight.getTimeInfo().hasActualArrival()) {
+      result += String.format("Arrived %s %s\n",
+          flight.getTimeInfo().getArrivalOffset(),
+          flight.getTimeInfo().getArrivalZulu());
+    } else {
+      result += String.format("Arrives %s%s\n",
+          isCurrentOrNext ? flight.getTimeInfo().getScheduledArrivalOffset() + " " : "",
+          flight.getTimeInfo().getScheduledArrivalZulu());
     }
     return result;
   }

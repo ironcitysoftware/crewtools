@@ -20,15 +20,16 @@
 package crewtools.dashboard;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import crewtools.aa.FlightStatusService;
-import crewtools.aa.Proto.FlightStatusResponse;
 import crewtools.flica.FlicaService;
 import crewtools.flica.LegSelector;
 import crewtools.flica.parser.ParseException;
 import crewtools.flica.pojo.Leg;
-import crewtools.flica.pojo.Schedule;
 import crewtools.util.Clock;
+import crewtools.util.ListAndIndex;
 
 public class DashboardService {
   private final FlicaService flicaService;
@@ -44,25 +45,23 @@ public class DashboardService {
 
   public Dashboard getDashboard(Clock clock) throws IOException, ParseException {
     ScheduleProvider scheduleProvider = new ScheduleProvider(clock, flicaService);
-    Schedule currentMonthSchedule = scheduleProvider.getCurrentMonthSchedule();
+    LegSelector selector = new LegSelector(clock, scheduleProvider);
+    ListAndIndex<Leg> legs = selector.getRelevantLegs();
+    List<FlightStatusResponseWrapper> statuses = legs.list
+        .stream()
+        .map(leg -> getStatus(leg))
+        .collect(Collectors.toList());
+    return dashboardAdaptor.adapt(clock, legs, statuses);
+  }
 
-    LegSelector selector = new LegSelector(clock);
-    Leg currentLeg = selector.getCurrentLeg(currentMonthSchedule);
-    if (currentLeg == null) {
-      currentLeg = selector.getPreviousLeg(scheduleProvider);
+  private FlightStatusResponseWrapper getStatus(Leg leg) {
+    try {
+      return new FlightStatusResponseWrapper(
+          flightStatusService.getFlightStatus(
+              leg.getFlightNumber(),
+              leg.getDepartureTime().toLocalDate()));
+    } catch (IOException e) {
+      throw new IllegalStateException(e);
     }
-    Leg nextLeg = selector.getNextLeg(scheduleProvider);
-    FlightStatusResponse currentFlight = null;
-    if (currentLeg != null) {
-      currentFlight = flightStatusService.getFlightStatus(currentLeg.getFlightNumber(),
-          currentLeg.getDepartureTime().toLocalDate());
-    }
-    FlightStatusResponse nextFlight = null;
-    if (nextLeg != null) {
-      nextFlight = flightStatusService.getFlightStatus(nextLeg.getFlightNumber(),
-          nextLeg.getDepartureTime().toLocalDate());
-    }
-
-    return dashboardAdaptor.adapt(clock, currentLeg, currentFlight, nextLeg, nextFlight);
   }
 }

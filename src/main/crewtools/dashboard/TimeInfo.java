@@ -74,7 +74,7 @@ public class TimeInfo {
     return formatter.getZulu(estimatedShow);
   }
 
-  public boolean hasDeparture() {
+  public boolean hasActualDeparture() {
     return actualDeparture != null;
   }
 
@@ -94,7 +94,7 @@ public class TimeInfo {
     return formatter.getZulu(scheduledDeparture);
   }
 
-  public boolean hasArrival() {
+  public boolean hasActualArrival() {
     return actualArrival != null;
   }
 
@@ -104,5 +104,13 @@ public class TimeInfo {
 
   public String getArrivalZulu() {
     return formatter.getZulu(actualArrival);
+  }
+
+  public String getScheduledArrivalOffset() {
+    return formatter.getPrettyOffset(scheduledArrival, clock.now());
+  }
+
+  public String getScheduledArrivalZulu() {
+    return formatter.getZulu(scheduledArrival);
   }
 }
