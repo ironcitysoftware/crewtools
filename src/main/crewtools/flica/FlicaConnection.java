@@ -82,7 +82,8 @@ public class FlicaConnection {
     }
   }
 
-  private FlicaConnection(String username, String password) {
+  // TODO make private
+  public FlicaConnection(String username, String password) {
     this.username = username;
     this.password = password;
     this.httpclient = new OkHttpClient().newBuilder()
@@ -187,15 +188,19 @@ public class FlicaConnection {
         .post(form)
         .build();
     Response response = httpclient.newCall(request).execute();
-    if (response.code() != HttpURLConnection.HTTP_OK) {
-      return false;
+    try {
+      if (response.code() != HttpURLConnection.HTTP_OK) {
+        return false;
+      }
+      sessionCreationTime = clock.now();
+      if (sessionCacheFile != null) {
+        logger.info("Writing session to " + sessionCacheFile);
+        Files.write(getSession(), sessionCacheFile, StandardCharsets.UTF_8);
+      }
+      return true;
+    } finally {
+      response.close();
     }
-    sessionCreationTime = clock.now();
-    if (sessionCacheFile != null) {
-      logger.info("Writing session to " + sessionCacheFile);
-      Files.write(getSession(), sessionCacheFile, StandardCharsets.UTF_8);
-    }
-    return true;
   }
 
   public void disconnect() throws IOException {
