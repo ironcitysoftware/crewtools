@@ -122,6 +122,7 @@ public class MonthlyBidder {
       logger.info("Submitting bids!");
       Response response = service.submitLineBid(/* round */ 1, yearMonth, bids);
       Preconditions.checkState(response.code() == 200, response.toString());
+      response.close();
     } else {
       logger.info("--submit was not specified, so bids not submitted.");
     }
