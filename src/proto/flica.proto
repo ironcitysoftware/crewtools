@@ -122,7 +122,7 @@ enum Domicile {
   DAY = 3;
   DCA = 4;
   TYS = 5;
-  TRAINING_DOMICILE = 6;
+  TRN = 6;
   NHF = 7;  // new hire
   NH1 = 8;  // new hire after ca. Oct 2017
   Z = 9;  // new hire June 2017?

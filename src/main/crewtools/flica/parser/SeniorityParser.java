@@ -91,6 +91,8 @@ public class SeniorityParser {
   
   private ParseState state = ParseState.START;
   
+  private boolean firstPass = false;
+
   private Pattern PAGE_HEADER_PATTERN = Pattern.compile("SYSSEN (\\d{4})-(\\d+)");
   
   // Pre    Oct 2017: 1399 28148 NIMA MOJDEH 17-Jul-17 FO SIP
@@ -110,7 +112,8 @@ public class SeniorityParser {
       case START:
       case PAGE_FOOTER:
         Matcher matcher = PAGE_HEADER_PATTERN.matcher(line);
-        if (!matcher.matches()) {
+        // Oct 2018 had a non-standard header.
+        if (!line.contains("SYSSEN") && !matcher.matches()) {
           // August 2018 started containing two lists - one old-style, one
           // split out by domicile. Ignore the rest of the document when we
           // start seeing a domicile page header.
@@ -151,6 +154,17 @@ public class SeniorityParser {
           }
           state = ParseState.PAGE_FOOTER;
         } else {
+          // Oct 2018 SYSSEN did not have domicile headers.
+          // So, ignore the rest of the document once we see #1 twice.
+          int seniorityId = Integer.parseInt(matcher.group(1));
+          if (seniorityId == 1) {
+            if (firstPass) {
+              state = ParseState.FINISHED;
+              return;
+            } else {
+              firstPass = true;
+            }
+          }
           addCrewMember(matcher, builder);
         }
         break;

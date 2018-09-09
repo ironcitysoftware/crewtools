@@ -99,6 +99,9 @@ message BidConfig {
 
   // "New" way to adjust scoring.
   repeated ScoreAdjustment score_adjustment = 12;
+
+  // Ordered list of line names which trumps normal monthly bidding.
+  repeated string monthly_bid_override = 13;
 }
 
 message ScoreAdjustment {

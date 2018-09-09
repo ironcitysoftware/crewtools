@@ -108,7 +108,7 @@ public class LineParser {
   }
 
   private static final Set<Integer> MONTHS_WHERE_FIRST_COLUMN_IS_FIRST_DAY = ImmutableSet
-      .of(4, 5, 6, 7, 8, 9);
+      .of(4, 5, 6, 7, 8, 9, 10);
 
   /** column is 1 .. numColumns */
   /** TODO, capture header text row and properly map columns to days */
