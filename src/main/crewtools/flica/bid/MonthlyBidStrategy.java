@@ -40,7 +40,6 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
   public int compare(LineScore a, LineScore b) {
     int aOverrideIndex = bidConfig.getMonthlyBidOverrideList().indexOf(a.getLineName());
     int bOverrideIndex = bidConfig.getMonthlyBidOverrideList().indexOf(b.getLineName());
-    // 104
     if (aOverrideIndex > -1 && bOverrideIndex > -1) {
       return Integer.compare(aOverrideIndex, bOverrideIndex);
     }
