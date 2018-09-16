@@ -72,6 +72,10 @@ public class Trip implements Comparable<Trip> {
     }
   }
   
+  public int getStartingDayOfMonth() {
+    return earliestDepartureDate.getDayOfMonth();
+  }
+
   // TODO: define this list.
   private static final Set<ScheduleType> UNDROPPABLE_SCHEDULE_TYPES = ImmutableSet.of(
       ScheduleType.RELOCATION_DAY,

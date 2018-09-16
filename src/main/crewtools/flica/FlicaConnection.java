@@ -220,7 +220,8 @@ public class FlicaConnection {
       logger.info("(Re)Logging in");
       Preconditions.checkState(connect(), "connect failed");
       response = httpclient.newCall(request).execute();
-      Preconditions.checkState(response.code() != HttpURLConnection.HTTP_MOVED_TEMP);
+      Preconditions.checkState(response.code() != HttpURLConnection.HTTP_MOVED_TEMP,
+          response.toString());
     }
     return response.body();
   }

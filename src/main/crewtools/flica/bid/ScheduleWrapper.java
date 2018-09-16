@@ -141,6 +141,14 @@ public class ScheduleWrapper {
     this.baggageCredit = baggageCreditThisMonth;
   }
   
+  public boolean containsKey(PairingKey key) {
+    return trips.containsKey(key);
+  }
+
+  public Trip getTrip(PairingKey key) {
+    return trips.get(key);
+  }
+
   // Credits should be ordered from smallest to largest period.
   private Period getSmallestDroppableCredit(Map<PairingKey, Period> credits) {
     for (Map.Entry<PairingKey, Period> entry : credits.entrySet()) {
