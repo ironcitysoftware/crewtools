@@ -166,6 +166,8 @@ enum ScheduleType {
   VACATION_START = 27 [(flica_name)="VAX"];
   VACATION = 28 [(flica_name)="VAC"];
   VACATION_END = 29 [(flica_name)="VAS"];
+
+  SICK = 30 [(flica_name)="Sick"];
 }
 
 enum LegType {
