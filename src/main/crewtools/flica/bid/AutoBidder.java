@@ -79,7 +79,7 @@ public class AutoBidder {
         cmdLine.getScheduleRefreshInterval(), yearMonth,
         tree, trips, service, bidConfig);
     scheduleLoaderThread.start();
-    scheduleLoaderThread.blockCurrentThreadUntilInitialRunIsComplete();
+    scheduleLoaderThread.blockCurrentThreadUntilScheduleIsLoaded();
 
     BlockingQueue<Trip> queue = new LinkedBlockingQueue<Trip>();
     Worker worker = new Worker(queue, service, tree, yearMonth,

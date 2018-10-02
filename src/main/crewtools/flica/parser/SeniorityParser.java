@@ -140,6 +140,18 @@ public class SeniorityParser {
         matcher = CREW_MEMBER_PATTERN.matcher(line);
         if (!matcher.matches()) {
           throw new ParseException("unmatched crew member [" + line + "] (blank page?)");
+        } else {
+          // Oct 2018 SYSSEN did not have domicile headers.
+          // So, ignore the rest of the document once we see #1 twice.
+          int seniorityId = Integer.parseInt(matcher.group(1));
+          if (seniorityId == 1) {
+            if (firstPass) {
+              state = ParseState.FINISHED;
+              return;
+            } else {
+              firstPass = true;
+            }
+          }
         }
         addCrewMember(matcher, builder);
         state = ParseState.CREW_MEMBER;
@@ -154,17 +166,6 @@ public class SeniorityParser {
           }
           state = ParseState.PAGE_FOOTER;
         } else {
-          // Oct 2018 SYSSEN did not have domicile headers.
-          // So, ignore the rest of the document once we see #1 twice.
-          int seniorityId = Integer.parseInt(matcher.group(1));
-          if (seniorityId == 1) {
-            if (firstPass) {
-              state = ParseState.FINISHED;
-              return;
-            } else {
-              firstPass = true;
-            }
-          }
           addCrewMember(matcher, builder);
         }
         break;

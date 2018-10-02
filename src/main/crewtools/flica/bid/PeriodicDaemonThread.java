@@ -45,7 +45,7 @@ public abstract class PeriodicDaemonThread extends Thread {
     this.initialRunComplete = new AtomicBoolean(false);
   }
   
-  public void blockCurrentThreadUntilInitialRunIsComplete() {
+  public void blockCurrentThreadUntilScheduleIsLoaded() {
     if (initialRunComplete.get()) {
       return;
     }
