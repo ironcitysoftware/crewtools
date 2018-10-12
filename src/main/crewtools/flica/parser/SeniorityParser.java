@@ -51,34 +51,34 @@ public class SeniorityParser {
   private final Set<String> domiciles;
   private final byte systemSeniorityPdf[];
   private final Splitter LINE_SPLITTER = Splitter.on("\n");
-  
+
   // September 2017 and later.
   private static final String LIST_HEADER =
       "SEN ID EMP ID FIRST LAST HIRE DATE CITY TITLE STATUS";
-  
+
   // August 2017 and prior.
   private static final String LEGACY_LIST_HEADER =
       "SEN EMP FIRST LAST HIRE DATE CITY TITLE STATUS";
-  
+
   private static final Map<String, Status> STATUS_MAP =
       ParseUtils.getEnumValueMap(Status.class);
-  
+
   public SeniorityParser(byte systemSeniorityPdf[], Set<String> domiciles) {
     this.systemSeniorityPdf = systemSeniorityPdf;
     this.domiciles = domiciles;
   }
-  
+
   public SeniorityList parse() throws Exception {
     String systemSeniorityText = parsePdf();
-    Iterable<String> lines = LINE_SPLITTER.split(systemSeniorityText);  
-    
+    Iterable<String> lines = LINE_SPLITTER.split(systemSeniorityText);
+
     SeniorityList.Builder builder = SeniorityList.newBuilder();
     for (String line : lines) {
       parse(line, builder);
     }
     return builder.build();
   }
-  
+
   enum ParseState {
     START,
     TITLE,
@@ -88,22 +88,22 @@ public class SeniorityParser {
     PAGE_FOOTER,
     FINISHED
   }
-  
+
   private ParseState state = ParseState.START;
-  
+
   private boolean firstPass = false;
 
-  private Pattern PAGE_HEADER_PATTERN = Pattern.compile("SYSSEN (\\d{4})-(\\d+)");
-  
+  private Pattern PAGE_HEADER_PATTERN = Pattern.compile("SYS ?SEN (\\d{4})-(\\d+)");
+
   // Pre    Oct 2017: 1399 28148 NIMA MOJDEH 17-Jul-17 FO SIP
   // Oct 2017 onward: 1399 28148 NIMA MOJDEH 17-Jul-17 NH1 FO SIP
   private Pattern CREW_MEMBER_PATTERN = Pattern.compile("(\\d+) (\\d+) ([^0-9]+)"
-      /* no space */ 
+      /* no space */
       + "(\\d{2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\\d{2})"
       + " ([A-Z0-9]+)? ?(FO|CA) ([A-Z]+)");
   private Pattern PAGE_FOOTER_PATTERN = Pattern.compile(
       "((\\d+) )?(\\d{1,2})/(\\d{1,2})/(\\d{4})");
-  
+
   private void parse(String line, SeniorityList.Builder builder) throws ParseException {
     if (line.isEmpty()) {
       return;
@@ -126,7 +126,7 @@ public class SeniorityParser {
         logger.info("Parsing new page");
         state = ParseState.PAGE_HEADER;
         break;
-        
+
       case PAGE_HEADER:
         if (line.equals(LIST_HEADER) || line.equals(LEGACY_LIST_HEADER)) {
           state = ParseState.LIST_HEADER;
@@ -135,7 +135,7 @@ public class SeniorityParser {
           // throw new ParseException("header [" + line + "] unmatched");
         }
         // fall through
-        
+
       case LIST_HEADER:
         matcher = CREW_MEMBER_PATTERN.matcher(line);
         if (!matcher.matches()) {
@@ -156,7 +156,7 @@ public class SeniorityParser {
         addCrewMember(matcher, builder);
         state = ParseState.CREW_MEMBER;
         break;
-        
+
       case CREW_MEMBER:
         matcher = CREW_MEMBER_PATTERN.matcher(line);
         if (!matcher.matches()) {
@@ -169,7 +169,7 @@ public class SeniorityParser {
           addCrewMember(matcher, builder);
         }
         break;
-        
+
       case FINISHED:
         return;
 
@@ -200,10 +200,10 @@ public class SeniorityParser {
     }
     member.setStatus(status);
   }
-  
-  private DateTimeFormatter HIRE_DATE_FORMATTER = 
+
+  private DateTimeFormatter HIRE_DATE_FORMATTER =
       DateTimeFormat.forPattern("d-MMM-y");
-  
+
   private LocalDate parseHireDate(String dayOfMonth, String month, String yearStr) {
     int year = 1900 + Integer.parseInt(yearStr);
     if (year < 1950) {
@@ -212,7 +212,7 @@ public class SeniorityParser {
     String syntheticDate = String.format("%s-%s-%d", dayOfMonth, month, year);
     return HIRE_DATE_FORMATTER.parseLocalDate(syntheticDate);
   }
-  
+
   private String parsePdf() throws IOException, SAXException, TikaException {
     ByteArrayInputStream bais = new ByteArrayInputStream(systemSeniorityPdf);
     BodyContentHandler handler = new BodyContentHandler(-1);

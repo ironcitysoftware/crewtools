@@ -108,7 +108,7 @@ public class LineParser {
   }
 
   private static final Set<Integer> MONTHS_WHERE_FIRST_COLUMN_IS_FIRST_DAY = ImmutableSet
-      .of(4, 5, 6, 7, 8, 9, 10);
+      .of(4, 5, 6, 7, 8, 9, 10, 11);
 
   /** column is 1 .. numColumns */
   /** TODO, capture header text row and properly map columns to days */
@@ -130,13 +130,13 @@ public class LineParser {
         return yearMonth.toLocalDate(column - 1);
       }
     } else if (yearMonth.getMonthOfYear() == 3) {
-      return yearMonth.toLocalDate(column + 1);      
+      return yearMonth.toLocalDate(column + 1);
     } else {
       throw new IllegalStateException(
           "TODO Verify that column 1 is the first of the month");
     }
   }
-  
+
   private void parseLine(int numColumns, YearMonth yearMonth, Elements tds,
       ThinLine.Builder builder) throws ParseException {
     builder.setLineName(tds.get(0).text());
@@ -160,7 +160,7 @@ public class LineParser {
         isFirstDayOfPairing = false;
       }
       List<String> components = SPACE_SPLITTER.splitToList(cell.text());
-      // "-, GSP" normally.  "-" if this is a day of rest in the line.      
+      // "-, GSP" normally. "-" if this is a day of rest in the line.
       if (components.size() != 1 && components.size() != 2) {
         throw new ParseException("Expected 1 or 2 components in " + cell);
       }
