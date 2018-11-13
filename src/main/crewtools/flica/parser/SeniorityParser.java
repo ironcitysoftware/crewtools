@@ -111,6 +111,11 @@ public class SeniorityParser {
     switch(state) {
       case START:
       case PAGE_FOOTER:
+        // December 2018 didn't have the SYSSEN header
+        if (line.equals(LIST_HEADER)) {
+          state = ParseState.LIST_HEADER;
+          break;
+        }
         Matcher matcher = PAGE_HEADER_PATTERN.matcher(line);
         // Oct 2018 had a non-standard header.
         if (!line.contains("SYSSEN") && !matcher.matches()) {
