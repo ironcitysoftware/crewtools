@@ -102,6 +102,9 @@ message BidConfig {
 
   // Ordered list of line names which trumps normal monthly bidding.
   repeated string monthly_bid_override = 13;
+
+  optional string award_domicile = 14;
+  optional string rank = 15;
 }
 
 message ScoreAdjustment {

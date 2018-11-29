@@ -56,6 +56,8 @@ public class MonthlyBidder {
   private final Logger logger = Logger.getLogger(MonthlyBidder.class.getName());
   private final MonthlyBidderCommandLineConfig cmdLine;
   private final BidConfig bidConfig;
+  private final AwardDomicile awardDomicile;
+  private final Rank rank;
 
   public static void main(String args[]) throws Exception {
     new MonthlyBidder(args).run();
@@ -64,8 +66,10 @@ public class MonthlyBidder {
   public MonthlyBidder(String args[]) throws Exception {
     this.cmdLine = new MonthlyBidderCommandLineConfig(args);
     this.bidConfig = FileUtils.readBidConfig();
+    this.awardDomicile = AwardDomicile.valueOf(bidConfig.getAwardDomicile());
+    this.rank = Rank.valueOf(bidConfig.getRank());
   }
-  
+
   public void run() throws Exception {
     runForMonthlyBid();
   }
@@ -93,7 +97,7 @@ public class MonthlyBidder {
       Map<PairingKey, Trip> trips = new HashMap<>();
       for (PairingKey key : line.getPairingKeys()) {
         logger.fine("Line " + line.getLineName() + " key " + key);
-        trips.put(key, 
+        trips.put(key,
             Preconditions.checkNotNull(pairings.get(key),
                 "Pairing not found: " + key));
       }
@@ -144,9 +148,9 @@ public class MonthlyBidder {
       Map<PairingKey, Trip> allPairings, YearMonth yearMonth) {
     StringBuilder result = new StringBuilder();
     ThinLine line = lineScore.getThinLine();
-    
+
     result.append(line.getLineName());
-    
+
     char dates[] = THIRTY_ONE_SPACES.substring(0, lastDateOfMonth).toCharArray();
     List<String> supplement = new ArrayList<>();
     for (PairingKey key : line.getPairingKeys()) {
@@ -161,7 +165,7 @@ public class MonthlyBidder {
         Section section = trip.getSections().get(i);
 
         Proto.Section proto = trip.proto.getSection(i);
-        if (section.getDepartureDate().getMonthOfYear() == 
+        if (section.getDepartureDate().getMonthOfYear() ==
             yearMonth.getMonthOfYear()) {
           dates[section.getDepartureDate().getDayOfMonth() - 1] = '.';
         }
@@ -189,19 +193,20 @@ public class MonthlyBidder {
     for (String s : supplement) {
       result.append(String.format("%19s ", s));
     }
-    
+
     return result.toString();
   }
-  
+
   private Map<PairingKey, Trip> getAllPairings(FlicaService service, YearMonth yearMonth) throws Exception {
     Proto.PairingList pairingList;
     if (!cmdLine.useProto()) {
-      String rawPairings = service.getAllPairings(AwardDomicile.CLT, Rank.FIRST_OFFICER, 1, yearMonth);
+      String rawPairings = service.getAllPairings(awardDomicile, rank, 1,
+          yearMonth);
       PairingParser pairingParser = new PairingParser(rawPairings, yearMonth,
           cmdLine.parseCanceled());
       pairingList = pairingParser.parse();
     } else {
-      String filename = new DataReader().getPairingFilename(yearMonth, AwardDomicile.CLT);
+      String filename = new DataReader().getPairingFilename(yearMonth, awardDomicile);
       Proto.PairingList.Builder builder = Proto.PairingList.newBuilder();
       FileInputStream inputStream = new FileInputStream(new File(filename));
       builder.mergeFrom(inputStream);
@@ -222,11 +227,12 @@ public class MonthlyBidder {
   private List<ThinLine> getAllLines(FlicaService service, YearMonth yearMonth) throws Exception {
     Proto.ThinLineList lineList;
     if (!cmdLine.useProto()) {
-      String rawLines = service.getAllLines(AwardDomicile.CLT, Rank.FIRST_OFFICER, 1, yearMonth);
+      String rawLines = service.getAllLines(awardDomicile, rank, 1,
+          yearMonth);
       LineParser lineParser = new LineParser(rawLines);
       lineList = lineParser.parse();
     } else {
-      String filename = new DataReader().getLineFilename(yearMonth, AwardDomicile.CLT);
+      String filename = new DataReader().getLineFilename(yearMonth, awardDomicile);
       Proto.ThinLineList.Builder builder = Proto.ThinLineList.newBuilder();
       FileInputStream inputStream = new FileInputStream(new File(filename));
       builder.mergeFrom(inputStream);
