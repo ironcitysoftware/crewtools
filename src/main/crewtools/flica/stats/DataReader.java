@@ -21,6 +21,7 @@ package crewtools.flica.stats;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,6 +29,8 @@ import java.util.TreeMap;
 import java.util.logging.Logger;
 
 import org.joda.time.YearMonth;
+
+import com.google.common.base.Preconditions;
 
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.Proto.PairingList;
@@ -38,11 +41,11 @@ import crewtools.util.FlicaConfig;
 public class DataReader {
   private final Logger logger = Logger.getLogger(DataReader.class.getName());
   private final String dataDir;
-  
+
   public DataReader() throws IOException {
     dataDir = new FlicaConfig().getDataDirectory();
   }
-  
+
 //  public static void main(String args[]) throws Exception {
 //    DataReader dataReader = new DataReader();
 //    File f = new File(dataReader.getPairingFilename(YearMonth.parse("2018-01"), AwardDomicile.CLT));
@@ -55,22 +58,22 @@ public class DataReader {
 //      }
 //    }
 //  }
-  
+
   public String getSeniorityFilename(YearMonth yearMonth) {
     return dataDir + "seniority-" + yearMonth + ".io";
   }
-  
+
   public String getLineFilename(YearMonth yearMonth, AwardDomicile awardDomicile) {
     return dataDir
-        + "lines-" 
-        + awardDomicile.name().toLowerCase() 
+        + "lines-"
+        + awardDomicile.name().toLowerCase()
         + "-"+ yearMonth + ".io";
   }
 
   public String getPairingFilename(YearMonth yearMonth, AwardDomicile awardDomicile) {
-    return dataDir 
-        + "pairings-" 
-        + awardDomicile.name().toLowerCase() 
+    return dataDir
+        + "pairings-"
+        + awardDomicile.name().toLowerCase()
         + "-"+ yearMonth + ".io";
   }
 
@@ -90,10 +93,10 @@ public class DataReader {
     }
     return lists;
   }
-  
+
   private static final int MONTHS_IN_PAST_CUTOFF = 60;
   private static final int MAX_STRIKES = 2;
-  
+
   public Map<YearMonth, Map<AwardDomicile, ThinLineList>> readLines() throws Exception {
     Map<YearMonth, Map<AwardDomicile, ThinLineList>> result = new HashMap<>();
     YearMonth startingMonth = YearMonth.now().plusMonths(1);
@@ -126,7 +129,7 @@ public class DataReader {
     }
     return result;
   }
-  
+
   public Map<YearMonth, Map<AwardDomicile, PairingList>> readPairings() throws Exception {
     Map<YearMonth, Map<AwardDomicile, PairingList>> result = new HashMap<>();
     YearMonth startingMonth = YearMonth.now().plusMonths(1);
@@ -158,5 +161,27 @@ public class DataReader {
       monthsInPast++;
     }
     return result;
+  }
+
+  public ThinLineList readLines(YearMonth yearMonth, AwardDomicile awardDomicile)
+      throws FileNotFoundException, IOException {
+    File line = new File(getLineFilename(yearMonth, awardDomicile));
+    Preconditions.checkState(line.exists(),
+        "File doesn't exist: " + line.getAbsolutePath());
+    logger.info("Reading " + line.getAbsolutePath());
+    ThinLineList.Builder builder = ThinLineList.newBuilder();
+    builder.mergeFrom(new FileInputStream(line));
+    return builder.build();
+  }
+
+  public PairingList readPairings(YearMonth yearMonth, AwardDomicile awardDomicile)
+      throws FileNotFoundException, IOException {
+    File pairing = new File(getPairingFilename(yearMonth, awardDomicile));
+    Preconditions.checkState(pairing.exists(),
+        "File doesn't exist: " + pairing.getAbsolutePath());
+    logger.info("Reading " + pairing.getAbsolutePath());
+    PairingList.Builder builder = PairingList.newBuilder();
+    builder.mergeFrom(new FileInputStream(pairing));
+    return builder.build();
   }
 }

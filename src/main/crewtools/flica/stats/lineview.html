@@ -1,0 +1,68 @@
+<html>
+<head>
+<title>LineView</title>
+<style>
+.split {
+  width: 100%;
+  height: 50%;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  overflow-y: scroll;
+  padding-left: 5px;
+}
+
+.upper {
+  top: 0;
+}
+
+.lower {
+  bottom: 0;
+}
+
+.upper table, .upper th, .upper td {
+  border: 1px solid black;
+}
+
+.upper table {
+  border-collapse: collapse;
+}
+
+.upper td {
+  font-family: 'Trebuchet';
+  font-size: 14pt;
+  padding: 2px;
+}
+
+.weekend {
+  background-color: #fff8dc;
+}
+
+.lower table, .lower th, .lower td {
+  border: none;
+}
+
+.lower td {
+  font-family: 'Trebuchet';
+  font-size: 8pt;
+  padding: 1px;
+}
+</style>
+<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+</head>
+<body>
+<div class="split upper" id="line_pane">
+LINE_HTML
+</div>
+
+<div class="split lower" id="pairing_pane">
+</div>
+
+<script>
+$("#line_pane td[id]").click(
+  function () {
+    $("#pairing_pane").load("detail/" + $(this).attr("id"));
+  });
+</script>
+</body>
+</html>
