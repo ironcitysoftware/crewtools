@@ -37,6 +37,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
 
+import crewtools.flica.Proto.ScheduleType;
 import crewtools.flica.Proto.ThinLine;
 import crewtools.flica.Proto.ThinLineList;
 import crewtools.flica.Proto.ThinPairing;
@@ -47,6 +48,7 @@ public class LineParser {
   private static final Splitter SPACE_SPLITTER = Splitter.on(' ').omitEmptyStrings();
   private static final String NBSP = "\u00a0";
   private static final String CARRY_IN_DAY = "CI";
+  private static final String DASH = "-";
 
   protected final String input;
 
@@ -139,7 +141,9 @@ public class LineParser {
 
   private void parseLine(int numColumns, YearMonth yearMonth, Elements tds,
       ThinLine.Builder builder) throws ParseException {
-    builder.setLineName(tds.get(0).text());
+    String lineName = tds.get(0).text();
+    builder.setLineName(lineName);
+    logger.fine(lineName);
     ThinPairing.Builder currentPairing = null;
     boolean isFirstDayOfPairing = false;
     for (int dayOfMonth = 1; dayOfMonth < numColumns; ++dayOfMonth) {
@@ -149,6 +153,16 @@ public class LineParser {
         currentPairing = null;
         continue;
       }
+
+      List<String> components = SPACE_SPLITTER.omitEmptyStrings().trimResults()
+          .splitToList(cell.text());
+      logger.fine(components.toString());
+      // "-, GSP" normally. "-" if this is a day of rest in the line.
+      // also 0500, SCR or -, LCR or -, R2 or just 'R'
+      if (components.size() != 1 && components.size() != 2) {
+        throw new ParseException("Expected 1 or 2 components in [" + cell.text() + "]");
+      }
+
       Elements as = cell.select("> a");
       if (!as.isEmpty()) {
         Element a = as.get(0);
@@ -157,14 +171,39 @@ public class LineParser {
         currentPairing.setDate(cellDate.toString());
         isFirstDayOfPairing = true;
       } else {
+        if (components.size() == 2
+            && components.get(0).equals(DASH)
+            && components.get(1).equals("LCR")) {
+          // Long call reserve has -, LCR for every day.
+          if (currentPairing == null) {
+            currentPairing = builder.addThinPairingBuilder();
+            currentPairing.setDate(cellDate.toString());
+          }
+          currentPairing.addScheduleType(ScheduleType.LONG_CALL_RESERVE);
+          continue;
+        } else if ((components.size() == 2
+            && components.get(0).equals(DASH)
+            && components.get(1).equals("R2"))
+            || (components.size() == 1 && components.get(0).equals("R"))) {
+          // Seriously? What is the difference beweeen "R" and "-, R2"
+          // Short call reserve has -, R2 on subsequent days.
+          Preconditions.checkNotNull(currentPairing);
+          Preconditions.checkState(currentPairing.hasLocalReserveStartTime());
+          currentPairing.addScheduleType(ScheduleType.SHORT_CALL_RESERVE);
+          continue;
+        } else if (components.size() == 2 && components.get(1).equals("SCR")) {
+          // Short call reserve has 0500 SCR on the first day.
+          Preconditions.checkState(currentPairing == null);
+          currentPairing = builder.addThinPairingBuilder();
+          currentPairing.setDate(cellDate.toString());
+          currentPairing.addScheduleType(ScheduleType.SHORT_CALL_RESERVE);
+          currentPairing.setLocalReserveStartTime(components.get(0));
+          continue;
+        }
         isFirstDayOfPairing = false;
       }
-      List<String> components = SPACE_SPLITTER.splitToList(cell.text());
-      // "-, GSP" normally. "-" if this is a day of rest in the line.
-      if (components.size() != 1 && components.size() != 2) {
-        throw new ParseException("Expected 1 or 2 components in " + cell);
-      }
-      if (!isFirstDayOfPairing && !components.get(0).equals("-")) {
+
+      if (!isFirstDayOfPairing && !components.get(0).equals(DASH)) {
         throw new ParseException("Expected - as first component but got: " + components);
       }
       if (components.size() > 1) {
@@ -172,7 +211,7 @@ public class LineParser {
         if (airportCodeOrCarryIn.equals(CARRY_IN_DAY)) {
           builder.addCarryInDay(cellDate.toString());
         } else {
-          Preconditions.checkNotNull(currentPairing);
+          Preconditions.checkNotNull(currentPairing, components);
           currentPairing.addOvernightAirportCode(components.get(1));
         }
       }

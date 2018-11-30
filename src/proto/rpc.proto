@@ -107,6 +107,8 @@ message BidConfig {
   optional string rank = 15;
 
   repeated PairingOverride pairing_override = 16;
+
+  optional int32 round = 17;
 }
 
 message ScoreAdjustment {

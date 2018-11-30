@@ -201,7 +201,8 @@ public class MonthlyBidder {
   private Map<PairingKey, Trip> getAllPairings(FlicaService service, YearMonth yearMonth) throws Exception {
     Proto.PairingList pairingList;
     if (!cmdLine.useProto()) {
-      String rawPairings = service.getAllPairings(awardDomicile, rank, 1,
+      String rawPairings = service.getAllPairings(awardDomicile, rank,
+          bidConfig.getRound(),
           yearMonth);
       PairingParser pairingParser = new PairingParser(rawPairings, yearMonth,
           cmdLine.parseCanceled());
@@ -235,12 +236,13 @@ public class MonthlyBidder {
   private List<ThinLine> getAllLines(FlicaService service, YearMonth yearMonth) throws Exception {
     Proto.ThinLineList lineList;
     if (!cmdLine.useProto()) {
-      String rawLines = service.getAllLines(awardDomicile, rank, 1,
+      String rawLines = service.getAllLines(awardDomicile, rank, bidConfig.getRound(),
           yearMonth);
       LineParser lineParser = new LineParser(rawLines);
       lineList = lineParser.parse();
     } else {
-      String filename = new DataReader().getLineFilename(yearMonth, awardDomicile);
+      String filename = new DataReader().getLineFilename(yearMonth, awardDomicile,
+          bidConfig.getRound());
       Proto.ThinLineList.Builder builder = Proto.ThinLineList.newBuilder();
       FileInputStream inputStream = new FileInputStream(new File(filename));
       builder.mergeFrom(inputStream);

@@ -47,10 +47,10 @@ import crewtools.flica.formatter.ThinLineFormatter;
 import crewtools.flica.formatter.TripFormatter;
 
 public class LineViewer extends AbstractHandler {
-  private final String args[];
   private final ThinLineList lines;
   private final YearMonth yearMonth;
   private final AwardDomicile awardDomicile;
+  private final int round;
   private final Map<String, Trip> trips;
   private final ThinLineFormatter lineFormatter;
   private final TripFormatter tripFormatter;
@@ -60,12 +60,12 @@ public class LineViewer extends AbstractHandler {
   }
 
   public LineViewer(String args[]) throws FileNotFoundException, IOException {
-    this.args = args;
-    Preconditions.checkState(args.length == 2, "LineViewer CLT 2018-12");
+    Preconditions.checkState(args.length == 2, "LineViewer CLT 2018-12 1");
     this.awardDomicile = AwardDomicile.valueOf(args[0]);
     this.yearMonth = YearMonth.parse(args[1]);
+    this.round = Integer.parseInt(args[2]);
     DataReader dataReader = new DataReader();
-    this.lines = dataReader.readLines(yearMonth, awardDomicile);
+    this.lines = dataReader.readLines(yearMonth, awardDomicile, round);
     this.trips = new HashMap<>();
     PairingList pairings = dataReader.readPairings(yearMonth, awardDomicile);
     for (Trip trip : pairings.getTripList()) {

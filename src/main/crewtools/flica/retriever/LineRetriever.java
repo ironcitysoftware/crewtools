@@ -38,12 +38,13 @@ import crewtools.util.FlicaConfig;
 /** Retrieves all combinations of FO/Captain domicile awards */
 public class LineRetriever {
   private final Logger logger = Logger.getLogger(LineRetriever.class.getName());
-  
+
   private final AwardDomicile awardDomicile;
   private final Rank rank;
   private final File outputFile;
   private final int round;
   private final YearMonth yearMonth;
+  private static final int ROUND_ONE = 1;
 
   public static void main(String args[]) throws Exception {
     new LineRetriever(args).run();
@@ -72,14 +73,14 @@ public class LineRetriever {
 
     LineParser lineParser = new LineParser(lines);
     ThinLineList lineList = lineParser.parse();
-    
+
     System.out.println(lineList);
 
     FileOutputStream output = new FileOutputStream(outputFile);
     lineList.writeTo(output);
     output.close();
   }
-  
+
   public void run() throws Exception {
     FlicaConnection connection = new FlicaConnection(new FlicaConfig());
     FlicaService service = new FlicaService(connection);
@@ -91,12 +92,14 @@ public class LineRetriever {
     for (AwardDomicile awardDomicile : AwardDomicile.values()) {
       for (int monthBack = 0; monthBack < 3; monthBack++) {
         YearMonth yearMonth = start.minusMonths(monthBack);
-        File outputFile = new File(dataReader.getLineFilename(yearMonth, awardDomicile));
+        File outputFile = new File(
+            dataReader.getLineFilename(yearMonth, awardDomicile, ROUND_ONE));
         if (outputFile.exists()) {
           logger.info("SKIP " + outputFile + " as it exists");
           continue;
         }
-        String lines = service.getAllLines(awardDomicile, Rank.FIRST_OFFICER, 1, yearMonth);
+        String lines = service.getAllLines(awardDomicile,
+            Rank.FIRST_OFFICER, ROUND_ONE, yearMonth);
         LineParser lineParser = new LineParser(lines);
         ThinLineList lineList = lineParser.parse();
         FileOutputStream output = new FileOutputStream(outputFile);

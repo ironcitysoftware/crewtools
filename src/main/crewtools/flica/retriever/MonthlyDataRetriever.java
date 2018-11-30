@@ -78,18 +78,22 @@ public class MonthlyDataRetriever {
   private void getLinesForAllDomiciles(FlicaService service)
       throws ParseException, URISyntaxException, IOException {
     for (AwardDomicile awardDomicile : AwardDomicile.values()) {
-      File outputFile = new File(dataReader.getLineFilename(yearMonth, awardDomicile));
-      if (outputFile.exists()) {
-        logger.info("SKIP " + outputFile + " as it exists");
-        continue;
+      for (int round = 1; round < 3; ++round) {
+        File outputFile = new File(
+            dataReader.getLineFilename(yearMonth, awardDomicile, round));
+        if (outputFile.exists()) {
+          logger.info("SKIP " + outputFile + " as it exists");
+          continue;
+        }
+        String lines = service.getAllLines(awardDomicile, Rank.FIRST_OFFICER, round,
+            yearMonth);
+        LineParser lineParser = new LineParser(lines);
+        ThinLineList lineList = lineParser.parse();
+        FileOutputStream output = new FileOutputStream(outputFile);
+        lineList.writeTo(output);
+        output.close();
+        logger.info("WROTE " + outputFile);
       }
-      String lines = service.getAllLines(awardDomicile, Rank.FIRST_OFFICER, ROUND_ONE, yearMonth);
-      LineParser lineParser = new LineParser(lines);
-      ThinLineList lineList = lineParser.parse();
-      FileOutputStream output = new FileOutputStream(outputFile);
-      lineList.writeTo(output);
-      output.close();
-      logger.info("WROTE " + outputFile);
     }
   }
 

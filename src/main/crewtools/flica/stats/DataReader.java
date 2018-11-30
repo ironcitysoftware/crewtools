@@ -63,11 +63,15 @@ public class DataReader {
     return dataDir + "seniority-" + yearMonth + ".io";
   }
 
-  public String getLineFilename(YearMonth yearMonth, AwardDomicile awardDomicile) {
+  public String getLineFilename(YearMonth yearMonth, AwardDomicile awardDomicile,
+      int round) {
+    String roundText = round == 1 ? "" : "-rd" + round;
     return dataDir
         + "lines-"
         + awardDomicile.name().toLowerCase()
-        + "-"+ yearMonth + ".io";
+        + "-" + yearMonth
+        + roundText
+        + ".io";
   }
 
   public String getPairingFilename(YearMonth yearMonth, AwardDomicile awardDomicile) {
@@ -107,18 +111,21 @@ public class DataReader {
       YearMonth yearMonth = startingMonth.minusMonths(monthsInPast);
       boolean anyFound = false;
       for (AwardDomicile awardDomicile : AwardDomicile.values()) {
-        File line = new File(getLineFilename(yearMonth, awardDomicile));
-        if (!line.exists()) {
-          continue;
+        // TODO round 2
+        for (int round = 1; round < 2; ++round) {
+          File line = new File(getLineFilename(yearMonth, awardDomicile, round));
+          if (!line.exists()) {
+            continue;
+          }
+          anyFound = true;
+          logger.info("Reading " + line.getAbsolutePath());
+          ThinLineList.Builder builder = ThinLineList.newBuilder();
+          builder.mergeFrom(new FileInputStream(line));
+          if (!result.containsKey(yearMonth)) {
+            result.put(yearMonth, new HashMap<>());
+          }
+          result.get(yearMonth).put(awardDomicile, builder.build());
         }
-        anyFound = true;
-        logger.info("Reading " + line.getAbsolutePath());
-        ThinLineList.Builder builder = ThinLineList.newBuilder();
-        builder.mergeFrom(new FileInputStream(line));
-        if (!result.containsKey(yearMonth)) {
-          result.put(yearMonth, new HashMap<>());
-        }
-        result.get(yearMonth).put(awardDomicile, builder.build());
       }
       if (!anyFound) {
         strikes++;
@@ -163,9 +170,10 @@ public class DataReader {
     return result;
   }
 
-  public ThinLineList readLines(YearMonth yearMonth, AwardDomicile awardDomicile)
+  public ThinLineList readLines(YearMonth yearMonth, AwardDomicile awardDomicile,
+      int round)
       throws FileNotFoundException, IOException {
-    File line = new File(getLineFilename(yearMonth, awardDomicile));
+    File line = new File(getLineFilename(yearMonth, awardDomicile, round));
     Preconditions.checkState(line.exists(),
         "File doesn't exist: " + line.getAbsolutePath());
     logger.info("Reading " + line.getAbsolutePath());

@@ -68,7 +68,7 @@ message Award {
 enum Rank {
   CAPTAIN = 1;
   FIRST_OFFICER = 2;
-} 
+}
 
 message DomicileAward {
   optional string domicile = 1;
@@ -109,11 +109,11 @@ message CrewMember {
   optional int32 employee_id = 1;
   optional CrewPosition crew_position = 2;
   optional string name = 3;
-  
+
   optional int32 seniority_id = 4;
   optional string hire_date = 5;
   optional Domicile domicile = 6;
-  optional Status status = 7;  
+  optional Status status = 7;
 }
 
 enum Domicile {
@@ -179,7 +179,7 @@ enum LegType {
   GROUND_TRANSPORT = 6 [(flica_name)="LIMO"];
   TAXI = 7 [(flica_name)="TAX"];
   TEST = 8 [(flica_name)="TST"];
-  
+
   // Pairing gems.
   DPA = 9 [(flica_name)="DPA"];  // Only pairings?
   HOT_RESERVE = 10 [(flica_name)="HRV"];  // Hot reserve as part of a pairing?
@@ -236,12 +236,12 @@ message Trip {
   optional Domicile base = 3;
   optional Equipment equipment = 4;
   optional string operates = 5;   // Mar 2 only
-  
+
   // from L1234 : 22DEC.
   // Note, the trip can start the previous day if the show time is before
   // midnight and the departure time is after midnight.  In that case,
   // FLICA shows a start_date of the after-midnight date.
-  optional string start_date = 6;  
+  optional string start_date = 6;
   optional string end_date = 7;
   repeated CrewMember crew = 8;
 
@@ -294,6 +294,8 @@ message ThinPairing {
   optional string date = 1;
   optional string pairing_name = 2;
   repeated string overnight_airport_code = 3;
+  repeated ScheduleType schedule_type = 4;
+  optional string local_reserve_start_time = 5;
 }
 
 message ThinLine {
