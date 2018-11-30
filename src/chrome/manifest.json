@@ -1,0 +1,12 @@
+{
+  "manifest_version": 2,
+ 
+  "name": "Helpful additions to Flica",
+  "version": "0.1.0",
+  "description": "Popup blocker",
+ 
+  "content_scripts": [{
+    "js": ["jquery-1.10.2.js","content.js"],
+    "matches": ["https://jia.flica.net/online/mainmenu.cgi*"]
+  }]
+}
