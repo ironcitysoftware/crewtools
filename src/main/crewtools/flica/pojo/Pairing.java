@@ -32,14 +32,14 @@ import com.google.common.collect.ImmutableList;
 import crewtools.flica.Proto;
 import crewtools.util.Period;
 
-/** 
+/**
  * A pairing is a set of flights that may repeat on different days.
- * 
+ *
  * TODO - is there a need for a common type between Pairing and Trip?
  */
 public class Pairing {
   private final Logger logger = Logger.getLogger(Pairing.class.getName());
-  
+
   private List<Section> sections;
   private Period block;
   private Period credit;
@@ -65,7 +65,7 @@ public class Pairing {
   Section getFirstSection() {
     return sections.get(0);
   }
-  
+
   public List<Trip> getTrips() {
     if (!proto.hasOperates() || proto.getOperates().contains("Only")) {
       return ImmutableList.of(getTrip(getFirstSection().getShowDate()));
@@ -75,7 +75,7 @@ public class Pairing {
     OperationDateExpander expander = new OperationDateExpander(
         year, proto.getOperates(), proto.getDayOfWeekList(), proto.getOperatesExcept());
     ImmutableList.Builder<Trip> result = ImmutableList.builder();
-    
+
     for (LocalDate date : expander.getDates()) {
       result.add(getTrip(date));
     }
@@ -90,7 +90,7 @@ public class Pairing {
       newSections.add(section.copyWithDateOffset(daysBetween));
     }
     Proto.Trip.Builder newProto = proto.toBuilder();
-    
+
     Set<LocalDate> newDepartureDates = new HashSet<>();
     for (LocalDate departureDate : departureDates) {
       newDepartureDates.add(departureDate.plusDays(daysBetween));

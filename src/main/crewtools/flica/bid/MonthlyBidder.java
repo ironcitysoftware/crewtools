@@ -48,6 +48,7 @@ import crewtools.flica.pojo.ThinLine;
 import crewtools.flica.pojo.Trip;
 import crewtools.flica.stats.DataReader;
 import crewtools.rpc.Proto.BidConfig;
+import crewtools.rpc.Proto.PairingOverride;
 import crewtools.util.FileUtils;
 import crewtools.util.FlicaConfig;
 import okhttp3.Response;
@@ -216,6 +217,13 @@ public class MonthlyBidder {
     PairingAdapter pairingAdapter = new PairingAdapter();
     Map<PairingKey, Trip> trips = new HashMap<>();
     for (Proto.Trip protoTrip : pairingList.getTripList()) {
+      for (PairingOverride override : bidConfig.getPairingOverrideList()) {
+        if (protoTrip.getPairingName().equals(override.getPairingName())) {
+          protoTrip = Proto.Trip.newBuilder(protoTrip).setOperatesExcept(
+              override.getOperatesExcept()).build();
+          break;
+        }
+      }
       for (Trip trip : pairingAdapter.adaptPairing(protoTrip).getTrips()) {
         logger.fine("Adding pairing key " + trip.getPairingKey());
         trips.put(trip.getPairingKey(), trip);
