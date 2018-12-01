@@ -78,12 +78,13 @@ public class LineRetriever {
     LineParser lineParser = new LineParser(lines);
     ThinLineList lineList = lineParser.parse();
 
-    System.out.println(lineList);
-
     if (outputFile != null) {
       FileOutputStream output = new FileOutputStream(outputFile);
       lineList.writeTo(output);
       output.close();
+      logger.info("Wrote to " + outputFile);
+    } else {
+      System.out.println(lineList);
     }
   }
 
