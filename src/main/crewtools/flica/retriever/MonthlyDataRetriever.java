@@ -27,13 +27,17 @@ import java.util.logging.Logger;
 
 import org.joda.time.YearMonth;
 
+import com.google.common.collect.ImmutableList;
+
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.FlicaConnection;
 import crewtools.flica.FlicaService;
+import crewtools.flica.Proto.DomicileAward;
 import crewtools.flica.Proto.PairingList;
 import crewtools.flica.Proto.Rank;
 import crewtools.flica.Proto.SeniorityList;
 import crewtools.flica.Proto.ThinLineList;
+import crewtools.flica.parser.AwardParser;
 import crewtools.flica.parser.LineParser;
 import crewtools.flica.parser.PairingParser;
 import crewtools.flica.parser.ParseException;
@@ -73,12 +77,16 @@ public class MonthlyDataRetriever {
     getLinesForAllDomiciles(service);
     getPairingsForAllDomiciles(service);
     getSeniority(service, config);
+    getAwards(service);
   }
 
   private void getLinesForAllDomiciles(FlicaService service)
       throws ParseException, URISyntaxException, IOException {
     for (AwardDomicile awardDomicile : AwardDomicile.values()) {
       for (int round = 1; round < 3; ++round) {
+        // TODO remove
+        if (round != 1)
+          continue;
         File outputFile = new File(
             dataReader.getLineFilename(yearMonth, awardDomicile, round));
         if (outputFile.exists()) {
@@ -127,5 +135,25 @@ public class MonthlyDataRetriever {
     SeniorityList list = parser.parse();
     list.writeTo(new FileOutputStream(outputFile));
     logger.info("Wrote " + outputFile);
+  }
+
+  public void getAwards(FlicaService service) throws Exception {
+    for (AwardDomicile awardDomicile : AwardDomicile.values()) {
+      for (Rank rank : ImmutableList.of(Rank.FIRST_OFFICER, Rank.CAPTAIN)) {
+        for (int round = 1; round < 3; round++) {
+          File outputFile = new File(dataReader.getAwardFilename(
+              yearMonth, awardDomicile, rank, round));
+          if (outputFile.exists()) {
+            logger.info("SKIP " + outputFile + " as it exists");
+            return;
+          }
+          String award = service.getBidAward(awardDomicile, rank, round, yearMonth);
+          AwardParser parser = new AwardParser(award, awardDomicile, rank, round);
+          DomicileAward protoAward = parser.parse();
+          protoAward.writeTo(new FileOutputStream(outputFile));
+          logger.info("Wrote " + outputFile);
+        }
+      }
+    }
   }
 }

@@ -34,6 +34,7 @@ import com.google.common.base.Preconditions;
 
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.Proto.PairingList;
+import crewtools.flica.Proto.Rank;
 import crewtools.flica.Proto.SeniorityList;
 import crewtools.flica.Proto.ThinLineList;
 import crewtools.util.FlicaConfig;
@@ -79,6 +80,17 @@ public class DataReader {
         + "pairings-"
         + awardDomicile.name().toLowerCase()
         + "-"+ yearMonth + ".io";
+  }
+
+  public String getAwardFilename(YearMonth yearMonth, AwardDomicile awardDomicile,
+      Rank rank, int round) {
+    return dataDir
+        + "award-"
+        + awardDomicile.name().toLowerCase()
+        + "-" + yearMonth
+        + "-" + rank.name().toLowerCase()
+        + "-rd" + round
+        + ".io";
   }
 
   public Map<YearMonth, SeniorityList> readSeniorityLists() throws Exception {

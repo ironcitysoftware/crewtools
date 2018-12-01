@@ -24,6 +24,7 @@ import java.io.FileInputStream;
 
 import com.google.protobuf.Message;
 
+import crewtools.flica.Proto.DomicileAward;
 import crewtools.flica.Proto.PairingList;
 import crewtools.flica.Proto.SeniorityList;
 import crewtools.flica.Proto.ThinLineList;
@@ -42,6 +43,8 @@ public class CatProto {
       builder = PairingList.newBuilder();
     } else if (protoFile.getName().startsWith("seniority-")) {
       builder = SeniorityList.newBuilder();
+    } else if (protoFile.getName().startsWith("award-")) {
+      builder = DomicileAward.newBuilder();
     } else {
       System.err.println("Need to add detection for this filename: " + protoFile.getName());
       System.exit(-1);
