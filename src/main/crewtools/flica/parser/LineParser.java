@@ -187,8 +187,10 @@ public class LineParser {
             || (components.size() == 1 && components.get(0).equals("R"))) {
           // Seriously? What is the difference beweeen "R" and "-, R2"
           // Short call reserve has -, R2 on subsequent days.
-          Preconditions.checkNotNull(currentPairing);
-          Preconditions.checkState(currentPairing.hasLocalReserveStartTime());
+          if (currentPairing == null) {
+            currentPairing = builder.addThinPairingBuilder();
+            currentPairing.setDate(cellDate.toString());
+          }
           currentPairing.addScheduleType(ScheduleType.SHORT_CALL_RESERVE);
           continue;
         } else if (components.size() == 2 && components.get(1).equals("SCR")) {
@@ -206,6 +208,7 @@ public class LineParser {
       if (!isFirstDayOfPairing && !components.get(0).equals(DASH)) {
         throw new ParseException("Expected - as first component but got: " + components);
       }
+      logger.fine("Considering adding overnight: " + components);
       if (components.size() > 1) {
         String airportCodeOrCarryIn = components.get(1);
         if (airportCodeOrCarryIn.equals(CARRY_IN_DAY)) {

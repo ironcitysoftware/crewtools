@@ -51,8 +51,8 @@ public class LineRetriever {
   }
 
   public LineRetriever(String args[]) {
-    if (args.length != 5) {
-      System.err.println("LineRetriever CLT FIRST_OFFICER round yyyy-mm output.io");
+    if (args.length < 4) {
+      System.err.println("LineRetriever CLT FIRST_OFFICER round yyyy-mm [output.io]");
       System.err.println("not " + Arrays.asList(args));
       System.exit(1);
     }
@@ -61,10 +61,14 @@ public class LineRetriever {
     this.rank = Rank.valueOf(args[i++]);
     this.round = Integer.parseInt(args[i++]);
     this.yearMonth = YearMonth.parse(args[i++]);
-    this.outputFile = new File(args[i++]);
+    if (args.length > i) {
+      this.outputFile = new File(args[i++]);
+    } else {
+      this.outputFile = null;
+    }
   }
 
-  public void run2() throws Exception {
+  public void run() throws Exception {
     FlicaConnection connection = new FlicaConnection(new FlicaConfig());
     FlicaService service = new FlicaService(connection);
     service.connect();
@@ -76,12 +80,14 @@ public class LineRetriever {
 
     System.out.println(lineList);
 
-    FileOutputStream output = new FileOutputStream(outputFile);
-    lineList.writeTo(output);
-    output.close();
+    if (outputFile != null) {
+      FileOutputStream output = new FileOutputStream(outputFile);
+      lineList.writeTo(output);
+      output.close();
+    }
   }
 
-  public void run() throws Exception {
+  public void run2() throws Exception {
     FlicaConnection connection = new FlicaConnection(new FlicaConfig());
     FlicaService service = new FlicaService(connection);
     service.connect();
