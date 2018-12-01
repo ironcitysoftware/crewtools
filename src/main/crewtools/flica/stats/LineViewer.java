@@ -40,6 +40,7 @@ import com.google.common.io.Resources;
 
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.Proto.PairingList;
+import crewtools.flica.Proto.Rank;
 import crewtools.flica.Proto.ThinLine;
 import crewtools.flica.Proto.ThinLineList;
 import crewtools.flica.Proto.Trip;
@@ -50,6 +51,7 @@ public class LineViewer extends AbstractHandler {
   private final ThinLineList lines;
   private final YearMonth yearMonth;
   private final AwardDomicile awardDomicile;
+  private final Rank rank;
   private final int round;
   private final Map<String, Trip> trips;
   private final ThinLineFormatter lineFormatter;
@@ -60,12 +62,13 @@ public class LineViewer extends AbstractHandler {
   }
 
   public LineViewer(String args[]) throws FileNotFoundException, IOException {
-    Preconditions.checkState(args.length == 2, "LineViewer CLT 2018-12 1");
+    Preconditions.checkState(args.length == 4, "LineViewer CLT 2018-12 CAPTAIN 1");
     this.awardDomicile = AwardDomicile.valueOf(args[0]);
     this.yearMonth = YearMonth.parse(args[1]);
-    this.round = Integer.parseInt(args[2]);
+    this.rank = Rank.valueOf(args[2]);
+    this.round = Integer.parseInt(args[3]);
     DataReader dataReader = new DataReader();
-    this.lines = dataReader.readLines(yearMonth, awardDomicile, round);
+    this.lines = dataReader.readLines(yearMonth, awardDomicile, rank, round);
     this.trips = new HashMap<>();
     PairingList pairings = dataReader.readPairings(yearMonth, awardDomicile);
     for (Trip trip : pairings.getTripList()) {

@@ -65,12 +65,14 @@ public class DataReader {
   }
 
   public String getLineFilename(YearMonth yearMonth, AwardDomicile awardDomicile,
-      int round) {
+      Rank rank, int round) {
     String roundText = round == 1 ? "" : "-rd" + round;
+    String rankText = round == 1 ? "" : "-" + rank.name().toLowerCase();
     return dataDir
         + "lines-"
         + awardDomicile.name().toLowerCase()
         + "-" + yearMonth
+        + rankText
         + roundText
         + ".io";
   }
@@ -125,7 +127,8 @@ public class DataReader {
       for (AwardDomicile awardDomicile : AwardDomicile.values()) {
         // TODO round 2
         for (int round = 1; round < 2; ++round) {
-          File line = new File(getLineFilename(yearMonth, awardDomicile, round));
+          File line = new File(
+              getLineFilename(yearMonth, awardDomicile, Rank.CAPTAIN, round));
           if (!line.exists()) {
             continue;
           }
@@ -183,9 +186,9 @@ public class DataReader {
   }
 
   public ThinLineList readLines(YearMonth yearMonth, AwardDomicile awardDomicile,
-      int round)
+      Rank rank, int round)
       throws FileNotFoundException, IOException {
-    File line = new File(getLineFilename(yearMonth, awardDomicile, round));
+    File line = new File(getLineFilename(yearMonth, awardDomicile, rank, round));
     Preconditions.checkState(line.exists(),
         "File doesn't exist: " + line.getAbsolutePath());
     logger.info("Reading " + line.getAbsolutePath());

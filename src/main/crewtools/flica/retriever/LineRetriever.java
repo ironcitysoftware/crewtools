@@ -99,7 +99,8 @@ public class LineRetriever {
       for (int monthBack = 0; monthBack < 3; monthBack++) {
         YearMonth yearMonth = start.minusMonths(monthBack);
         File outputFile = new File(
-            dataReader.getLineFilename(yearMonth, awardDomicile, ROUND_ONE));
+            dataReader.getLineFilename(yearMonth, awardDomicile, Rank.CAPTAIN,
+                ROUND_ONE));
         if (outputFile.exists()) {
           logger.info("SKIP " + outputFile + " as it exists");
           continue;

@@ -242,7 +242,7 @@ public class MonthlyBidder {
       lineList = lineParser.parse();
     } else {
       String filename = new DataReader().getLineFilename(yearMonth, awardDomicile,
-          bidConfig.getRound());
+          Rank.valueOf(bidConfig.getRank()), bidConfig.getRound());
       Proto.ThinLineList.Builder builder = Proto.ThinLineList.newBuilder();
       FileInputStream inputStream = new FileInputStream(new File(filename));
       builder.mergeFrom(inputStream);

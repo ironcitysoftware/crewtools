@@ -23,11 +23,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import org.joda.time.YearMonth;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.FlicaConnection;
@@ -53,6 +54,8 @@ public class MonthlyDataRetriever {
   private final DataReader dataReader;
 
   private static final int ROUND_ONE = 1;
+  private static final Set<Rank> RANKS = ImmutableSet.of(Rank.FIRST_OFFICER,
+      Rank.CAPTAIN);
 
   public static void main(String args[]) throws Exception {
     new MonthlyDataRetriever(args).run();
@@ -83,24 +86,27 @@ public class MonthlyDataRetriever {
   private void getLinesForAllDomiciles(FlicaService service)
       throws ParseException, URISyntaxException, IOException {
     for (AwardDomicile awardDomicile : AwardDomicile.values()) {
-      for (int round = 1; round < 3; ++round) {
-        // TODO remove
-        if (round != 1)
-          continue;
-        File outputFile = new File(
-            dataReader.getLineFilename(yearMonth, awardDomicile, round));
-        if (outputFile.exists()) {
-          logger.info("SKIP " + outputFile + " as it exists");
-          continue;
+      for (Rank rank : RANKS) {
+        for (int round = 1; round < 3; ++round) {
+          if (round == 1 && !rank.equals(Rank.CAPTAIN)) {
+            // round 1 lines are the same for captains and first officers.
+            continue;
+          }
+          File outputFile = new File(
+              dataReader.getLineFilename(yearMonth, awardDomicile, rank, round));
+          if (outputFile.exists()) {
+            logger.info("SKIP " + outputFile + " as it exists");
+            continue;
+          }
+          String lines = service.getAllLines(awardDomicile, rank, round,
+              yearMonth);
+          LineParser lineParser = new LineParser(lines);
+          ThinLineList lineList = lineParser.parse();
+          FileOutputStream output = new FileOutputStream(outputFile);
+          lineList.writeTo(output);
+          output.close();
+          logger.info("WROTE " + outputFile);
         }
-        String lines = service.getAllLines(awardDomicile, Rank.FIRST_OFFICER, round,
-            yearMonth);
-        LineParser lineParser = new LineParser(lines);
-        ThinLineList lineList = lineParser.parse();
-        FileOutputStream output = new FileOutputStream(outputFile);
-        lineList.writeTo(output);
-        output.close();
-        logger.info("WROTE " + outputFile);
       }
     }
   }
@@ -139,7 +145,7 @@ public class MonthlyDataRetriever {
 
   public void getAwards(FlicaService service) throws Exception {
     for (AwardDomicile awardDomicile : AwardDomicile.values()) {
-      for (Rank rank : ImmutableList.of(Rank.FIRST_OFFICER, Rank.CAPTAIN)) {
+      for (Rank rank : RANKS) {
         for (int round = 1; round < 3; round++) {
           File outputFile = new File(dataReader.getAwardFilename(
               yearMonth, awardDomicile, rank, round));
