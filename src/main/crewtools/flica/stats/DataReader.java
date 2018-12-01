@@ -66,14 +66,13 @@ public class DataReader {
 
   public String getLineFilename(YearMonth yearMonth, AwardDomicile awardDomicile,
       Rank rank, int round) {
-    String roundText = round == 1 ? "" : "-rd" + round;
     String rankText = round == 1 ? "" : "-" + rank.name().toLowerCase();
     return dataDir
         + "lines-"
         + awardDomicile.name().toLowerCase()
         + "-" + yearMonth
         + rankText
-        + roundText
+        + "-rd" + round
         + ".io";
   }
 
