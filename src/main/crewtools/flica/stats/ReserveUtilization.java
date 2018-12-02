@@ -36,6 +36,8 @@ import crewtools.flica.Proto.SeniorityList;
 import crewtools.flica.Proto.ThinLine;
 import crewtools.flica.Proto.ThinLineList;
 import crewtools.flica.Proto.ThinPairing;
+import crewtools.util.PilotMatcher;
+import jline.internal.Preconditions;
 
 public class ReserveUtilization {
   private final Logger logger = Logger.getLogger(ReserveUtilization.class.getName());
@@ -59,6 +61,7 @@ public class ReserveUtilization {
     DomicileAward awardContainer = dataReader.readAwards(yearMonth, awardDomicile,
         Rank.CAPTAIN, 2);
     SeniorityList list = dataReader.readSeniorityList(yearMonth);
+    PilotMatcher matcher = new PilotMatcher(list);
     for (ThinLine line : roundTwo.getThinLineList()) {
       if (!isLongCallReserve(line)) {
         continue;
@@ -69,7 +72,7 @@ public class ReserveUtilization {
         continue;
       }
       Pilot pilot = award.getPilot();
-      CrewMember member = findCrewMember(list, pilot);
+      CrewMember member = Preconditions.checkNotNull(matcher.matchCrewMember(pilot));
       logger.info(
           line.getLineName() + " LCR " + member.getEmployeeId() + " "
               + member.getName());
@@ -94,16 +97,5 @@ public class ReserveUtilization {
       }
     }
     return null;
-  }
-
-  private CrewMember findCrewMember(SeniorityList seniorityList, Pilot pilot) {
-    String formattedName = (pilot.getFirstMiddleName()
-        + " " + pilot.getLastNameSuffix()).toUpperCase();
-    for (CrewMember member : seniorityList.getCrewMemberList()) {
-      if (member.getName().equals(formattedName)) {
-        return member;
-      }
-    }
-    throw new IllegalStateException(formattedName + " not in seniority list");
   }
 }

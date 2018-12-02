@@ -46,6 +46,7 @@ public class ThinLineFormatter {
 
   private static final String WEEKEND_CSS_CLASS = "weekend";
   private static final String TWO_HUNDRED_CSS_CLASS = "rj2";
+  private static final String NOT_ELIGIBLE_CSS_CLASS = "gray";
 
   public ThinLineFormatter(YearMonth yearMonth) {
     this.lastDayOfMonth = yearMonth.toLocalDate(1).dayOfMonth().getMaximumValue();
@@ -70,7 +71,7 @@ public class ThinLineFormatter {
   }
 
   public String getRowHtml(ThinLine line, AwardDomicile awardDomicile,
-      Map<String, Trip> optionalTripDetail) {
+      Map<String, Trip> optionalTripDetail, boolean isEligible) {
     Map<Integer, String> events = new HashMap<>();
     Map<Integer, String> pairings = new HashMap<>();
     for (String carryInDay : line.getCarryInDayList()) {
@@ -86,11 +87,16 @@ public class ThinLineFormatter {
         }
       }
     }
-    String result = "<tr><td>" + line.getLineName() + "</td>";
+    String result = String.format("<tr><td%s>%s</td>",
+        !isEligible ? " class=\"" + NOT_ELIGIBLE_CSS_CLASS + "\"" : "",
+        line.getLineName());
     for (int dom = 1; dom <= lastDayOfMonth; ++dom) {
       List<String> css = new ArrayList<>();
       if (weekends.contains(dom)) {
         css.add(WEEKEND_CSS_CLASS);
+      }
+      if (!isEligible) {
+        css.add(NOT_ELIGIBLE_CSS_CLASS);
       }
       if (events.containsKey(dom)) {
         if (pairings.containsKey(dom)) {
