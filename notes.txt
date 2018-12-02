@@ -3,3 +3,6 @@ AA7DB01D0000000075B319F840115829DD2ABAA4
 There is a memory disclosure vulnerability when accessing lines through a raw url:
 view-source:https://jia.flica.net/full/bslines.cgi?WAIT=YES&BCID=010.049&CC=T6F
 
+CCS=1 is helpful:
+https://jia.flica.net/full/bsclose.cgi?CCS=1&BCID=011.060&CC=DCA-CRJ-CA
+https://jia.flica.net/full/awardbyline.cgi?bcid=011.060&ccid=A6C then 'print lines'

@@ -33,6 +33,7 @@ import org.joda.time.YearMonth;
 import com.google.common.base.Preconditions;
 
 import crewtools.flica.AwardDomicile;
+import crewtools.flica.Proto.DomicileAward;
 import crewtools.flica.Proto.PairingList;
 import crewtools.flica.Proto.Rank;
 import crewtools.flica.Proto.SeniorityList;
@@ -204,6 +205,29 @@ public class DataReader {
     logger.info("Reading " + pairing.getAbsolutePath());
     PairingList.Builder builder = PairingList.newBuilder();
     builder.mergeFrom(new FileInputStream(pairing));
+    return builder.build();
+  }
+
+  public DomicileAward readAwards(YearMonth yearMonth, AwardDomicile awardDomicile,
+      Rank rank, int round)
+      throws FileNotFoundException, IOException {
+    File award = new File(getAwardFilename(yearMonth, awardDomicile, rank, round));
+    Preconditions.checkState(award.exists(),
+        "File doesn't exist: " + award.getAbsolutePath());
+    logger.info("Reading " + award.getAbsolutePath());
+    DomicileAward.Builder builder = DomicileAward.newBuilder();
+    builder.mergeFrom(new FileInputStream(award));
+    return builder.build();
+  }
+
+  public SeniorityList readSeniorityList(YearMonth yearMonth)
+      throws FileNotFoundException, IOException {
+    File seniority = new File(getSeniorityFilename(yearMonth));
+    Preconditions.checkState(seniority.exists(),
+        "File doesn't exist: " + seniority.getAbsolutePath());
+    logger.info("Reading " + seniority.getAbsolutePath());
+    SeniorityList.Builder builder = SeniorityList.newBuilder();
+    builder.mergeFrom(new FileInputStream(seniority));
     return builder.build();
   }
 }
