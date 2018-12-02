@@ -19,28 +19,35 @@
 
 package crewtools.flica.formatter;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.YearMonth;
 
+import com.google.common.base.Joiner;
+
 import crewtools.flica.AwardDomicile;
+import crewtools.flica.Proto;
 import crewtools.flica.Proto.DayOfWeek;
+import crewtools.flica.Proto.Leg;
+import crewtools.flica.Proto.Section;
 import crewtools.flica.Proto.ThinLine;
 import crewtools.flica.Proto.ThinPairing;
+import crewtools.flica.Proto.Trip;
 
 public class ThinLineFormatter {
-  private final YearMonth yearMonth;
   private final int lastDayOfMonth;
   private final Set<Integer> weekends;
 
   private static final String WEEKEND_CSS_CLASS = "weekend";
+  private static final String TWO_HUNDRED_CSS_CLASS = "rj2";
 
   public ThinLineFormatter(YearMonth yearMonth) {
-    this.yearMonth = yearMonth;
     this.lastDayOfMonth = yearMonth.toLocalDate(1).dayOfMonth().getMaximumValue();
     this.weekends = new HashSet<>();
     for (int i = 1; i <= lastDayOfMonth; i++) {
@@ -62,7 +69,8 @@ public class ThinLineFormatter {
     return result + "</tr>\n";
   }
 
-  public String getRowHtml(ThinLine line, AwardDomicile awardDomicile) {
+  public String getRowHtml(ThinLine line, AwardDomicile awardDomicile,
+      Map<String, Trip> optionalTripDetail) {
     Map<Integer, String> events = new HashMap<>();
     Map<Integer, String> pairings = new HashMap<>();
     for (String carryInDay : line.getCarryInDayList()) {
@@ -80,21 +88,47 @@ public class ThinLineFormatter {
     }
     String result = "<tr><td>" + line.getLineName() + "</td>";
     for (int dom = 1; dom <= lastDayOfMonth; ++dom) {
-      String classString = weekends.contains(dom)
-          ? " class=\"" + WEEKEND_CSS_CLASS + "\""
-          : "";
+      List<String> css = new ArrayList<>();
+      if (weekends.contains(dom)) {
+        css.add(WEEKEND_CSS_CLASS);
+      }
       if (events.containsKey(dom)) {
         if (pairings.containsKey(dom)) {
-          result += String.format("<td %s id=\"%s\">%s</td>",
-              classString, pairings.get(dom), events.get(dom));
+          String pairingName = pairings.get(dom);
+          if (optionalTripDetail.containsKey(pairingName)) {
+            if (isTwoHundred(optionalTripDetail.get(pairingName))) {
+              css.add(TWO_HUNDRED_CSS_CLASS);
+            }
+          }
+          result += String.format("<td%s id=\"%s\">%s</td>",
+              getClass(css), pairings.get(dom), events.get(dom));
         } else {
           result += String.format("<td%s>%s</td>",
-              classString, events.get(dom));
+              getClass(css), events.get(dom));
         }
       } else {
-        result += String.format("<td%s>&nbsp;&nbsp;&nbsp;</td>", classString);
+        result += String.format("<td%s>&nbsp;&nbsp;&nbsp;</td>", getClass(css));
       }
     }
     return result + "</tr>\n";
+  }
+
+  private static final Joiner CSS_CLASS_JOINER = Joiner.on(' ');
+
+  private String getClass(List<String> css) {
+    return css.isEmpty()
+        ? ""
+        : " class=\"" + CSS_CLASS_JOINER.join(css) + "\"";
+  }
+
+  private boolean isTwoHundred(Trip trip) {
+    for (Section section : trip.getSectionList()) {
+      for (Leg leg : section.getLegList()) {
+        if (leg.hasEquipment() && leg.getEquipment().equals(Proto.Equipment.RJ2)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }

@@ -128,12 +128,13 @@ public class LineViewer extends AbstractHandler {
   }
 
   private String getLinesTable() {
-    String result = "<table>";
+    String result = String.format("Domicile %s Rank %s Round %s Date %s<br /><table>",
+        awardDomicile, rank, round, yearMonth);
     if (lines.getThinLineCount() > 0) {
       result += lineFormatter.getHeaderHtml();
     }
     for (ThinLine line : lines.getThinLineList()) {
-      result += lineFormatter.getRowHtml(line, awardDomicile);
+      result += lineFormatter.getRowHtml(line, awardDomicile, trips);
     }
     return result + "</table>\n";
   }
