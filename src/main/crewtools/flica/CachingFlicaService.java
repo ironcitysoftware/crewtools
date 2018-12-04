@@ -101,7 +101,7 @@ public class CachingFlicaService extends FlicaService {
   }
 
   @Override
-  public String getAllLines(AwardDomicile domicile, Rank rank, 
+  public String getAllLines(AwardDomicile domicile, Rank rank,
       int round, YearMonth yearMonth) throws URISyntaxException, IOException {
     File file = new File(DIR, "all-lines-" + domicile + rank + round + yearMonth + ".txt");
     if (file.exists()) {
@@ -115,7 +115,7 @@ public class CachingFlicaService extends FlicaService {
   }
 
   @Override
-  public String getOpenTime(AwardDomicile domicile, Rank rank, 
+  public String getOpenTime(AwardDomicile domicile, Rank rank,
       int round, YearMonth yearMonth) throws URISyntaxException, IOException {
     File file = new File(DIR, "opentime-" + domicile + rank + round + yearMonth + ".txt");
     if (file.exists()) {
@@ -155,7 +155,7 @@ public class CachingFlicaService extends FlicaService {
       return result;
     }
   }
-  
+
   @Override
   public Response submitLineBid(int round, YearMonth yearMonth,
       List<String> lines) throws URISyntaxException, IOException {
@@ -176,13 +176,26 @@ public class CachingFlicaService extends FlicaService {
       return result;
     }
   }
-  
+
+  @Override
+  public String getPeerSchedule(int employeeId, YearMonth yearMonth) throws IOException {
+    File file = new File(DIR, "peer-schedule-" + employeeId + "-" + yearMonth + ".txt");
+    if (file.exists()) {
+      return Files.toString(file, StandardCharsets.UTF_8);
+    } else {
+      connectIfNecessary();
+      String result = super.getPeerSchedule(employeeId, yearMonth);
+      Files.write(result, file, StandardCharsets.UTF_8);
+      return result;
+    }
+  }
+
   @Override
   public byte[] getDocument(AwardDomicile awardDomicile, Rank rank,
       int round, YearMonth yearMonth,
       int documentId, String title)
       throws URISyntaxException, IOException {
-    File file = new File(DIR, "document-" + awardDomicile + rank + 
+    File file = new File(DIR, "document-" + awardDomicile + rank +
         round + yearMonth + documentId + title + ".txt");
     if (file.exists()) {
       return Files.toByteArray(file);

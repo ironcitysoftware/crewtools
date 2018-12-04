@@ -161,5 +161,4 @@ public class FlicaTask {
   public int hashCode() {
     return pairingName.hashCode();
   }
-
 }

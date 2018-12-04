@@ -49,7 +49,7 @@ public class FlicaService {
 
   private static final String DOMAIN =
       "https://jia.flica.net/";
-  
+
   private static final String AWARD_BY_LINE_BASE_URL = "awardbyline.cgi";
 
   private static final String SCHEDULE_BY_MONTH_BASE_URL = "scheduledetail.cgi";
@@ -77,9 +77,11 @@ public class FlicaService {
 
   private static final String OPENTIME_REQUEST_BASE_URL =
       "otrequest.cgi";
-  
+
   private static final String SHOW_DOCUMENT_STAGE_ONE_BASE_URL =
       "coversheet_showdocument.cgi";
+
+  private static final String CREW_MEMBER_SCHEDULE_URL = "cmschedules.cgi";
 
   private static final String SHOW_DOCUMENT_STAGE_TWO_FORMAT_SPEC =
       DOMAIN + "public/getdoc.dll/%s_Document%03d.pdf?type=bc&bc=%d";
@@ -114,7 +116,7 @@ public class FlicaService {
       } else {
         // But to view Feburary SBB (round code 3) we need 013.051, not 013.052
       }
-      yearMonthCode = JAN_2017_CODE + monthsBetween; 
+      yearMonthCode = JAN_2017_CODE + monthsBetween;
     }
     return String.format(BID_CLOSE_ID_FORMAT_SPEC, roundCode, yearMonthCode);
   }
@@ -123,10 +125,10 @@ public class FlicaService {
 
   String getCrewClassId(AwardDomicile domicile, Rank rank) {
     char rankCharacter = rank == Rank.CAPTAIN ? 'C' : 'F';
-    return String.format(CREW_CLASS_ID_FORMAT_SPEC, 
+    return String.format(CREW_CLASS_ID_FORMAT_SPEC,
         domicile.getAwardId(), rankCharacter);
   }
-  
+
   String getCrewClass(AwardDomicile domicile, Rank rank) {
     return String.format("%s-CRJ-%s", domicile, rank == Rank.CAPTAIN ? "CA" : "FO");
   }
@@ -203,7 +205,7 @@ public class FlicaService {
     return connection.retrieveUrl(url);
   }
 
-  public String getAllLines(AwardDomicile awardDomicile, Rank rank, 
+  public String getAllLines(AwardDomicile awardDomicile, Rank rank,
       int round, YearMonth yearMonth) throws URISyntaxException, IOException {
     String bidCloseId = getBidCloseId(round, yearMonth);
     String crewClassId = getCrewClassId(awardDomicile, rank);
@@ -283,7 +285,7 @@ public class FlicaService {
   }
 
   public String submitSwap(int round, YearMonth yearMonth,
-      LocalDate today, List<PairingKey> addTrips, 
+      LocalDate today, List<PairingKey> addTrips,
       List<PairingKey> dropTrips) throws URISyntaxException, IOException {
     String bidCloseId = getBidCloseId(round, yearMonth);
     HttpUrl url = new HttpUrl.Builder()
@@ -306,27 +308,27 @@ public class FlicaService {
       data.put("dropBid", formatPairingKeyForBid(key));
     }
     data.put("pageId", "25270342");  // needed?
-    
+
     String submitPairs = "";
     for (PairingKey key : addTrips) {
       if (!submitPairs.isEmpty()) {
         submitPairs = submitPairs + " and ";
       }
-      submitPairs += key.getPairingName() 
-          + ":" 
+      submitPairs += key.getPairingName()
+          + ":"
           + String.format("%02d", key.getPairingDate().getDayOfMonth())
-          + monthName(key.getPairingDate().getMonthOfYear()); 
+          + monthName(key.getPairingDate().getMonthOfYear());
     }
-    
+
     String swapPairs = "";
     for (PairingKey key : dropTrips) {
       if (!swapPairs.isEmpty()) {
         swapPairs = swapPairs + " and ";
       }
-      swapPairs += key.getPairingName() 
-          + ":" 
+      swapPairs += key.getPairingName()
+          + ":"
           + String.format("%02d", key.getPairingDate().getDayOfMonth())
-          + monthName(key.getPairingDate().getMonthOfYear()); 
+          + monthName(key.getPairingDate().getMonthOfYear());
     }
 
     data.put("MySwapPairs", swapPairs);
@@ -347,10 +349,10 @@ public class FlicaService {
         .addQueryParameter("MySubmitPairs", submitPairs)
         .addQueryParameter("pageId", "2527034")
         .build();
-    
+
     return connection.postUrlWithReferer(url, refererUrl.toString(), data.build());
   }
-  
+
   private String monthName(int month) {
     switch (month) {
     case 1: return "JAN";
@@ -410,11 +412,28 @@ public class FlicaService {
         .build();
     return connection.retrieveUrl(url);
     //BO=20180121&GO=1
-  }  
+  }
+
+  public String getPeerSchedule(int employeeId, YearMonth yearMonth) throws IOException {
+    int shortYear = yearMonth.getYear();
+    if (shortYear > 2000) {
+      shortYear -= 2000;
+    }
+    String bd = String.format("%02d%02d", yearMonth.getMonthOfYear(), shortYear);
+    HttpUrl url = new HttpUrl.Builder()
+        .scheme("https")
+        .host(HOST)
+        .addPathSegment("full")
+        .addPathSegment(CREW_MEMBER_SCHEDULE_URL)
+        .addQueryParameter("EmployeeId", "" + employeeId)
+        .addQueryParameter("bd", bd)
+        .build();
+    return connection.retrieveUrl(url);
+  }
 
   // self.location='/public/getdoc.dll/CLT-CRJ-FO_Document008.pdf?type=bc&bc=3211274';
   private final Pattern DOC_ID = Pattern.compile("&bc=(\\d+)[&']");
-  
+
   public byte[] getDocument(AwardDomicile awardDomicile, Rank rank,
       int round, YearMonth yearMonth,
       int documentId, String title)
@@ -436,7 +455,7 @@ public class FlicaService {
     Preconditions.checkState(docIdMatcher.find(), redirectText);
     String serverDocumentId = docIdMatcher.group(1);
     logger.info("server document id = [" + serverDocumentId + "]");
-    
+
     url = HttpUrl.parse(
         String.format(SHOW_DOCUMENT_STAGE_TWO_FORMAT_SPEC,
             getCrewClass(awardDomicile, rank),
@@ -444,7 +463,7 @@ public class FlicaService {
             Integer.parseInt(serverDocumentId)));
     return connection.retrieveUrlBytes(url);
   }
-  
+
   //  "L7436:20171025"
   String formatPairingKeyForBid(PairingKey key) {
     return String.format("%s:%s", key.getPairingName(),

@@ -21,6 +21,7 @@ package crewtools.flica.stats;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.logging.Logger;
@@ -31,6 +32,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 import crewtools.flica.AwardDomicile;
+import crewtools.flica.CachingFlicaService;
+import crewtools.flica.FlicaConnection;
+import crewtools.flica.FlicaService;
 import crewtools.flica.Proto.Award;
 import crewtools.flica.Proto.CrewMember;
 import crewtools.flica.Proto.DomicileAward;
@@ -41,6 +45,9 @@ import crewtools.flica.Proto.SeniorityList;
 import crewtools.flica.Proto.ThinLine;
 import crewtools.flica.Proto.ThinLineList;
 import crewtools.flica.Proto.ThinPairing;
+import crewtools.flica.parser.PeerScheduleParser;
+import crewtools.flica.pojo.PeerScheduleDay;
+import crewtools.util.FlicaConfig;
 import crewtools.util.PilotMatcher;
 
 public class ReserveUtilization {
@@ -53,6 +60,7 @@ public class ReserveUtilization {
   private final YearMonth yearMonth;
   private final AwardDomicile awardDomicile;
   private final ScheduleType scheduleType;
+  private final FlicaService flicaService;
 
   private static final Map<ScheduleType, String> ABBREVIATIONS = ImmutableMap.of(
       ScheduleType.SHORT_CALL_RESERVE, "SCR",
@@ -70,6 +78,7 @@ public class ReserveUtilization {
     } else {
       this.scheduleType = ScheduleType.valueOf(args[2]);
     }
+    this.flicaService = new CachingFlicaService(new FlicaConnection(new FlicaConfig()));
   }
 
   public void run() throws Exception {
@@ -98,9 +107,79 @@ public class ReserveUtilization {
       info.put(member.getEmployeeId(), message);
     }
 
+    int num = 0;
     for (int employeeId : info.keySet()) {
-      logger.info(info.get(employeeId));
+      String raw = flicaService.getPeerSchedule(employeeId, yearMonth);
+      PeerScheduleParser parser = new PeerScheduleParser(raw);
+      List<PeerScheduleDay> days = parser.parse();
+      String result = analyze(days);
+      logger.info(info.get(employeeId) + result);
     }
+  }
+
+  private String analyze(List<PeerScheduleDay> days) {
+    if (days.isEmpty()) {
+      return "";
+    }
+    int daysOff = 0;
+    int daysUnused = 0;
+    int daysWorked = 0;
+    boolean monthStart = false;
+    PeerScheduleDay lastDayProcessed = null;
+    for (PeerScheduleDay day : days) {
+      // System.out.println(day);
+      if (!monthStart && day.dayOfMonth != 1) {
+        continue;
+      }
+      monthStart = true;
+
+      // Main processing
+      if (day.duty.equals("PER")
+          || day.duty.equals("NAVL")
+          || day.duty.equals("PED")
+          || day.duty.equals("PUD")
+          || day.duty.equals("Sick")
+          || day.duty.equals("DNC")
+          || day.duty.equals("FML")
+          || day.duty.equals("FMLU")
+          || day.duty.equals("VAX")
+          || day.duty.equals("VAC")) {
+        return "";
+      }
+      if (day.duty.equals("SCR") || day.duty.equals("LCR")) {
+        daysUnused++;
+      } else if (!day.duty.isEmpty()) {
+        if (lastDayProcessed != null
+            && lastDayProcessed.dayOfMonth == day.dayOfMonth) {
+          if (lastDayProcessed.duty.equals("SCR")
+              || lastDayProcessed.duty.equals("LCR")) {
+            // 04 SCR
+            // 04 DCA
+            daysUnused--;
+          } else if (lastDayProcessed.duty.equals("HRV")
+              || lastDayProcessed.duty.equals("TAR")) {
+            daysWorked--;
+          } else {
+            throw new IllegalStateException("Unexpected repeat");
+          }
+        }
+        daysWorked++;
+      } else {
+        if (day.overnight.isEmpty()) {
+          daysOff++;
+        } else {
+          daysWorked++;
+        }
+      }
+
+      if (lastDayProcessed != null
+          && day.dayOfMonth < lastDayProcessed.dayOfMonth) {
+        break;
+      }
+      lastDayProcessed = day;
+    }
+    return String.format(" daysOff:%d daysUnused:%d daysHome:%d daysWorked:%d",
+        daysOff, daysUnused, daysOff + daysUnused, daysWorked);
   }
 
   private String getName(ScheduleType scheduleType) {
