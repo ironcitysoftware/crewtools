@@ -21,9 +21,14 @@ package crewtools.flica.stats;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.logging.Logger;
 
 import org.joda.time.YearMonth;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.Proto.Award;
@@ -37,7 +42,6 @@ import crewtools.flica.Proto.ThinLine;
 import crewtools.flica.Proto.ThinLineList;
 import crewtools.flica.Proto.ThinPairing;
 import crewtools.util.PilotMatcher;
-import jline.internal.Preconditions;
 
 public class ReserveUtilization {
   private final Logger logger = Logger.getLogger(ReserveUtilization.class.getName());
@@ -48,10 +52,24 @@ public class ReserveUtilization {
 
   private final YearMonth yearMonth;
   private final AwardDomicile awardDomicile;
+  private final ScheduleType scheduleType;
+
+  private static final Map<ScheduleType, String> ABBREVIATIONS = ImmutableMap.of(
+      ScheduleType.SHORT_CALL_RESERVE, "SCR",
+      ScheduleType.LONG_CALL_RESERVE, "LCR");
 
   public ReserveUtilization(String args[]) throws FileNotFoundException, IOException {
-    yearMonth = YearMonth.parse(args[0]);
-    awardDomicile = AwardDomicile.valueOf(args[1]);
+    if (args.length < 2) {
+      System.err.println("reserveUtilization.sh 2018-12 CLT [LONG_CALL_RESERVE]");
+      System.exit(-1);
+    }
+    this.yearMonth = YearMonth.parse(args[0]);
+    this.awardDomicile = AwardDomicile.valueOf(args[1]);
+    if (args.length == 2) {
+      this.scheduleType = ScheduleType.LONG_CALL_RESERVE;
+    } else {
+      this.scheduleType = ScheduleType.valueOf(args[2]);
+    }
   }
 
   public void run() throws Exception {
@@ -62,8 +80,10 @@ public class ReserveUtilization {
         Rank.CAPTAIN, 2);
     SeniorityList list = dataReader.readSeniorityList(yearMonth);
     PilotMatcher matcher = new PilotMatcher(list);
+
+    Map<Integer, String> info = new TreeMap<>();
     for (ThinLine line : roundTwo.getThinLineList()) {
-      if (!isLongCallReserve(line)) {
+      if (!isScheduleType(line)) {
         continue;
       }
       Award award = findAward(awardContainer, line.getLineName());
@@ -73,16 +93,28 @@ public class ReserveUtilization {
       }
       Pilot pilot = award.getPilot();
       CrewMember member = Preconditions.checkNotNull(matcher.matchCrewMember(pilot));
-      logger.info(
-          line.getLineName() + " LCR " + member.getEmployeeId() + " "
-              + member.getName());
+      String message = String.format("%s %s %d %s", line.getLineName(),
+          getName(scheduleType), member.getEmployeeId(), member.getName());
+      info.put(member.getEmployeeId(), message);
+    }
+
+    for (int employeeId : info.keySet()) {
+      logger.info(info.get(employeeId));
     }
   }
 
-  private boolean isLongCallReserve(ThinLine line) {
+  private String getName(ScheduleType scheduleType) {
+    if (ABBREVIATIONS.containsKey(scheduleType)) {
+      return ABBREVIATIONS.get(scheduleType);
+    } else {
+      return scheduleType.name();
+    }
+  }
+
+  private boolean isScheduleType(ThinLine line) {
     for (ThinPairing pairing : line.getThinPairingList()) {
       for (ScheduleType scheduleType : pairing.getScheduleTypeList()) {
-        if (scheduleType.equals(ScheduleType.LONG_CALL_RESERVE)) {
+        if (scheduleType.equals(this.scheduleType)) {
           return true;
         }
       }
