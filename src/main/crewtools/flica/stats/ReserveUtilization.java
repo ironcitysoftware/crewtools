@@ -107,7 +107,6 @@ public class ReserveUtilization {
       info.put(member.getEmployeeId(), message);
     }
 
-    int num = 0;
     for (int employeeId : info.keySet()) {
       String raw = flicaService.getPeerSchedule(employeeId, yearMonth);
       PeerScheduleParser parser = new PeerScheduleParser(raw);
@@ -157,7 +156,8 @@ public class ReserveUtilization {
             // 04 DCA
             daysUnused--;
           } else if (lastDayProcessed.duty.equals("HRV")
-              || lastDayProcessed.duty.equals("TAR")) {
+              || lastDayProcessed.duty.equals("TAR")
+              || lastDayProcessed.duty.equals("COB")) {
             daysWorked--;
           } else {
             throw new IllegalStateException("Unexpected repeat");
