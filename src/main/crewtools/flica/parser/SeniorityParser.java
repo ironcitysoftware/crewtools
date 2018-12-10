@@ -95,8 +95,8 @@ public class SeniorityParser {
 
   private Pattern PAGE_HEADER_PATTERN = Pattern.compile("SYS ?SEN (\\d{4})-(\\d+)");
 
-  // Pre    Oct 2017: 1399 28148 NIMA MOJDEH 17-Jul-17 FO SIP
-  // Oct 2017 onward: 1399 28148 NIMA MOJDEH 17-Jul-17 NH1 FO SIP
+  // Pre Oct 2017: 1399 28148 LINCOLN ABE 17-Jul-17 FO SIP
+  // Oct 2017 onward: 1399 28148 LINCOLN ABE 17-Jul-17 NH1 FO SIP
   private Pattern CREW_MEMBER_PATTERN = Pattern.compile("(\\d+) (\\d+) ([^0-9]+)"
       /* no space */
       + "(\\d{2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\\d{2})"
@@ -167,7 +167,9 @@ public class SeniorityParser {
         if (!matcher.matches()) {
           matcher = PAGE_FOOTER_PATTERN.matcher(line);
           if (!matcher.matches()) {
-            throw new ParseException("unmatched line [" + line + "] in state crew member");
+            // Jan 2019 has no page footers
+            state = ParseState.PAGE_HEADER;
+            break;
           }
           state = ParseState.PAGE_FOOTER;
         } else {
