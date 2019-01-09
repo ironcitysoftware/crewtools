@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
 import com.google.common.collect.ImmutableList;
@@ -83,8 +84,8 @@ public class Pairing {
   }
 
   Trip getTrip(LocalDate date) {
-    int daysBetween = date.getDayOfMonth()
-        - getFirstSection().getDepartureDate().getDayOfMonth();
+    int daysBetween = Days.daysBetween(
+        getFirstSection().getDepartureDate(), date).getDays();
     List<Section> newSections = new ArrayList<>();
     for (Section section : sections) {
       newSections.add(section.copyWithDateOffset(daysBetween));

@@ -19,8 +19,6 @@
 
 package crewtools.flica.bid;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -208,11 +206,8 @@ public class MonthlyBidder {
           cmdLine.parseCanceled());
       pairingList = pairingParser.parse();
     } else {
-      String filename = new DataReader().getPairingFilename(yearMonth, awardDomicile);
-      Proto.PairingList.Builder builder = Proto.PairingList.newBuilder();
-      FileInputStream inputStream = new FileInputStream(new File(filename));
-      builder.mergeFrom(inputStream);
-      pairingList = builder.build();
+      DataReader dataReader = new DataReader();
+      pairingList = dataReader.readPairings(yearMonth, awardDomicile);
     }
 
     PairingAdapter pairingAdapter = new PairingAdapter();
@@ -241,18 +236,13 @@ public class MonthlyBidder {
       LineParser lineParser = new LineParser(rawLines);
       lineList = lineParser.parse();
     } else {
-      String filename = new DataReader().getLineFilename(yearMonth, awardDomicile,
+      DataReader dataReader = new DataReader();
+      lineList = dataReader.readLines(yearMonth, awardDomicile,
           Rank.valueOf(bidConfig.getRank()), bidConfig.getRound());
-      Proto.ThinLineList.Builder builder = Proto.ThinLineList.newBuilder();
-      FileInputStream inputStream = new FileInputStream(new File(filename));
-      builder.mergeFrom(inputStream);
-      lineList = builder.build();
     }
 
     List<ThinLine> result = new ArrayList<>();
-    for (Proto.ThinLine protoThinLine : lineList.getThinLineList()) {
-      result.add(new ThinLine(protoThinLine));
-    }
+    lineList.getThinLineList().forEach(line -> result.add(new ThinLine(line)));
     return result;
   }
 }
