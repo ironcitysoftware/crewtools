@@ -38,6 +38,7 @@ import crewtools.flica.Proto;
 import crewtools.flica.Proto.CrewPosition;
 import crewtools.flica.Proto.ScheduleType;
 import crewtools.flica.parser.ParseUtils;
+import crewtools.util.MonthBoundary;
 import crewtools.util.Period;
 import crewtools.util.TimeUtils;
 
@@ -48,7 +49,7 @@ import crewtools.util.TimeUtils;
 public class Trip implements Comparable<Trip> {
   private final TimeUtils timeUtils = new TimeUtils();
   private final Logger logger = Logger.getLogger(Trip.class.getName());
-  
+
   public Trip(List<Section> sections, Period block, Period credit,
       Period tafb, Period duty,
       Set<LocalDate> departureDates,
@@ -71,7 +72,7 @@ public class Trip implements Comparable<Trip> {
       return proto.getPairingName();
     }
   }
-  
+
   public int getStartingDayOfMonth() {
     return earliestDepartureDate.getDayOfMonth();
   }
@@ -84,9 +85,9 @@ public class Trip implements Comparable<Trip> {
       ScheduleType.VACATION_START,
       ScheduleType.VACATION_END,
       ScheduleType.VACATION);
-  
+
   public boolean isDroppable() {
-    if (proto.hasScheduleType() 
+    if (proto.hasScheduleType()
         && UNDROPPABLE_SCHEDULE_TYPES.contains(proto.getScheduleType())) {
       return false;
     }
@@ -97,11 +98,11 @@ public class Trip implements Comparable<Trip> {
     }
     return true;
   }
-  
+
   public Set<LocalDate> getDepartureDates() {
     return departureDates;
   }
-  
+
   public List<Section> getSections() {
     return sections;
   }
@@ -116,7 +117,7 @@ public class Trip implements Comparable<Trip> {
   public List<String> scoreInfo = new ArrayList<>();
   private Set<LocalDate> departureDates;
   private LocalDate earliestDepartureDate;
-  
+
   public boolean isTwoHundred() {
     return proto.getEquipment().equals(Proto.Equipment.RJ2);
   }
@@ -125,15 +126,15 @@ public class Trip implements Comparable<Trip> {
   public Section getFirstSection() {
     return sections.get(0);
   }
-  
+
   public Section getLastSection() {
     return sections.get(sections.size() - 1);
   }
-  
+
   public boolean hasScheduleType() {
     return proto.hasScheduleType();
   }
-  
+
   public int getNumSections() {
     return sections.size();
   }
@@ -178,9 +179,10 @@ public class Trip implements Comparable<Trip> {
 
   /** Does not include vacation. */
   public Period getCreditInMonth(YearMonth yearMonth) {
+    MonthBoundary monthBoundary = new MonthBoundary(yearMonth);
     Period outOfMonthCredit = Period.ZERO;
     for (Section section : sections) {
-      if (section.date.getMonthOfYear() != yearMonth.getMonthOfYear()) {
+      if (!monthBoundary.isWithin(section.date)) {
         outOfMonthCredit = outOfMonthCredit.plus(section.credit);
       }
     }
@@ -199,7 +201,7 @@ public class Trip implements Comparable<Trip> {
     }
     return credit.minus(outOfMonthCredit).minus(vacationCredit);
   }
-  
+
   private static final DateTimeZone EASTERN = DateTimeZone.forID("America/New_York");
 
   public DateTime getDutyStart() {
@@ -240,7 +242,7 @@ public class Trip implements Comparable<Trip> {
   public String toString() {
     return proto.toString();
   }
-  
+
   @Override
   public boolean equals(Object that) {
     if (that == null) { return false; }

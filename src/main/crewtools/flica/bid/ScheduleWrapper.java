@@ -43,6 +43,7 @@ import crewtools.flica.pojo.Schedule;
 import crewtools.flica.pojo.Trip;
 import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.Clock;
+import crewtools.util.MonthBoundary;
 import crewtools.util.Period;
 
 public class ScheduleWrapper {
@@ -63,12 +64,13 @@ public class ScheduleWrapper {
   private final YearMonth yearMonth;
   private final Clock clock;
   private final BidConfig bidConfig;
-  
+
   private Set<Interval> nonTripIntervals;
   private Map<PairingKey, Period> creditInMonthMap;  // least first
   private Period minRequiredCredit;
   private Period baggageCredit;
-  
+  private MonthBoundary monthBoundary;
+
   private static final Period SIXTY_FIVE = Period.hours(65);
 
   public ScheduleWrapper(
@@ -86,6 +88,7 @@ public class ScheduleWrapper {
     this.yearMonth = yearMonth;
     this.clock = clock;
     this.bidConfig = bidConfig;
+    this.monthBoundary = new MonthBoundary(yearMonth);
 
     // Computes required days off.
     ImmutableSet.Builder<LocalDate> builder = ImmutableSet.builder();
@@ -111,7 +114,9 @@ public class ScheduleWrapper {
         logger.info("Scheduled trip " + trip.getPairingKey());
         if (!allBaggageTrips.contains(trip.getPairingKey())) {
           trips.put(trip.getPairingKey(), trip);
-          if (trip.isDroppable() && trip.getDutyStart().isAfter(clock.now())) {
+          if (trip.isDroppable()
+              && trip.getDutyStart().isAfter(clock.now())
+              && monthBoundary.isWithin(trip.getDutyStart().toLocalDate())) {
             droppableSchedule.put(trip.getPairingKey(), trip);
           }
           Period tripCredit = trip.getCreditInMonth(yearMonth);
@@ -140,7 +145,7 @@ public class ScheduleWrapper {
     logger.info("Baggage trips: " + baggageTrips);
     this.baggageCredit = baggageCreditThisMonth;
   }
-  
+
   public boolean containsKey(PairingKey key) {
     return trips.containsKey(key);
   }
@@ -164,14 +169,14 @@ public class ScheduleWrapper {
     logger.severe("Can't find any droppable trips?");
     return SIXTY_FIVE;
   }
-  
+
   public boolean meetsMinimumCredit(Trip trip, YearMonth yearMonth) {
     Period tripCredit = trip.getCreditInMonth(yearMonth);
-    logger.info("Trip " + trip.getPairingName() + " credit=" + tripCredit + 
+    logger.info("Trip " + trip.getPairingName() + " credit=" + tripCredit +
         ", minRequired=" + minRequiredCredit);
     return tripCredit.compareTo(minRequiredCredit) >= 0;
   }
-  
+
   public boolean meetsMinimumCredit(
       PairingKey scheduledTrip, Trip trip, YearMonth yearMonth) {
     Period tripCredit = trip.getCreditInMonth(yearMonth);
@@ -189,7 +194,7 @@ public class ScheduleWrapper {
         + " = " + newCredit);
     return result;
   }
-  
+
   /**
    * trip is a potential trip that we want to add to our schedule. If trip
    * overlaps with one or more existing trips, returns those trips.
@@ -258,21 +263,21 @@ public class ScheduleWrapper {
   public Collection<Trip> getAllDroppable() {
     return droppableSchedule.values();
   }
-  
+
   //
   // Create a new ScheduleWrapper based on adds and drops.
   //
-  
+
   public ScheduleWrapper mutate(List<Trip> adds, List<PairingKey> dropKeys) {
     List<PairingKey> addKeys = new ArrayList<>();
     adds.forEach(trip -> addKeys.add(trip.getPairingKey()));
-    
+
     Schedule newSchedule = schedule.copyAndModify(adds, dropKeys);
     ScheduleWrapper newWrapper = new ScheduleWrapper(
         newSchedule, yearMonth, clock, bidConfig);
     return newWrapper;
   }
-  
+
   /** Returns any baggage trips that remain in this schedule. */
   public Collection<PairingKey> getBaggage() {
     return baggageTrips;

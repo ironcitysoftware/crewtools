@@ -40,16 +40,16 @@ import crewtools.rpc.Proto.BidConfig;
 import crewtools.rpc.Proto.ScheduleNode;
 import crewtools.rpc.Proto.Status;
 
-// DAG where each node represents a schedule state and each 
+// DAG where each node represents a schedule state and each
 // line represents a swap request.
 public class ScheduleWrapperTree {
   private final Logger logger = Logger.getLogger(ScheduleWrapperTree.class.getName());
 
   private final SetMultimap<ScheduleWrapper, ScheduleWrapper> nodes =
       MultimapBuilder.hashKeys().hashSetValues().build();
-  
+
   private final Map<Transition, ScheduleWrapper> transitions = new HashMap<>();
-  
+
   private ScheduleWrapper root;
   private final Set<PairingKey> processedKeys = new HashSet<>();
   private final BidConfig bidConfig;
@@ -57,7 +57,7 @@ public class ScheduleWrapperTree {
   public ScheduleWrapperTree(BidConfig bidConfig) {
     this.bidConfig = bidConfig;
   }
-  
+
   public abstract class Visitor {
     public abstract void visit(ScheduleWrapper wrapper);
     public void add(ScheduleWrapper wrapper, Transition transition, ScheduleWrapper newChild) {
@@ -66,19 +66,19 @@ public class ScheduleWrapperTree {
       transitions.put(transition, newChild);
     }
   }
-  
+
   /**
    * Keeps track of processed keys here, rather than in worker,
    * because we want to clear this list when we reroot the tree.
-   */  
+   */
   public synchronized boolean shouldProcess(PairingKey key) {
     return !processedKeys.contains(key);
   }
-  
+
   public synchronized void markProcessed(PairingKey key) {
     processedKeys.add(key);
   }
-  
+
   public synchronized void visit(Visitor visitor) {
     if (root == null) {
       logger.warning("No nodes to visit");
@@ -86,19 +86,21 @@ public class ScheduleWrapperTree {
       visitNodeAndChildren(visitor, root);
     }
   }
-  
+
   private void visitNodeAndChildren(Visitor visitor, ScheduleWrapper startingNode) {
     visitor.visit(startingNode);
-    for (ScheduleWrapper node : nodes.get(startingNode)) {
-      visitNodeAndChildren(visitor, node);
+    if (bidConfig.getEnableRecursiveSwaps()) {
+      for (ScheduleWrapper node : nodes.get(startingNode)) {
+        visitNodeAndChildren(visitor, node);
+      }
     }
   }
-  
-  /** 
-   * We process requests as well as schedule refreshes because the denials 
+
+  /**
+   * We process requests as well as schedule refreshes because the denials
    * help trim the tree faster than schedule refreshes (an approval-only change).
    */
-  
+
   /** Called by ScheduleLoaderThread. */
   public synchronized void setRootScheduleWrapper(ScheduleWrapper wrapper) {
     if (root == null) {
@@ -123,7 +125,7 @@ public class ScheduleWrapperTree {
       }
     }
   }
-  
+
   void removeAllNodesButSubtree(ScheduleWrapper wrapper) {
     Set<ScheduleWrapper> toKeep = new HashSet<>();
     Queue<ScheduleWrapper> toTraverse = new LinkedList<>();
@@ -140,7 +142,7 @@ public class ScheduleWrapperTree {
     nodes.keys().retainAll(toKeep);
     nodes.values().retainAll(toKeep);
   }
-  
+
   void removeSubtree(ScheduleWrapper wrapper) {
     Set<ScheduleWrapper> toRemove = new HashSet<>();
     Queue<ScheduleWrapper> toTraverse = new LinkedList<>();
@@ -157,7 +159,7 @@ public class ScheduleWrapperTree {
     nodes.keys().removeAll(toRemove);
     nodes.values().removeAll(toRemove);
   }
-  
+
   void removeAssociatedTransitions(Collection<ScheduleWrapper> wrappers) {
     transitions.entrySet().removeIf(entry -> wrappers.contains(entry.getValue()));
   }
@@ -202,7 +204,7 @@ public class ScheduleWrapperTree {
     }
     toRemove.forEach((wrapper) -> removeSubtree(wrapper));
   }
-  
+
   public synchronized void markDenied(Transition transition) {
     if (!transitions.containsKey(transition)) {
       // The transition could have been removed by a reroot or approval.
@@ -212,7 +214,7 @@ public class ScheduleWrapperTree {
     logger.info("Transition denied: " + transition);
     removeSubtree(transitions.get(transition));
   }
-  
+
   @Override
   public int hashCode() {
     return Objects.hashCode(root, nodes);

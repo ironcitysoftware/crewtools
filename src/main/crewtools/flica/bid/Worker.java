@@ -37,8 +37,8 @@ import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.Clock;
 
 public class Worker extends Thread {
-  private static final int MAX_SWAPS = 520;
-  
+  private static final int MAX_SWAPS = 50;
+
   private final Logger logger = Logger.getLogger(Worker.class.getName());
   private final BlockingQueue<Trip> queue;
   private final FlicaService service;
@@ -50,7 +50,7 @@ public class Worker extends Thread {
   private final BidConfig bidConfig;
   private final boolean debug;
   private int numSwaps;
-  
+
   public Worker(BlockingQueue<Trip> queue, FlicaService service,
       ScheduleWrapperTree tree, YearMonth yearMonth,
       int round, Clock clock, RuntimeStats stats, BidConfig bidConfig,
@@ -68,7 +68,7 @@ public class Worker extends Thread {
     this.setName("Autobidder Worker");
     this.setDaemon(false);
   }
-  
+
   public void run() {
     try {
       while (true) {
@@ -78,7 +78,7 @@ public class Worker extends Thread {
       t.printStackTrace();
     }
   }
-  
+
   void doWork() {
     try {
       Trip trip = queue.take();
@@ -95,10 +95,10 @@ public class Worker extends Thread {
       logger.log(Level.WARNING, "Error processing", e);
     }
   }
-  
+
   private class TripProcessor extends ScheduleWrapperTree.Visitor {
     private final Trip trip;
-    
+
     TripProcessor(ScheduleWrapperTree tree, Trip trip) {
       tree.super();
       this.trip = trip;
@@ -128,7 +128,7 @@ public class Worker extends Thread {
           continue;
         }
         if (!wrapper.meetsMinimumCredit(scheduledTrip.getPairingKey(), trip, yearMonth)) {
-          logger.info("Unable to swap with scheduled trip " 
+          logger.info("Unable to swap with scheduled trip "
               + scheduledTrip.getPairingName() + " due to MinCredit");
           continue;
         }
@@ -142,21 +142,21 @@ public class Worker extends Thread {
         if (newTripIsBetter ||
             (bidConfig.getDiscardBaggageRegardlessOfScore()
                 && scheduleHasBaggage)) {
-          logger.info("Trip " + trip.getPairingName() 
+          logger.info("Trip " + trip.getPairingName()
           + " (" + potentialNewTrip.getPoints() + ") is better than "
           + scheduledTrip.getPairingName() + " (" + existingTrip.getPoints() + ")");
           logger.info("SWAP!!!! DROP " + scheduledTrip.getPairingName()
               + " and any baggage " + wrapper.getBaggage() + " FOR "
               + trip.getPairingName());
           List<PairingKey> adds = ImmutableList.of(trip.getPairingKey());
-          
+
           List<PairingKey> drops = ImmutableList.<PairingKey>builder()
               .addAll(wrapper.getBaggage())
               .add(scheduledTrip.getPairingKey())
               .build();
-          
+
           Transition transition = new Transition(adds, drops);
-          
+
           try {
             if (!debug) {
               String html = service.submitSwap(round, yearMonth, clock.today(), adds,
