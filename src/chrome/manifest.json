@@ -2,23 +2,15 @@
   "manifest_version": 2,
 
   "name": "Helpful additions to Flica",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Popup blocker",
 
-  "background": {
-    "scripts": [
-      "background.js"
-    ]
-  },
-
   "content_scripts": [{
-    "js": ["jquery-1.10.2.js","content.js"],
+    "js": ["jquery-3.3.1.js","content.js"],
+    "all_frames": true,
+    "run_at": "document_start",
     "matches": ["https://jia.flica.net/online/mainmenu.cgi*"]
   }],
 
-  "permissions": [
-    "https://jia.flica.net/full/OneTimeNotice.cgi*",
-    "webRequest",
-    "webRequestBlocking"
-  ]
+  "web_accessible_resources": ["injected.js"]
 }
