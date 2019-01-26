@@ -38,6 +38,7 @@
     <path location="lib/joda-time-2.2.jar" />
     <path location="lib/jsoup-1.10.2.jar" />
     <path location="lib/protobuf-2.6.1.jar" />
+    <path location="lib/servlet-api-3.1.jar" />
     <path location="lib/subethasmtp-3.1.7.jar" />
     <path location="lib/tika-core-1.16.jar" />
     <path location="lib/tika-parsers-1.16.jar" />
@@ -57,7 +58,7 @@
     <uptodate property="build-rpc-proto.notrequired" srcfile="${rpc-proto}" targetfile="${rpc-proto.java}" />
   </target>
 
-<!-- 
+<!--
   TODO requires proto-2.6.1 in /opt
    -->
   <target name="build-flica-proto" depends="checkprotoforchanges"
@@ -111,7 +112,7 @@
       <classpath>
         <path refid="test-classpath" />
       </classpath>
- 
+
       <batchtest>
         <fileset dir="src/test"><include name="**/*Test.java"/></fileset>
       </batchtest>
@@ -129,7 +130,7 @@
 
   <target name="jar">
     <delete file="bin/crewtools.jar" />
-    <jar destfile="bin/crewtools.jar" 
+    <jar destfile="bin/crewtools.jar"
          basedir="bin">
     </jar>
   </target>
