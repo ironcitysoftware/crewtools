@@ -42,6 +42,10 @@
     <path location="lib/subethasmtp-3.1.7.jar" />
     <path location="lib/tika-core-1.16.jar" />
     <path location="lib/tika-parsers-1.16.jar" />
+  	<path location="lib/jetty-http-9.4.14.v20181114.jar" />
+    <path location="lib/jetty-io-9.4.14.v20181114.jar" />
+    <path location="lib/jetty-server-9.4.14.v20181114.jar" />
+    <path location="lib/jetty-util-9.4.14.v20181114.jar" />
     <path location="${bin}" />
   </path>
 
