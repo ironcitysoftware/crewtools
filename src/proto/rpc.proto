@@ -125,3 +125,20 @@ message PairingOverride {
   optional string pairing_name = 1;
   optional string operates_except = 2;
 }
+
+message GridObservation {
+  optional int64 observation_time = 1;
+  optional int32 year = 2;
+  optional int32 month = 3;
+  optional string domicile = 4;
+  optional string rank = 5;
+  repeated Observation observation = 6;
+}
+
+message Observation {
+  optional int32 month = 1;
+  optional int32 day = 2;
+  optional int32 available_reserve = 3;
+  optional int32 open_duty_periods = 4;
+  optional int32 min_required = 5;
+}
