@@ -26,6 +26,7 @@ import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import org.joda.time.DateTime;
@@ -90,6 +91,7 @@ public class FlicaConnection {
         .followRedirects(false)
         .followSslRedirects(false)
         .cookieJar(cookieJar)
+        .readTimeout(30, TimeUnit.SECONDS)
         .build();
     this.clock = new SystemClock();
   }
@@ -206,7 +208,7 @@ public class FlicaConnection {
   public void disconnect() throws IOException {
     retrieveUrl(FLICA_LOGOUT_URL);
   }
-  
+
   private ResponseBody retrieveUrlInternal(HttpUrl url) throws IOException {
     logger.info("url = [" + url.toString() + "]");
     Request request = new Request.Builder()
