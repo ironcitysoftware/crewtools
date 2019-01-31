@@ -12,4 +12,4 @@ CLASSPATH=$CLASSPATH:lib/gson-2.8.0.jar
 java \
   -Djava.util.logging.config.file=scripts/logging.properties \
   -cp $CLASSPATH \
-  crewtools.flica.bid.GetReserveGrid $@
+  crewtools.flica.retriever.ReserveGridRetriever $@

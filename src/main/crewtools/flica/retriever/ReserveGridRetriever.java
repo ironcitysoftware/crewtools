@@ -49,7 +49,7 @@ public class ReserveGridRetriever {
   private DateTimeFormatter DATE_MONTH_FORMAT = DateTimeFormat.forPattern("ddMMM");
 
   public void run(String args[]) throws Exception {
-    YearMonth yearMonth = YearMonth.parse("2017-09");
+    YearMonth yearMonth = YearMonth.parse("2019-2");
     LocalDate today = new DateTime().toLocalDate();
 
     FlicaConnection connection = new FlicaConnection(new FlicaConfig());
@@ -59,12 +59,12 @@ public class ReserveGridRetriever {
     int round = Integer.parseInt(args[0]);
     AwardDomicile awardDomicile = AwardDomicile.valueOf(args[1]);
     Rank rank = Rank.valueOf(args[2]);
-    
+
     if (false) {
       System.out.println(service.getBidAward(awardDomicile, rank, round, yearMonth));
       return;
     }
-    
+
     String rawReserveGridJson = service.getReserveGrid(
         awardDomicile,
         rank,
@@ -73,7 +73,7 @@ public class ReserveGridRetriever {
         );
 
     logger.info(rawReserveGridJson);
-    
+
     JsonParser parser = new JsonParser();
     JsonObject jsonObject = parser.parse(rawReserveGridJson).getAsJsonObject();
     Preconditions.checkState(
@@ -96,8 +96,9 @@ public class ReserveGridRetriever {
       }
 
       if (!date.isBefore(today)) {
-//        System.out.printf("%s : avail %d / open %d / net %d / min %d\n", date, availableReserves,
-//            openDutyPeriods, netReserves, minimumRequired);
+        System.out.printf("%s : avail %d / open %d / net %d / min %d\n", date,
+            availableReserves,
+            openDutyPeriods, netReserves, minimumRequired);
         if (netReserves > minimumRequired) {
           System.out.printf("%s is green\n", date);
         }
