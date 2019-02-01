@@ -19,6 +19,7 @@
 
 package crewtools.flica;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -51,7 +52,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
-public class FlicaConnection {
+public class FlicaConnection implements Closeable {
   private final String username;
   private final String password;
   private final OkHttpClient httpclient;
@@ -207,6 +208,11 @@ public class FlicaConnection {
 
   public void disconnect() throws IOException {
     retrieveUrl(FLICA_LOGOUT_URL);
+  }
+
+  @Override
+  public void close() throws IOException {
+    disconnect();
   }
 
   private ResponseBody retrieveUrlInternal(HttpUrl url) throws IOException {
