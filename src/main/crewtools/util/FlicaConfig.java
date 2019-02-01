@@ -21,6 +21,7 @@ package crewtools.util;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Properties;
 import java.util.Set;
@@ -34,10 +35,18 @@ public class FlicaConfig {
 
   private final Properties props;
 
-  public FlicaConfig() throws IOException {
+  // TODO readDefault() static
+  public FlicaConfig() {
     props = new Properties();
-    props.load(new FileInputStream(
-        new File(System.getProperty("user.home") + CONFIG_PROPERTIES_PATH)));
+    File file = new File(System.getProperty("user.home") + CONFIG_PROPERTIES_PATH);
+    try {
+      props.load(new FileInputStream(file));
+    } catch (FileNotFoundException e) {
+      throw new IllegalStateException(
+          "Unable to find config file " + file.getAbsolutePath());
+    } catch (IOException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   public String getFlicaUsername() {
@@ -47,7 +56,7 @@ public class FlicaConfig {
   public String getFlicaPassword() {
     return Preconditions.checkNotNull(props.getProperty("flicaPassword"));
   }
-  
+
   public String getDataDirectory() {
     return Preconditions.checkNotNull(props.getProperty("dataDirectory"));
   }
