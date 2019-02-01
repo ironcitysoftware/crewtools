@@ -100,8 +100,12 @@ public class FlicaService {
   private static final int JAN_2017_CODE = 38;
   private static final String BID_CLOSE_ID_FORMAT_SPEC = "01%d.%03d";
 
+  public static final int BID_ROUND_ONE = 1;
+  public static final int BID_ROUND_TWO = 2;
+  public static final int BID_FIRST_COME = 5;
+  
   // BCID = 01[Round 1=0, Round 2=1, SeniorityBased=3, Opentime=5, FO SAP=9].xxx where 040 = March 2017
-  String getBidCloseId(int round, YearMonth yearMonth) {
+  public static String getBidCloseId(int round, YearMonth yearMonth) {
     Preconditions.checkState(round == 1 || round == 2 || round == 3
         || round == 4 || round == 5 || round == 10);
     int roundCode = round - 1;
@@ -121,9 +125,9 @@ public class FlicaService {
     return String.format(BID_CLOSE_ID_FORMAT_SPEC, roundCode, yearMonthCode);
   }
 
-  private String CREW_CLASS_ID_FORMAT_SPEC = "%s6%c";
+  private static final String CREW_CLASS_ID_FORMAT_SPEC = "%s6%c";
 
-  String getCrewClassId(AwardDomicile domicile, Rank rank) {
+  public static String getCrewClassId(AwardDomicile domicile, Rank rank) {
     char rankCharacter = rank == Rank.CAPTAIN ? 'C' : 'F';
     return String.format(CREW_CLASS_ID_FORMAT_SPEC,
         domicile.getAwardId(), rankCharacter);
@@ -235,12 +239,11 @@ public class FlicaService {
     return connection.retrieveUrl(url);
   }
 
-  public String getOpenTime(AwardDomicile awardDomicile, Rank rank,
-      int round, YearMonth yearMonth)
-      throws URISyntaxException, IOException {
+  public static HttpUrl getOpenTimeUrl(AwardDomicile awardDomicile, Rank rank,
+      int round, YearMonth yearMonth) {
     String bidCloseId = getBidCloseId(round, yearMonth);
     String crewClassId = getCrewClassId(awardDomicile, rank);
-    HttpUrl url = new HttpUrl.Builder()
+    return new HttpUrl.Builder()
         .scheme("https")
         .host(HOST)
         .addPathSegment("full")
@@ -250,6 +253,12 @@ public class FlicaService {
         .addQueryParameter("SubmitBids", "NO")
         .addQueryParameter("CC", crewClassId)
         .build();
+  }
+  
+  public String getOpenTime(AwardDomicile awardDomicile, Rank rank,
+      int round, YearMonth yearMonth)
+      throws URISyntaxException, IOException {
+    HttpUrl url = getOpenTimeUrl(awardDomicile, rank, round, yearMonth);
     return connection.retrieveUrl(url);
   }
 
@@ -268,11 +277,11 @@ public class FlicaService {
     return connection.retrieveUrl(url);
   }
 
-  public String getReserveGrid(AwardDomicile awardDomicile, Rank rank,
-      int round, YearMonth yearMonth) throws URISyntaxException, IOException {
+  public static HttpUrl getReserveGridJsonUrl(AwardDomicile awardDomicile, Rank rank,
+      int round, YearMonth yearMonth) {
     String bidCloseId = getBidCloseId(round, yearMonth);
     String crewClassId = getCrewClassId(awardDomicile, rank);
-    HttpUrl url = new HttpUrl.Builder()
+    return new HttpUrl.Builder()
         .scheme("https")
         .host(HOST)
         .addPathSegment("full")
@@ -280,7 +289,12 @@ public class FlicaService {
         .addQueryParameter("BCID", bidCloseId)
         .addQueryParameter("json", "1")
         .addQueryParameter("CC", crewClassId)
-        .build();
+        .build();   
+  }
+  
+  public String getReserveGrid(AwardDomicile awardDomicile, Rank rank,
+      int round, YearMonth yearMonth) throws URISyntaxException, IOException {
+    HttpUrl url = getReserveGridJsonUrl(awardDomicile, rank, round, yearMonth);
     return connection.retrieveUrl(url);
   }
 
