@@ -38,7 +38,7 @@ import crewtools.flica.Proto;
 import crewtools.flica.Proto.CrewPosition;
 import crewtools.flica.Proto.ScheduleType;
 import crewtools.flica.parser.ParseUtils;
-import crewtools.util.MonthBoundary;
+import crewtools.util.Calendar;
 import crewtools.util.Period;
 import crewtools.util.TimeUtils;
 
@@ -179,10 +179,10 @@ public class Trip implements Comparable<Trip> {
 
   /** Does not include vacation. */
   public Period getCreditInMonth(YearMonth yearMonth) {
-    MonthBoundary monthBoundary = new MonthBoundary(yearMonth);
+    Calendar calendar = new Calendar(yearMonth);
     Period outOfMonthCredit = Period.ZERO;
     for (Section section : sections) {
-      if (!monthBoundary.isWithin(section.date)) {
+      if (!calendar.isWithinPeriod(section.date)) {
         outOfMonthCredit = outOfMonthCredit.plus(section.credit);
       }
     }

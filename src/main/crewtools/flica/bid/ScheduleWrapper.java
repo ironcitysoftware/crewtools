@@ -42,8 +42,8 @@ import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Schedule;
 import crewtools.flica.pojo.Trip;
 import crewtools.rpc.Proto.BidConfig;
+import crewtools.util.Calendar;
 import crewtools.util.Clock;
-import crewtools.util.MonthBoundary;
 import crewtools.util.Period;
 
 public class ScheduleWrapper {
@@ -69,7 +69,7 @@ public class ScheduleWrapper {
   private Map<PairingKey, Period> creditInMonthMap;  // least first
   private Period minRequiredCredit;
   private Period baggageCredit;
-  private MonthBoundary monthBoundary;
+  private Calendar calendar;
 
   private static final Period SIXTY_FIVE = Period.hours(65);
 
@@ -88,7 +88,7 @@ public class ScheduleWrapper {
     this.yearMonth = yearMonth;
     this.clock = clock;
     this.bidConfig = bidConfig;
-    this.monthBoundary = new MonthBoundary(yearMonth);
+    this.calendar = new Calendar(yearMonth);
 
     // Computes required days off.
     ImmutableSet.Builder<LocalDate> builder = ImmutableSet.builder();
@@ -116,7 +116,7 @@ public class ScheduleWrapper {
           trips.put(trip.getPairingKey(), trip);
           if (trip.isDroppable()
               && trip.getDutyStart().isAfter(clock.now())
-              && monthBoundary.isWithin(trip.getDutyStart().toLocalDate())) {
+              && calendar.isWithinPeriod(trip.getDutyStart().toLocalDate())) {
             droppableSchedule.put(trip.getPairingKey(), trip);
           }
           Period tripCredit = trip.getCreditInMonth(yearMonth);
