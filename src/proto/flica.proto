@@ -267,7 +267,7 @@ message Trip {
   optional string operates_except = 21;  // Oct 24, Oct 25
 }
 
-// "Schedule" or “Line” means the grouping of sections and/or reserve days and days off.
+// "Schedule" or "Line" means the grouping of sections and/or reserve days and days off.
 //
 // "Trip" means a series of sections separated by RON(s) beginning and ending at a pilot's
 // domicile.
