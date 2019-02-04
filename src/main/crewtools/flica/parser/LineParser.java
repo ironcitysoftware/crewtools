@@ -21,7 +21,6 @@ package crewtools.flica.parser;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.logging.Logger;
 
 import org.joda.time.LocalDate;
@@ -35,12 +34,12 @@ import org.jsoup.select.Elements;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableSet;
 
 import crewtools.flica.Proto.ScheduleType;
 import crewtools.flica.Proto.ThinLine;
 import crewtools.flica.Proto.ThinLineList;
 import crewtools.flica.Proto.ThinPairing;
+import crewtools.util.Calendar;
 
 public class LineParser {
   private final Logger logger = Logger.getLogger(LineParser.class.getName());
@@ -109,36 +108,6 @@ public class LineParser {
     return thinLineList.build();
   }
 
-  private static final Set<Integer> MONTHS_WHERE_FIRST_COLUMN_IS_FIRST_DAY = ImmutableSet
-      .of(1, 4, 5, 6, 7, 8, 9, 10, 11, 12);
-
-  /** column is 1 .. numColumns */
-  /** TODO, capture header text row and properly map columns to days */
-  /** Except, I'm not sure what this is used for and how much effort to put into it */
-  private LocalDate getColumnDate(YearMonth yearMonth, int column) {
-    int monthOfYear = yearMonth.getMonthOfYear();
-    if (MONTHS_WHERE_FIRST_COLUMN_IS_FIRST_DAY.contains(monthOfYear)) {
-      return yearMonth.toLocalDate(column);
-    }
-
-    // exceptions follow.
-    if (yearMonth.getMonthOfYear() == 2) {
-      if (column == 1) {
-        return yearMonth.minusMonths(1).toLocalDate(31);
-      } else if (column == 30) {
-        return yearMonth.plusMonths(1).toLocalDate(1);
-      } else {
-        /* 2 .. 29 */
-        return yearMonth.toLocalDate(column - 1);
-      }
-    } else if (yearMonth.getMonthOfYear() == 3) {
-      return yearMonth.toLocalDate(column + 1);
-    } else {
-      throw new IllegalStateException(
-          "TODO Verify that column 1 is the first of the month");
-    }
-  }
-
   private void parseLine(int numColumns, YearMonth yearMonth, Elements tds,
       ThinLine.Builder builder) throws ParseException {
     String lineName = tds.get(0).text();
@@ -146,8 +115,10 @@ public class LineParser {
     logger.fine(lineName);
     ThinPairing.Builder currentPairing = null;
     boolean isFirstDayOfPairing = false;
+    Calendar calendar = new Calendar(yearMonth);
+    List<LocalDate> dates = calendar.getDatesInPeriod();
     for (int dayOfMonth = 1; dayOfMonth < numColumns; ++dayOfMonth) {
-      LocalDate cellDate = getColumnDate(yearMonth, dayOfMonth);
+      LocalDate cellDate = dates.get(dayOfMonth - 1);
       Element cell = tds.get(dayOfMonth);
       if (cell.text().equals(NBSP)) {
         currentPairing = null;
