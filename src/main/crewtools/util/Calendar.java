@@ -21,6 +21,7 @@ package crewtools.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
@@ -39,13 +40,23 @@ public class Calendar {
   }
 
   public List<LocalDate> getRemainingDatesInPeriod(LocalDate today) {
+    List<LocalDate> dates = getDatesInPeriod();
+    ListIterator<LocalDate> iterator = dates.listIterator();
+    while (iterator.hasNext()) {
+      LocalDate date = iterator.next();
+      if (date.isBefore(today)) {
+        iterator.remove();
+      }
+    }
+    return dates;
+  }
+
+  public List<LocalDate> getDatesInPeriod() {
     LocalDate date = getFirstDateInPeriod();
     LocalDate end = getLastDateInPeriod();
     List<LocalDate> result = new ArrayList<>();
     while (!date.isAfter(end)) {
-      if (!date.isBefore(today)) {
-        result.add(date);
-      }
+      result.add(date);
       date = date.plusDays(1);
     }
     return result;
