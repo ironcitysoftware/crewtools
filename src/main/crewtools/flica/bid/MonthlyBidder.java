@@ -74,7 +74,7 @@ public class MonthlyBidder {
   }
 
   private void runForMonthlyBid() throws Exception {
-    FlicaConnection connection = new FlicaConnection(new FlicaConfig());
+    FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
     FlicaService service;
     if (cmdLine.useCachingService()) {
       service = new CachingFlicaService(connection);

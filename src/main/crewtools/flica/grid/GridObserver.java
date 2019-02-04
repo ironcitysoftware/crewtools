@@ -134,7 +134,7 @@ public class GridObserver {
   }
 
   private GridObservation observe() throws IOException, URISyntaxException {
-    FlicaConnection connection = new FlicaConnection(new FlicaConfig());
+    FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
     FlicaService service = new FlicaService(connection);
 
     String rawReserveGridJson = service.getReserveGrid(domicile, rank, 4, yearMonth);

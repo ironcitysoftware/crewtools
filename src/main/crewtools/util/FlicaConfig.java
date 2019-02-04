@@ -21,7 +21,6 @@ package crewtools.util;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Properties;
 import java.util.Set;
@@ -33,45 +32,49 @@ import com.google.common.collect.ImmutableSet;
 public class FlicaConfig {
   private static final String CONFIG_PROPERTIES_PATH = "/.crewtools";
 
+  public static final String FLICA_USERNAME = "flicaUsername";
+  public static final String FLICA_PASSWORD = "flicaPassword";
+  public static final String DATA_DIRECTORY = "dataDirectory";
+  public static final String INTERESTING_EMPLOYEE_ID = "interestingEmployeeId";
+  public static final String SESSION_CACHE_FILE = "sessionCacheFile";
+  public static final String DOMICILES = "domiciles";
+
   private final Properties props;
 
-  // TODO readDefault() static
-  public FlicaConfig() {
-    props = new Properties();
+  public FlicaConfig(Properties props) {
+    this.props = props;
+  }
+
+  public static FlicaConfig readConfig() throws IOException {
+    Properties props = new Properties();
     File file = new File(System.getProperty("user.home") + CONFIG_PROPERTIES_PATH);
-    try {
-      props.load(new FileInputStream(file));
-    } catch (FileNotFoundException e) {
-      throw new IllegalStateException(
-          "Unable to find config file " + file.getAbsolutePath());
-    } catch (IOException e) {
-      throw new IllegalStateException(e);
-    }
+    props.load(new FileInputStream(file));
+    return new FlicaConfig(props);
   }
 
   public String getFlicaUsername() {
-    return Preconditions.checkNotNull(props.getProperty("flicaUsername"));
+    return Preconditions.checkNotNull(props.getProperty(FLICA_USERNAME));
   }
 
   public String getFlicaPassword() {
-    return Preconditions.checkNotNull(props.getProperty("flicaPassword"));
+    return Preconditions.checkNotNull(props.getProperty(FLICA_PASSWORD));
   }
 
   public String getDataDirectory() {
-    return Preconditions.checkNotNull(props.getProperty("dataDirectory"));
+    return Preconditions.checkNotNull(props.getProperty(DATA_DIRECTORY));
   }
 
   public String getInterestingEmployeeId() {
-    return Preconditions.checkNotNull(props.getProperty("interestingEmployeeId"));
+    return Preconditions.checkNotNull(props.getProperty(INTERESTING_EMPLOYEE_ID));
   }
 
   public String getSessionCacheFile() {
-    return props.getProperty("sessionCacheFile");
+    return props.getProperty(SESSION_CACHE_FILE);
   }
 
   public Set<String> getDomiciles() {
     return ImmutableSet.copyOf(
         Splitter.on(',').omitEmptyStrings().trimResults().split(
-            Preconditions.checkNotNull(props.getProperty("domiciles"))));
+            Preconditions.checkNotNull(props.getProperty(DOMICILES))));
   }
 }

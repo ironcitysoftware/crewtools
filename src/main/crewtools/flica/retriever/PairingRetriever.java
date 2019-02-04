@@ -44,7 +44,7 @@ public class PairingRetriever {
   }
 
   public void writeOneBinary(YearMonth yearMonth, int round) throws Exception {
-    FlicaConnection connection = new FlicaConnection(new FlicaConfig());
+    FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
     //FlicaService service = new CachingFlicaService(connection);
     FlicaService service = new FlicaService(connection);
     service.connect();
@@ -71,12 +71,12 @@ public class PairingRetriever {
   }
 
   public void writeAllBinary(YearMonth start, int round) throws Exception {
-    FlicaConnection connection = new FlicaConnection(new FlicaConfig());
+    FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
     // FlicaService service = new CachingFlicaService(connection);
     FlicaService service = new FlicaService(connection);
     service.connect();
     DataReader dataReader = new DataReader();
-    
+
     for (AwardDomicile awardDomicile : AwardDomicile.values()) {
       for (int monthBack = 0; monthBack < 3; monthBack++) {
         YearMonth yearMonth = start.minusMonths(monthBack);

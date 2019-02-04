@@ -78,7 +78,8 @@ public class ReserveUtilization {
     } else {
       this.scheduleType = ScheduleType.valueOf(args[2]);
     }
-    this.flicaService = new CachingFlicaService(new FlicaConnection(new FlicaConfig()));
+    this.flicaService = new CachingFlicaService(
+        new FlicaConnection(FlicaConfig.readConfig()));
   }
 
   public void run() throws Exception {

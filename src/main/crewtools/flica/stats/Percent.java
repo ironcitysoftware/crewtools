@@ -43,15 +43,16 @@ public class Percent {
   public static void main(String args[]) throws Exception {
     new Percent().run();
   }
-  
+
   private final DataReader dataReader;
   private final int employeeId;
-  
+
   public Percent() throws IOException {
     this.dataReader = new DataReader();
-    this.employeeId = Integer.parseInt(new FlicaConfig().getInterestingEmployeeId());
+    this.employeeId = Integer
+        .parseInt(FlicaConfig.readConfig().getInterestingEmployeeId());
   }
-  
+
   static class Columns {
     public Columns(int employeeId) {
       this.totalActiveCaptains = new Column<>("Active CAs");
@@ -66,7 +67,7 @@ public class Percent {
     Column<Integer> captainSeniorityInBase;
     Column<Integer> firstOfficerSeniorityInBase;
     Column<Integer> numRoundOneLines;
-    
+
     void addToGraphData(GraphData data) {
       data.add(totalActiveCaptains);
       data.add(totalActiveFirstOfficers);
@@ -80,19 +81,19 @@ public class Percent {
     Map<YearMonth, SeniorityList> seniorityLists = dataReader.readSeniorityLists();
     Map<YearMonth, Map<AwardDomicile, ThinLineList>> numLineLists = dataReader.readLines();
     Map<String, GraphData> tokenToDataMap = new HashMap<>();
-    
+
     for (AwardDomicile awardDomicile : AwardDomicile.values()) {
       GraphData graphData = getGraphData(Optional.of(awardDomicile), seniorityLists, numLineLists);
       tokenToDataMap.put("$" + awardDomicile + "_SENIORITY_DATA", graphData);
     }
-    
+
     GraphData graphData = getGraphData(Optional.absent(), seniorityLists, numLineLists);
     tokenToDataMap.put("$ALL_SENIORITY_DATA", graphData);
 
     new ChartRenderer(ImmutableMap.of(), tokenToDataMap, "percent.template",
         "/tmp/percent.html").render();
   }
-  
+
   private GraphData getGraphData(Optional<AwardDomicile> awardDomicile,
       Map<YearMonth, SeniorityList> seniorityLists,
       Map<YearMonth, Map<AwardDomicile, ThinLineList>> numLineLists) {
@@ -104,10 +105,10 @@ public class Percent {
       labelColumn.add(yearMonth);
       Integer numLines = getNumRoundOneLines(
           awardDomicile,
-          numLineLists.get(yearMonth)); 
+          numLineLists.get(yearMonth));
       populateForDomicile(columns,
           yearMonth,
-          awardDomicile, 
+          awardDomicile,
           seniorityLists.get(yearMonth),
           numLines);
     }
@@ -128,26 +129,26 @@ public class Percent {
       return numLines;
     }
     if (!lines.containsKey(awardDomicile.get())) {
-      return null; 
+      return null;
     }
     return lines.get(awardDomicile.get()).getThinLineCount();
   }
-  
-  private void populateForDomicile(Columns columns, YearMonth yearMonth, 
-      Optional<AwardDomicile> awardDomicile, SeniorityList list, 
+
+  private void populateForDomicile(Columns columns, YearMonth yearMonth,
+      Optional<AwardDomicile> awardDomicile, SeniorityList list,
       Integer numRoundOneLines) {
     int totalFirstOfficersInBase = 0;
     int totalCaptainsInBase = 0;
     int firstOfficerSeniorityInBase = 0;
     int captainSeniorityInBase = 0;
-    
+
     for (CrewMember member : list.getCrewMemberList()) {
       if (member.getEmployeeId() == employeeId) {
         if (firstOfficerSeniorityInBase == 0) {
           firstOfficerSeniorityInBase = totalFirstOfficersInBase;
         }
         if (captainSeniorityInBase == 0) {
-          captainSeniorityInBase = totalCaptainsInBase; 
+          captainSeniorityInBase = totalCaptainsInBase;
         }
       }
       if (!member.getStatus().equals(Status.ACTIVE)) {
@@ -157,7 +158,7 @@ public class Percent {
       if (awardDomicile.isPresent() && !member.hasDomicile()) {
         continue;
       }
-      if (!awardDomicile.isPresent() 
+      if (!awardDomicile.isPresent()
           || member.getDomicile().name().equals(awardDomicile.get().name())) {
         if (member.getCrewPosition().equals(CrewPosition.FO)) {
           totalFirstOfficersInBase++;
@@ -168,7 +169,7 @@ public class Percent {
         }
       }
     }
-    
+
     columns.totalActiveCaptains.add(totalCaptainsInBase);
     columns.totalActiveFirstOfficers.add(totalFirstOfficersInBase);
     columns.numRoundOneLines.add(numRoundOneLines);

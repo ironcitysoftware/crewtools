@@ -69,7 +69,7 @@ public class LineRetriever {
   }
 
   public void run() throws Exception {
-    FlicaConnection connection = new FlicaConnection(new FlicaConfig());
+    FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
     FlicaService service = new FlicaService(connection);
     service.connect();
 
@@ -89,7 +89,7 @@ public class LineRetriever {
   }
 
   public void run2() throws Exception {
-    FlicaConnection connection = new FlicaConnection(new FlicaConfig());
+    FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
     FlicaService service = new FlicaService(connection);
     service.connect();
 

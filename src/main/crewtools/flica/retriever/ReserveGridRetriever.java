@@ -52,7 +52,7 @@ public class ReserveGridRetriever {
     YearMonth yearMonth = YearMonth.parse("2019-2");
     LocalDate today = new DateTime().toLocalDate();
 
-    FlicaConnection connection = new FlicaConnection(new FlicaConfig());
+    FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
     FlicaService service = new FlicaService(connection);
     service.connect();
 

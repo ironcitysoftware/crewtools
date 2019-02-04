@@ -72,7 +72,7 @@ public class MonthlyDataRetriever {
   }
 
   public void run() throws Exception {
-    FlicaConfig config = new FlicaConfig();
+    FlicaConfig config = FlicaConfig.readConfig();
     FlicaConnection connection = new FlicaConnection(config);
     FlicaService service = new FlicaService(connection);
     service.connect();

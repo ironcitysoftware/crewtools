@@ -37,7 +37,7 @@ public class ChartRenderer {
   private final String outputFilename;
   private final Map<String, String> stringData;
   private final Map<String, GraphData> graphData;
-  
+
   public ChartRenderer(
       Map<String, String> stringData,
       Map<String, GraphData> graphData,
@@ -45,10 +45,11 @@ public class ChartRenderer {
       String outputFilename) throws IOException {
     this.stringData = stringData;
     this.graphData = graphData;
-    this.templateFilename = new FlicaConfig().getDataDirectory() + templateFilename;
+    this.templateFilename = FlicaConfig.readConfig().getDataDirectory()
+        + templateFilename;
     this.outputFilename = outputFilename;
   }
-  
+
   public void render() throws IOException {
     File templateFile = new File(templateFilename);
     String template = Files.toString(templateFile, StandardCharsets.UTF_8);

@@ -56,7 +56,7 @@ public class AutoBidder {
     YearMonth yearMonth = YearMonth.parse(bidConfig.getYearMonth());
     logger.info("Welcome to AutoBidder for " + yearMonth);
 
-    FlicaConnection connection = new FlicaConnection(new FlicaConfig());
+    FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
     FlicaService service;
     if (cmdLine.useCache()) {
       service = new CachingFlicaService(connection);
@@ -101,7 +101,7 @@ public class AutoBidder {
     smtpServer.start();
 
     Duration initialDelay = cmdLine.getInitialDelay(clock);
-    
+
     OpentimeLoaderThread opentimeLoader = new OpentimeLoaderThread(
         yearMonth,
         initialDelay.minus(Duration.standardMinutes(2)),
@@ -110,7 +110,7 @@ public class AutoBidder {
         trips,
         queue, stats);
     opentimeLoader.start();
-    
+
     OpentimeRequestLoaderThread opentimeRequestLoader = new OpentimeRequestLoaderThread(
         yearMonth,
         initialDelay,

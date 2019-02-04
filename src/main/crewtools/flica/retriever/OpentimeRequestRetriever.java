@@ -48,7 +48,7 @@ public class OpentimeRequestRetriever {
   }
 
   public void run() throws Exception {
-    FlicaConnection connection = new FlicaConnection(new FlicaConfig());
+    FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
     FlicaService service = new FlicaService(connection);
     service.connect();
     System.out.println(service.getOpentimeRequests(round, yearMonth));

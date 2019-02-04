@@ -27,7 +27,7 @@ import crewtools.util.SystemClock;
 
 public class DashboardCLI {
   public static void main(String args[]) throws Exception {
-    FlicaConnection connection = new FlicaConnection(new FlicaConfig());
+    FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
     FlicaService flicaService = new FlicaService(connection);
 
     FlightStatusService flightStatusService = new FlightStatusService();

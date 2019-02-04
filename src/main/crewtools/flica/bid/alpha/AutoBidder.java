@@ -85,7 +85,7 @@ public class AutoBidder {
     YearMonth yearMonth = YearMonth.parse(bidConfig.getYearMonth());
     logger.info("Welcome to AutoBidder for " + yearMonth);
 
-    FlicaConnection connection = new FlicaConnection(new FlicaConfig());
+    FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
     FlicaService service = new FlicaService(connection);
     service.connect();
 

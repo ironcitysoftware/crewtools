@@ -52,14 +52,14 @@ public class SubmitSapBid {
   public static void main(String args[]) throws Exception {
     new SubmitSapBid().run(args);
   }
-  
+
   private static final int FO_SAP_ROUND = 10;
   private static final int FO_SBB_ROUND = 4;
 
   public void run(String args[]) throws Exception {
     YearMonth yearMonth = YearMonth.parse("2018-8");
 
-    FlicaConnection connection = new FlicaConnection(new FlicaConfig());
+    FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
     FlicaService service = new FlicaService(connection);
     service.connect();
 
@@ -69,10 +69,10 @@ public class SubmitSapBid {
       openTime.put(key.getPairingName(), key);
     }
     Schedule schedule = getSchedule(service, yearMonth);
-    
+
     List<PairingKey> addTrips = new ArrayList<>();
     List<PairingKey> dropTrips = new ArrayList<>();
-    
+
     boolean parsingDrop = true;
     for (String arg : args) {
       if (arg.equals("-")) {
@@ -96,28 +96,28 @@ public class SubmitSapBid {
         addTrips.add(key);
       }
     }
-    
+
     if (addTrips.isEmpty()) {
       System.err.println("Usage: L1234 L2345 ..drops -> L4567 ..adds");
       System.exit(1);
     }
-    
+
     LocalDate firstDayOfMonth = yearMonth.toLocalDate(1);
     logger.info("ADD : " + addTrips);
     logger.info("DROP: " + dropTrips);
     String result = service.submitSwap(
         FO_SBB_ROUND,
-        yearMonth, 
-        firstDayOfMonth, 
-    	addTrips, 
+        yearMonth,
+        firstDayOfMonth,
+        addTrips,
     	dropTrips);
     System.out.println(result);
   }
-  
+
   private List<PairingKey> getOpenTimeTrips(FlicaService service, YearMonth yearMonth) throws Exception {
     String rawOpenTime = service.getOpenTime(
         AwardDomicile.CLT, Rank.FIRST_OFFICER, FO_SAP_ROUND, yearMonth);
-    OpenTimeParser openTimeParser = 
+    OpenTimeParser openTimeParser =
         new OpenTimeParser(yearMonth.getYear(), rawOpenTime);
     List<FlicaTask> tasks = openTimeParser.parse();
     List<PairingKey> openTimeTrips = new ArrayList<>();
@@ -126,7 +126,7 @@ public class SubmitSapBid {
     }
     return openTimeTrips;
   }
-  
+
   private Schedule getSchedule(FlicaService service, YearMonth yearMonth)
       throws IOException, ParseException {
     String rawSchedule = service.getSchedule(yearMonth);
@@ -135,7 +135,7 @@ public class SubmitSapBid {
     ScheduleAdapter scheduleAdapter = new ScheduleAdapter();
     return scheduleAdapter.adapt(protoSchedule);
   }
-  
+
   private PairingKey getPairingKey(Schedule schedule, String pairingName) {
     for (PairingKey key : schedule.getTrips().keySet()) {
       if (key.getPairingName().equals(pairingName)) {

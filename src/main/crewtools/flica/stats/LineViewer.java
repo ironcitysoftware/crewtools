@@ -94,7 +94,7 @@ public class LineViewer extends AbstractHandler {
     this.lineFormatter = new ThinLineFormatter(yearMonth);
     this.tripFormatter = new TripFormatter();
     this.interestingEmployeeId = Integer
-        .parseInt(new FlicaConfig().getInterestingEmployeeId());
+        .parseInt(FlicaConfig.readConfig().getInterestingEmployeeId());
   }
 
   public void run() throws Exception {

@@ -45,7 +45,7 @@ public class DataReader {
   private final String dataDir;
 
   public DataReader() throws IOException {
-    dataDir = new FlicaConfig().getDataDirectory();
+    dataDir = FlicaConfig.readConfig().getDataDirectory();
   }
 
 //  public static void main(String args[]) throws Exception {

@@ -58,7 +58,7 @@ public class AwardRetriever {
   }
 
   public void run() throws Exception {
-    FlicaConnection connection = new FlicaConnection(new FlicaConfig());
+    FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
     connection.connect();
     String session = connection.getSession();
     System.out.println("Session: " + session);

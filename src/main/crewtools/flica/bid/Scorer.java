@@ -49,7 +49,7 @@ public class Scorer {
       System.exit(-1);
     }
     Map<PairingKey, Trip> pairings = getAllPairings(YearMonth.parse("2018-8"));
-    FlicaConnection connection = new FlicaConnection(new FlicaConfig());
+    FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
     FlicaService service = new FlicaService(connection);
     BidConfig bidConfig = FileUtils.readBidConfig();
     Trip left = getTrip(args[0], pairings, service);
