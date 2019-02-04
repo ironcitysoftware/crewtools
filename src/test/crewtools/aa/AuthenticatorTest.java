@@ -31,7 +31,7 @@ public class AuthenticatorTest {
     String mixedCaseDeviceId = "aa7DB01D" + "00000000" + "75B319F8" + "40115829"
         + "DD2ABAA4";
     long currentMillis = 1496260026157L;
-    assertEquals("2797724bd102d5798f0e77928ae6cc9c",
+    assertEquals("3a0e017f40f49bf95d1cd741990bb04f",
         new Authenticator().getAuthToken(currentMillis, mixedCaseDeviceId));
   }
 

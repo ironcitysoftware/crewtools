@@ -39,17 +39,17 @@ public class ScheduleWrapperTreeTest {
       new FakeClock(TripBuilder.DEFAULT_DAY.minusDays(1));
 
   private LocalDate uniquePairingKeyDate = TripBuilder.DEFAULT_DAY;
-  
+
   private class Adder extends ScheduleWrapperTree.Visitor {
     private final ScheduleWrapper from;
     private final ScheduleWrapper to;
-    
+
     Adder(ScheduleWrapperTree tree, ScheduleWrapper from, ScheduleWrapper to) {
       tree.super();
       this.from = from;
       this.to = to;
     }
-    
+
     public void visit(ScheduleWrapper wrapper) {
       if (from != null && !from.equals(wrapper)) {
         return;
@@ -61,7 +61,7 @@ public class ScheduleWrapperTreeTest {
       add(wrapper, transition, to);
     }
   }
-  
+
   private ScheduleWrapper newScheduleWrapper(String name) {
     return new ScheduleWrapper(
         new ScheduleBuilder().build(name),
@@ -78,7 +78,7 @@ public class ScheduleWrapperTreeTest {
     tree.setRootScheduleWrapper(wrapper);
     assertEquals(oldHash, tree.hashCode());
   }
-  
+
   @Test
   public void testSingleLevelReRoot() throws ParseException {
     ScheduleWrapperTree tree = new ScheduleWrapperTree(BidConfig.getDefaultInstance());
@@ -99,7 +99,9 @@ public class ScheduleWrapperTreeTest {
 
   @Test
   public void testMultiLevelReRoot() throws ParseException {
-    ScheduleWrapperTree tree = new ScheduleWrapperTree(BidConfig.getDefaultInstance());
+    BidConfig config = BidConfig.getDefaultInstance().toBuilder()
+        .setEnableRecursiveSwaps(true).build();
+    ScheduleWrapperTree tree = new ScheduleWrapperTree(config);
     ScheduleWrapper oldRoot = newScheduleWrapper("oldRoot");
     tree.setRootScheduleWrapper(oldRoot);
     ScheduleWrapper left = newScheduleWrapper("leftChild");
