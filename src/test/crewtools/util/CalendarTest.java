@@ -59,5 +59,4 @@ public class CalendarTest {
     assertEquals(new LocalDate(2019, 3, 30), dates.get(1));
     assertEquals(new LocalDate(2019, 3, 31), dates.get(2));
   }
-
 }
