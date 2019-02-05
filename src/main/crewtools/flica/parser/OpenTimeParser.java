@@ -47,14 +47,18 @@ public class OpenTimeParser {
   private static final String UNPUBLISHED_MAGIC_MARKER =
       "Bid Package Not Published";
 
+  private static final String NO_PRIVILEGE = "An error has occurred";
+
   private final int year;
   private final String input;
   private final boolean published;
+  private final boolean unprivileged;
 
   public OpenTimeParser(int year, String input) {
     this.year = year;
     this.input = input;
     this.published = !input.contains(UNPUBLISHED_MAGIC_MARKER);
+    this.unprivileged = input.contains(NO_PRIVILEGE);
   }
 
   public List<FlicaTask> parse() throws ParseException {
@@ -69,6 +73,10 @@ public class OpenTimeParser {
 
   public boolean isPublished() {
     return published;
+  }
+
+  public boolean isUnprivileged() {
+    return unprivileged;
   }
 
   protected List<FlicaTask> parseInternal() throws ParseException {
