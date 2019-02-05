@@ -24,6 +24,7 @@ if (request.getScheme().equals("http")) {
 <html>
 <head>
 <title>Reports</title>
+<meta name="google" content="notranslate">
 <style>
 html, body {
   margin: 0;
