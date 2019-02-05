@@ -28,31 +28,30 @@ import org.joda.time.YearMonth;
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.FlicaService;
 import crewtools.flica.Proto.Rank;
-import okhttp3.HttpUrl;
 
 public class WriteGridLinks {
   private static final String OUTPUT_PATH = "/tmp/links.html";
   private static final YearMonth YEAR_MONTH = new YearMonth(2019, 2);
   private static final int ROUND = FlicaService.BID_FIRST_COME;
-  
+
   public static void main(String args[]) throws Exception {
     new WriteGridLinks().run();
   }
-  
+
   private static final String CSS = "html, body {\n"
       + "  margin: 0;\n"
       + "  padding: 0;\n"
       + "  font-family: \"Trebuchet MS, Helvetica, sans-serif\";\n"
       + "}\n"
       + "table {\n"
-      + "  border-collapse: collapse;\n" 
+      + "  border-collapse: collapse;\n"
       + "}\n"
       + "table td {\n"
       + "  padding: 0.5em;\n"
       + "  border: 1px solid black;\n"
       + "  vertical-align: top;\n"
       + "}\n";
-    
+
   public void run() throws Exception {
     PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(OUTPUT_PATH)));
     writer.println("<html><head><style>");
@@ -70,7 +69,7 @@ public class WriteGridLinks {
       for (AwardDomicile domicile : AwardDomicile.values()) {
         writer.printf("  <td><a target=_blank href=\"%s\">grid</a>, "
             + "<a target=_blank href=\"%s\">pot</a></td>\n",
-            getReserveGridUrl(domicile, rank, ROUND, YEAR_MONTH),
+            FlicaService.getReserveGridUrl(domicile, rank, ROUND, YEAR_MONTH),
             FlicaService.getOpenTimeUrl(domicile, rank, ROUND, YEAR_MONTH));
       }
       writer.print("</tr>");
@@ -78,22 +77,5 @@ public class WriteGridLinks {
     writer.println("</table>");
     writer.println("</body></html>");
     writer.close();
-  }
-  
-
-  static HttpUrl getReserveGridUrl(AwardDomicile awardDomicile, Rank rank,
-      int round, YearMonth yearMonth) {
-    String bidCloseId = FlicaService.getBidCloseId(round, yearMonth);
-    String crewClassId = FlicaService.getCrewClassId(awardDomicile, rank);
-    return new HttpUrl.Builder()
-        .scheme("https")
-        .host("jia.flica.net")
-        .addPathSegment("ui")
-        .addPathSegment("private")
-        .addPathSegment("bidCloseReserveGrid")
-        .addPathSegment("index.html")
-        .addQueryParameter("BCID", bidCloseId)
-        .addQueryParameter("CC", crewClassId)
-        .build();   
   }
 }

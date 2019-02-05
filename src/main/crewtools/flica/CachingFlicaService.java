@@ -40,7 +40,7 @@ public class CachingFlicaService extends FlicaService {
   private static final File DIR = new File("/tmp/flica/");
   private boolean isConnected = false;
 
-  public CachingFlicaService(FlicaConnection connection) {
+  public CachingFlicaService(BaseFlicaConnection connection) {
     super(connection);
     DIR.mkdir();
   }

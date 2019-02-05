@@ -43,7 +43,7 @@ import okhttp3.Response;
 public class FlicaService {
   private final Logger logger = Logger.getLogger(FlicaService.class.getName());
 
-  private final FlicaConnection connection;
+  private final BaseFlicaConnection connection;
 
   private static final String HOST = "jia.flica.net";
 
@@ -86,7 +86,7 @@ public class FlicaService {
   private static final String SHOW_DOCUMENT_STAGE_TWO_FORMAT_SPEC =
       DOMAIN + "public/getdoc.dll/%s_Document%03d.pdf?type=bc&bc=%d";
 
-  public FlicaService(FlicaConnection connection) {
+  public FlicaService(BaseFlicaConnection connection) {
     this.connection = connection;
   }
 
@@ -103,7 +103,7 @@ public class FlicaService {
   public static final int BID_ROUND_ONE = 1;
   public static final int BID_ROUND_TWO = 2;
   public static final int BID_FIRST_COME = 5;
-  
+
   // BCID = 01[Round 1=0, Round 2=1, SeniorityBased=3, Opentime=5, FO SAP=9].xxx where 040 = March 2017
   public static String getBidCloseId(int round, YearMonth yearMonth) {
     Preconditions.checkState(round == 1 || round == 2 || round == 3
@@ -254,7 +254,7 @@ public class FlicaService {
         .addQueryParameter("CC", crewClassId)
         .build();
   }
-  
+
   public String getOpenTime(AwardDomicile awardDomicile, Rank rank,
       int round, YearMonth yearMonth)
       throws URISyntaxException, IOException {
@@ -277,6 +277,22 @@ public class FlicaService {
     return connection.retrieveUrl(url);
   }
 
+  public static HttpUrl getReserveGridUrl(AwardDomicile awardDomicile, Rank rank,
+      int round, YearMonth yearMonth) {
+    String bidCloseId = FlicaService.getBidCloseId(round, yearMonth);
+    String crewClassId = FlicaService.getCrewClassId(awardDomicile, rank);
+    return new HttpUrl.Builder()
+        .scheme("https")
+        .host("jia.flica.net")
+        .addPathSegment("ui")
+        .addPathSegment("private")
+        .addPathSegment("bidCloseReserveGrid")
+        .addPathSegment("index.html")
+        .addQueryParameter("BCID", bidCloseId)
+        .addQueryParameter("CC", crewClassId)
+        .build();
+  }
+
   public static HttpUrl getReserveGridJsonUrl(AwardDomicile awardDomicile, Rank rank,
       int round, YearMonth yearMonth) {
     String bidCloseId = getBidCloseId(round, yearMonth);
@@ -289,9 +305,9 @@ public class FlicaService {
         .addQueryParameter("BCID", bidCloseId)
         .addQueryParameter("json", "1")
         .addQueryParameter("CC", crewClassId)
-        .build();   
+        .build();
   }
-  
+
   public String getReserveGrid(AwardDomicile awardDomicile, Rank rank,
       int round, YearMonth yearMonth) throws URISyntaxException, IOException {
     HttpUrl url = getReserveGridJsonUrl(awardDomicile, rank, round, yearMonth);
