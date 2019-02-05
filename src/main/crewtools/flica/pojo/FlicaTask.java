@@ -42,6 +42,7 @@ public class FlicaTask {
   private static final DateTimeFormatter LOCAL_PERIOD = DateTimeFormat.forPattern("HHmm");
 
   public FlicaTask(PairingKey key, Period creditTime) {
+    this.tradeboardRequestId = null;
     this.creditTime = creditTime;
     this.pairingName = key.getPairingName();
     this.pairingDate = key.getPairingDate();
@@ -72,7 +73,8 @@ public class FlicaTask {
     maxDutyPeriod = null;
   }
 
-  public FlicaTask(int year, Iterator<String> input) {
+  public FlicaTask(int year, Iterator<String> input, Integer tradeboardRequestId) {
+    this.tradeboardRequestId = tradeboardRequestId;
     isTruePairing = Boolean.parseBoolean(input.next());
     pairingName = input.next();
     date = LOCAL_DATE.parseLocalDate(input.next()).withYear(year);
@@ -149,6 +151,7 @@ public class FlicaTask {
   public final LocalDate repdate;
   final boolean isReserveDate;
   final LocalTime maxDutyPeriod;
+  public final Integer tradeboardRequestId;
 
   @Override
   public boolean equals(Object that) {
