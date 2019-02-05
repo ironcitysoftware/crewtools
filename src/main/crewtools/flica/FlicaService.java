@@ -262,9 +262,8 @@ public class FlicaService {
     return connection.retrieveUrl(url);
   }
 
-  public String getPairingDetail(String pairingName, LocalDate date)
-      throws URISyntaxException, IOException {
-    HttpUrl url = new HttpUrl.Builder()
+  public static HttpUrl getPairingDetailUrl(String pairingName, LocalDate date) {
+    return new HttpUrl.Builder()
         .scheme("https")
         .host(HOST)
         .addPathSegment("full")
@@ -274,6 +273,11 @@ public class FlicaService {
         .addQueryParameter("PID", pairingName)
         .addQueryParameter("DATE", DIGITS_ONLY_DATE_FORMAT.print(date))
         .build();
+  }
+
+  public String getPairingDetail(String pairingName, LocalDate date)
+      throws URISyntaxException, IOException {
+    HttpUrl url = getPairingDetailUrl(pairingName, date);
     return connection.retrieveUrl(url);
   }
 
