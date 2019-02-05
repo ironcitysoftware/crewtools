@@ -77,5 +77,6 @@ public class WriteGridLinks {
     writer.println("</table>");
     writer.println("</body></html>");
     writer.close();
+    System.err.println("Wrote to " + OUTPUT_PATH);
   }
 }
