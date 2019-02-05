@@ -142,3 +142,22 @@ message Observation {
   optional int32 open_duty_periods = 4;
   optional int32 min_required = 5;
 }
+
+// Open duty period discrepancy reporter RPC
+
+message ReportRequest {
+  optional string flica_username = 1;
+  optional string flica_password = 2;
+  enum RequestType {
+    OPEN_DUTY_PERIOD_DISCREPANCY_REPORT = 1;
+  }
+  optional RequestType request_type = 3;
+  optional string year_month = 4;
+  optional string rank = 5;
+  repeated string award_domicile = 6;
+}
+
+message ReportResponse {
+  optional string error = 1;
+  optional string html = 2;
+}
