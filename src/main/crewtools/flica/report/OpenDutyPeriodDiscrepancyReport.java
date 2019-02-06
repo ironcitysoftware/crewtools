@@ -132,7 +132,6 @@ public class OpenDutyPeriodDiscrepancyReport {
         }
         ReportRow row = report.rows.get(date);
         ReserveGridEntry entry = reserveGrid.get(date);
-        // The pot
         ReportItem item = new ReportItem(entry.openDutyPeriods, opentimeMap.get(date));
         row.items.put(awardDomicile, item);
       }
