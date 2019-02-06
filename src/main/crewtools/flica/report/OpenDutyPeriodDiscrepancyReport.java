@@ -22,6 +22,7 @@ package crewtools.flica.report;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,6 +54,7 @@ public class OpenDutyPeriodDiscrepancyReport {
   private final FlicaService service;
   private final YearMonth yearMonth;
   private final Rank rank;
+  private final boolean ignoreTrailingDutyDay;
   private final List<AwardDomicile> awardDomiciles;
 
   public static void main(String args[]) throws Exception {
@@ -63,7 +65,7 @@ public class OpenDutyPeriodDiscrepancyReport {
     Rank rank = Rank.FIRST_OFFICER;
     List<AwardDomicile> awardDomiciles = Arrays.asList(AwardDomicile.values());
     Report report = new OpenDutyPeriodDiscrepancyReport(
-        service, yearMonth, rank, awardDomiciles)
+        service, yearMonth, rank, awardDomiciles, true)
         .generateReport();
 
     System.out.println("OpenDutyPeriodDiscrepancyReport grid/ot");
@@ -87,15 +89,17 @@ public class OpenDutyPeriodDiscrepancyReport {
   }
 
   public OpenDutyPeriodDiscrepancyReport(FlicaService service, YearMonth yearMonth,
-      Rank rank, List<AwardDomicile> awardDomiciles) {
+      Rank rank, List<AwardDomicile> awardDomiciles, boolean ignoreTrailingDutyDay) {
     this.service = service;
     this.yearMonth = yearMonth;
     this.rank = rank;
+    this.ignoreTrailingDutyDay = ignoreTrailingDutyDay;
     this.awardDomiciles = awardDomiciles;
   }
 
   public static class Report {
     public Map<LocalDate, ReportRow> rows = new TreeMap<>();
+    public Set<FlicaTask> shortenedTrips = new HashSet<>();
   }
 
   public static class ReportRow {
@@ -117,8 +121,10 @@ public class OpenDutyPeriodDiscrepancyReport {
     Calendar calendar = new Calendar(yearMonth);
     List<LocalDate> dates = calendar.getRemainingDatesInPeriod(new LocalDate());
     Report report = new Report();
+    logger.info("Report run for " + awardDomiciles);
     for (AwardDomicile awardDomicile : awardDomiciles) {
-      SetMultimap<LocalDate, FlicaTask> opentimeMap = getOpentimeMap(awardDomicile);
+      SetMultimap<LocalDate, FlicaTask> opentimeMap = getOpentimeMap(awardDomicile,
+          report);
       Map<LocalDate, ReserveGridEntry> reserveGrid = getReserveGrid(awardDomicile);
       for (LocalDate date : dates) {
         if (!report.rows.containsKey(date)) {
@@ -126,6 +132,7 @@ public class OpenDutyPeriodDiscrepancyReport {
         }
         ReportRow row = report.rows.get(date);
         ReserveGridEntry entry = reserveGrid.get(date);
+        // The pot
         ReportItem item = new ReportItem(entry.openDutyPeriods, opentimeMap.get(date));
         row.items.put(awardDomicile, item);
       }
@@ -133,8 +140,14 @@ public class OpenDutyPeriodDiscrepancyReport {
     return report;
   }
 
+  /**
+   * Returns a map of duty days to trips in opentime.
+   * Opentime 'numDays' appears to include the full duty period,
+   * but the reserve grid does not include the arrivals on the next
+   * day or the trailing :15 minutes of duty time.
+   */
   private SetMultimap<LocalDate, FlicaTask> getOpentimeMap(
-      AwardDomicile awardDomicile)
+      AwardDomicile awardDomicile, Report report)
       throws URISyntaxException, IOException, ParseException {
     String openTimeResponse = service.getOpenTime(awardDomicile, rank,
         FlicaService.BID_FIRST_COME, yearMonth);
@@ -147,7 +160,13 @@ public class OpenDutyPeriodDiscrepancyReport {
     SetMultimap<LocalDate, FlicaTask> taskMap = HashMultimap.create();
     tasks.forEach(task -> {
       if (task.tradeboardRequestId == null) {
-        for (int i = 0; i < task.numDays; ++i) {
+        int numDays = task.numDays;
+        if (ignoreTrailingDutyDay &&
+            numDays == task.layoverAirportCodes.size() + 2) {
+          numDays -= 1;
+          report.shortenedTrips.add(task);
+        }
+        for (int i = 0; i < numDays; ++i) {
           taskMap.put(task.pairingDate.plusDays(i), task);
         }
       }

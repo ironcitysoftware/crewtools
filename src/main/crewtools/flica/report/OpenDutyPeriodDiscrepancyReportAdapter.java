@@ -102,7 +102,7 @@ public class OpenDutyPeriodDiscrepancyReportAdapter {
     try (BaseFlicaConnection connection = new BaseFlicaConnection(config)) {
       FlicaService service = new FlicaService(connection);
       OpenDutyPeriodDiscrepancyReport generator = new OpenDutyPeriodDiscrepancyReport(
-          service, yearMonth, rank, awardDomiciles);
+          service, yearMonth, rank, awardDomiciles, request.getIgnoreTrailingDutyDay());
       Report report = generator.generateReport();
       response.setHtml(formatReport(report, yearMonth, rank, awardDomiciles));
     } catch (IOException | ParseException | URISyntaxException e) {
@@ -129,7 +129,7 @@ public class OpenDutyPeriodDiscrepancyReportAdapter {
     secondHeader += "</tr>\n";
     html += firstHeader + secondHeader;
     for (LocalDate date : report.rows.keySet()) {
-      String row = "<tr><td>" + date + "</td>";
+      String row = "<tr><td class=\"date\">" + date + "</td>";
       for (AwardDomicile awardDomicile : awardDomiciles) {
         ReportItem item = report.rows.get(date).items.get(awardDomicile);
         boolean isDiscrepancy = item.numGridOpenDutyPeriods != item.opentimeTasks.size();
@@ -148,6 +148,13 @@ public class OpenDutyPeriodDiscrepancyReportAdapter {
       html += row;
     }
     html += "</table>";
+
+    if (!report.shortenedTrips.isEmpty()) {
+      html += "<p>Shortened trips due to ignore trailing duty day:<br />";
+      html += "<table><tr><td>";
+      html += getOpentimeInfo(report.shortenedTrips);
+      html += "</td></tr></table>";
+    }
     return html;
   }
 

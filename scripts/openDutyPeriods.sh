@@ -12,4 +12,4 @@ CLASSPATH=$CLASSPATH:lib/gson-2.8.0.jar
 java \
   -Djava.util.logging.config.file=scripts/logging.properties.report \
   -cp $CLASSPATH \
-  crewtools.flica.report.ReportServer $@
+  crewtools.flica.report.OpenDutyPeriodDiscrepancyReport $@

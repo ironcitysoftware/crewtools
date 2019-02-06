@@ -44,6 +44,9 @@ table th {
   border: 1px solid black;
   vertical-align: top;
 }
+td.date {
+  white-space: nowrap;
+}
 td.yellow {
   background-color: yellow;
 }
@@ -67,8 +70,12 @@ label, select {
 <h3>Reports</h3>
 
 <form method=POST>
-  <label>Flica username:</label> <input type="text" name="flica_username" value=""><br />
-  <label>Flica password:</label> <input type="password" name="flica_password" value=""><br />
+  <label>Flica username:</label> <input type="text" name="flica_username" value="">
+  <br />
+
+  <label>Flica password:</label> <input type="password" name="flica_password" value="">
+  <br />
+
   <label>Seat</label>
   <select name="rank">
   <%
@@ -79,15 +86,21 @@ label, select {
   %>
   <option value="FIRST_OFFICER" <%= selectedRank.equals("FIRST_OFFICER") ? "selected" : "" %>>First Officer</option>
   <option value="CAPTAIN" <%= selectedRank.equals("CAPTAIN") ? "selected" : "" %>>Captain</option>
-  </select><br />
+  </select>
+  <br />
+
   <label>Report</label>
   <select name="report">
   <option value="OpenDutyPeriodDiscrepancyReport">Open Duty Period Discrepancy Report</option>
-  </select><br />
+  </select>
+  <br />
+
   <label>Date</label>
   <select name="yearMonth">
   <option value="2019-02">2019-02</option>
-  </select><br />
+  </select>
+  <br />
+
   <label>Domiciles</label>
   <select multiple size="<%= AwardDomicile.values().length + 1 %>" name="awardDomiciles">
   <%
@@ -110,6 +123,20 @@ label, select {
   %>
   </select>
   <br />
+
+  <label>Ignore trailing duty day</label> (duty days that end after midnight)
+  <select name="ignoreTrailingDutyDay">
+  <%
+  boolean ignoreTrailingDutyDay =
+      request.getParameter("ignoreTrailingDutyDay") == null
+      || request.getParameter("ignoreTrailingDutyDay").equals("yes");
+  %>
+  <option value="yes" <%= ignoreTrailingDutyDay ? "selected" : "" %>>Yes</option>
+  <option value="no"  <%= !ignoreTrailingDutyDay ? "selected" : "" %>>No</option>
+  </select>
+  <br />
+  <br />
+
   <input type="submit" name="Generate Report"/>
   <p>This report can take a few minutes, please be patient.
 </form>
@@ -128,6 +155,7 @@ if (request.getParameter("flica_username") != null && !request.getParameter("fli
     }
   }
   builder.setRequestType(RequestType.OPEN_DUTY_PERIOD_DISCREPANCY_REPORT);
+  builder.setIgnoreTrailingDutyDay(ignoreTrailingDutyDay);
   String errorMessage = null;
   Socket socket = null;
   ReportResponse reportResponse = null;

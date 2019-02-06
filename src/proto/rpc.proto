@@ -155,6 +155,7 @@ message ReportRequest {
   optional string year_month = 4;
   optional string rank = 5;
   repeated string award_domicile = 6;
+  optional bool ignore_trailing_duty_day = 7;
 }
 
 message ReportResponse {
