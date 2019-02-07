@@ -55,14 +55,15 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
       return -isDesirable;
     }
 
-    int minTripEligible =
-        new Boolean(a.hasMinimumTripsThatMeetMinCredit()).compareTo(b.hasMinimumTripsThatMeetMinCredit());
+    int minTripEligible = new Boolean(
+        a.hasMinimumTripsThatMeetMinCredit())
+            .compareTo(b.hasMinimumTripsThatMeetMinCredit());
     if (minTripEligible != 0) {
       return -minTripEligible;
     }
-    
+
     // both LineScores either are or are not N-trip eligible.
-    
+
     int aPoints = 0;
     String aTrips = "";
     for (Trip trip : getTrips(a)) {
@@ -71,6 +72,7 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
         aTrips += ", ";
       }
       aTrips += trip.getPairingName();
+      aPoints += a.getScoreAdjustmentPoints();
     }
 
     int bPoints = 0;
@@ -81,14 +83,15 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
         bTrips += ", ";
       }
       bTrips += trip.getPairingName();
+      bPoints += b.getScoreAdjustmentPoints();
     }
 
     logger.fine("T" + a.getLineName() + " (" + aTrips + "=" + aPoints + ") vs "
         + "T" + b.getLineName() + " (" + bTrips + "=" + bPoints + ")");
-    
+
     return -((Integer) aPoints).compareTo(bPoints);
   }
-    
+
   private List<Trip> getTrips(LineScore lineScore) {
     if (lineScore.hasMinimumTripsThatMeetMinCredit()) {
       return new ArrayList<>(lineScore.getMinimumTripsThatMeetMinCredit().keySet());

@@ -111,6 +111,10 @@ message BidConfig {
   optional int32 round = 17;
 
   optional bool enable_recursive_swaps = 18;
+
+  optional bool enable_carry_ins_respect_required_days_off = 19;
+
+  optional bool enable_all_trips_respect_required_days_off = 20;
 }
 
 message ScoreAdjustment {

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
 import com.google.common.base.Preconditions;
@@ -47,6 +48,7 @@ import crewtools.flica.pojo.Trip;
 import crewtools.flica.stats.DataReader;
 import crewtools.rpc.Proto.BidConfig;
 import crewtools.rpc.Proto.PairingOverride;
+import crewtools.util.Calendar;
 import crewtools.util.FileUtils;
 import crewtools.util.FlicaConfig;
 import okhttp3.Response;
@@ -109,14 +111,13 @@ public class MonthlyBidder {
 
     logger.info("Computed bids:");
 
-    int lastDateOfMonth = yearMonth.toLocalDate(1).dayOfMonth().getMaximumValue();
-
-    System.out.println(header(lastDateOfMonth));
+    List<LocalDate> datesInPeriod = new Calendar(yearMonth).getDatesInPeriod();
+    System.out.println(header(datesInPeriod));
     LinkedList<String> bids = new LinkedList<>();
     for (LineScore lineScore : lineScores) {
       if (!bids.contains(lineScore.getLineName())) {
         bids.add(lineScore.getLineName());
-        String text = formatLine(lastDateOfMonth, lineScore, pairings, yearMonth);
+        String text = formatLine(datesInPeriod, lineScore, pairings, yearMonth);
         System.out.println(text);
       }
     }
@@ -133,24 +134,22 @@ public class MonthlyBidder {
 
   private final String THIRTY_ONE_SPACES = "                               ";
 
-  public String header(int lastDateOfMonth) {
+  public String header(List<LocalDate> datesInPeriod) {
     StringBuilder result = new StringBuilder();
     result.append("    ");
-    for (int i = 1; i < lastDateOfMonth + 1; ++i) {
-      result.append(i % 10);
-    }
+    datesInPeriod.forEach(date -> result.append(date.getDayOfMonth() % 10));
     result.append("  (GSP)");
     return result.toString();
   }
 
-  private String formatLine(int lastDateOfMonth, LineScore lineScore,
+  private String formatLine(List<LocalDate> datesInPeriod, LineScore lineScore,
       Map<PairingKey, Trip> allPairings, YearMonth yearMonth) {
     StringBuilder result = new StringBuilder();
     ThinLine line = lineScore.getThinLine();
 
     result.append(line.getLineName());
 
-    char dates[] = THIRTY_ONE_SPACES.substring(0, lastDateOfMonth).toCharArray();
+    char dates[] = THIRTY_ONE_SPACES.substring(0, datesInPeriod.size()).toCharArray();
     List<String> supplement = new ArrayList<>();
     for (PairingKey key : line.getPairingKeys()) {
       Trip trip = allPairings.get(key);
@@ -164,9 +163,8 @@ public class MonthlyBidder {
         Section section = trip.getSections().get(i);
 
         Proto.Section proto = trip.proto.getSection(i);
-        if (section.getDepartureDate().getMonthOfYear() ==
-            yearMonth.getMonthOfYear()) {
-          dates[section.getDepartureDate().getDayOfMonth() - 1] = '.';
+        if (datesInPeriod.contains(section.getDepartureDate())) {
+          dates[datesInPeriod.indexOf(section.getDepartureDate())] = '.';
         }
         if (proto.hasLayoverAirportCode()) {
           if (layover.length() > 2) {

@@ -31,6 +31,7 @@ import crewtools.flica.Proto;
 public class ThinLine {
   private final String lineName;
   private final List<PairingKey> pairingKeys;
+  private final List<LocalDate> carryInDays;
 
   public ThinLine(Proto.ThinLine protoThinLine) {
     this.lineName = protoThinLine.getLineName();
@@ -39,6 +40,9 @@ public class ThinLine {
       LocalDate pairingDate = LocalDate.parse(protoThinPairing.getDate());
       pairingKeys.add(new PairingKey(pairingDate, protoThinPairing.getPairingName()));
     }
+    this.carryInDays = new ArrayList<>();
+    protoThinLine.getCarryInDayList().forEach(
+        str -> carryInDays.add(new LocalDate(str)));
   }
 
   public String getLineName() {
@@ -47,6 +51,10 @@ public class ThinLine {
 
   public List<PairingKey> getPairingKeys() {
     return pairingKeys;
+  }
+
+  public List<LocalDate> getCarryInDays() {
+    return carryInDays;
   }
 
   @Override

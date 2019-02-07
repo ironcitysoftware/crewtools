@@ -21,9 +21,12 @@ package crewtools.flica.bid;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
+import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
 import org.joda.time.YearMonth;
 
@@ -35,6 +38,7 @@ import crewtools.flica.pojo.Section;
 import crewtools.flica.pojo.ThinLine;
 import crewtools.flica.pojo.Trip;
 import crewtools.rpc.Proto.BidConfig;
+import crewtools.rpc.Proto.ScoreAdjustment;
 import crewtools.util.Collections;
 import crewtools.util.Period;
 
@@ -52,6 +56,7 @@ public class LineScore {
   private final Period minimumTripGspOvernightPeriod;
   private final int startTimePoints;
   private final int endTimePoints;
+  private final int scoreAdjustmentPoints;
   private final boolean hasEquipmentTwoHundredSegments;
 
   public LineScore(ThinLine line,
@@ -64,9 +69,10 @@ public class LineScore {
     Period allCredit = Period.ZERO;
     Period gspOvernightPeriod = Period.ZERO;
     int numGspOvernights = 0;
-    
+
     Map<Trip, Period> creditsInMonthMap = new HashMap<>();
-    
+
+    Set<Integer> daysObligated = new HashSet<>();  // Carry-ins or trips
     for (Trip trip : trips.values()) {
       Period creditInMonth = trip.getCreditInMonth(
           bidConfig.getVacationDateList(), YearMonth.parse(bidConfig.getYearMonth()));
@@ -75,6 +81,7 @@ public class LineScore {
 
       boolean hasGspOvernight = false;
       for (Section section : trip.getSections()) {
+        daysObligated.add(section.getDepartureDate().getDayOfMonth());
         if (bidConfig.getVacationDateList().contains(section.date.getDayOfMonth())) {
           // This day will be dropped as it falls on vacation.
           continue;
@@ -90,13 +97,16 @@ public class LineScore {
         gspCredit = gspCredit.plus(creditInMonth);
       }
     }
+    for (LocalDate date : line.getCarryInDays()) {
+      daysObligated.add(date.getDayOfMonth());
+    }
 
     this.gspCredit = gspCredit;
     this.allCredit = allCredit;
     this.gspOvernightPeriod = gspOvernightPeriod;
     this.numGspOvernights = numGspOvernights;
     this.minimumTripsThatMeetMinCredit = evaluateMinCredit(creditsInMonthMap);
-    
+
     Period minimumTripGspOvernightPeriod = Period.ZERO;
     for (Trip trip : minimumTripsThatMeetMinCredit.keySet()) {
       for (Section section : trip.getSections()) {
@@ -113,18 +123,18 @@ public class LineScore {
     int startTimePoints = 0;
     int endTimePoints = 0;
     boolean hasEquipmentTwoHundredSegments = false;
-    
+
     for (Trip trip : minimumTripsThatMeetMinCredit.keySet()) {
       LocalTime reportTime = trip.getDutyStart().toLocalTime();
       if (reportTime.getHourOfDay() > 9 && reportTime.getHourOfDay() <= 20) {
         startTimePoints++;
       }
-      
+
       LocalTime endTime = trip.getDutyEnd().toLocalTime();
       if (endTime.getHourOfDay() <= 18) {
         endTimePoints++;
       }
-      
+
       for (Section section : trip.getSections()) {
         if (section.isEquipmentTwoHundred()) {
           hasEquipmentTwoHundredSegments = true;
@@ -134,8 +144,20 @@ public class LineScore {
     this.startTimePoints = startTimePoints;
     this.endTimePoints = endTimePoints;
     this.hasEquipmentTwoHundredSegments = hasEquipmentTwoHundredSegments;
+    this.scoreAdjustmentPoints = getScoreAdjustments(daysObligated);
   }
-  
+
+  private int getScoreAdjustments(Set<Integer> daysObligated) {
+    for (ScoreAdjustment scoreAdjustment : bidConfig.getScoreAdjustmentList()) {
+      for (int dayOfMonth : scoreAdjustment.getSoftDayOffList()) {
+        if (daysObligated.contains(dayOfMonth)) {
+          return scoreAdjustment.getScoreAdjustment();
+        }
+      }
+    }
+    return 0;
+  }
+
   /** Are there any N trips that together meet minimum credit? */
   private Map<Trip, Period> evaluateMinCredit(Map<Trip, Period> creditsInMonth) {
     Map<Trip, Period> largestToSmallestCredit = Collections
@@ -160,34 +182,43 @@ public class LineScore {
   public boolean isDesirableLine() {
     boolean hasAnyGspOvernights = false;
     for (Trip trip : getTrips()) {
-      if (hasMinimumTripsThatMeetMinCredit()) {
-        if (!getMinimumTripsThatMeetMinCredit().containsKey(trip)) {
-          // We're planning on dropping this trip in this line in the SAP anyway,
-          // because it is not one of the "magic N" (and there are a magic
-          // N in this line).
-          // We don't care if it spans a day off.
-          continue;
-        }
-      } else {
-        int numGspOvernights = countGspOvernights(trip);
-        if (numGspOvernights == 0) {
-          // We're planning on dropping this trip in this line in the SAP anyway,
-          // because it isn't a GSP overnight.
-          continue;
+      if (!bidConfig.getEnableAllTripsRespectRequiredDaysOff()) {
+        if (hasMinimumTripsThatMeetMinCredit()) {
+          if (!getMinimumTripsThatMeetMinCredit().containsKey(trip)) {
+            // We're planning on dropping this trip in this line in the SAP anyway,
+            // because it is not one of the "magic N" (and there are a magic
+            // N in this line).
+            // We don't care if it spans a day off.
+            continue;
+          }
         } else {
-          // We're planning on keeping this trip.
-          hasAnyGspOvernights = true;
+          int numGspOvernights = countGspOvernights(trip);
+          if (numGspOvernights == 0) {
+            // We're planning on dropping this trip in this line in the SAP anyway,
+            // because it isn't a GSP overnight.
+            continue;
+          } else {
+            // We're planning on keeping this trip.
+            hasAnyGspOvernights = true;
+          }
         }
       }
       if (trip.spansDaysOfMonth(bidConfig.getRequiredDayOffList())) {
         // A trip on this line spans a desired day off. Disqualify the line.
         return false;
       }
+      if (bidConfig.getEnableCarryInsRespectRequiredDaysOff()) {
+        for (LocalDate carryInDay : line.getCarryInDays()) {
+          if (bidConfig.getRequiredDayOffList().contains(carryInDay.getDayOfMonth())) {
+            return false;
+          }
+        }
+      }
     }
 
     return hasMinimumTripsThatMeetMinCredit() || hasAnyGspOvernights;
   }
-  
+
   private int countGspOvernights(Trip trip) {
     int numGspOvernights = 0;
     for (Proto.Section section : trip.proto.getSectionList()) {
@@ -201,19 +232,19 @@ public class LineScore {
   public Collection<Trip> getTrips() {
     return trips.values();
   }
-  
+
   public ThinLine getThinLine() {
     return line;
   }
-  
+
   public String getLineName() {
     return line.getLineName();
   }
-  
+
   public Period getGspCredit() {
     return gspCredit;
   }
-  
+
   public int getNumGspOvernights() {
     return numGspOvernights;
   }
@@ -221,23 +252,23 @@ public class LineScore {
   public Period getLineCredit() {
     return allCredit;
   }
-  
+
   public Period getGspOvernightPeriod() {
     return gspOvernightPeriod;
   }
-  
+
   public Map<Trip, Period> getMinimumTripsThatMeetMinCredit() {
     return minimumTripsThatMeetMinCredit;
   }
-  
+
   public boolean hasMinimumTripsThatMeetMinCredit() {
     return !minimumTripsThatMeetMinCredit.isEmpty();
   }
-  
+
   public Period getMinimumTripGspOvernightPeriod() {
     return minimumTripGspOvernightPeriod;
   }
-  
+
   public int getStartTimePoints() {
     return startTimePoints;
   }
@@ -245,7 +276,11 @@ public class LineScore {
   public int getEndTimePoints() {
     return endTimePoints;
   }
-  
+
+  public int getScoreAdjustmentPoints() {
+    return scoreAdjustmentPoints;
+  }
+
   public boolean hasEquipmentTwoHundredSegments() {
     return hasEquipmentTwoHundredSegments;
   }
