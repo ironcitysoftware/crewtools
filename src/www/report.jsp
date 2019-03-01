@@ -97,7 +97,7 @@ label, select {
 
   <label>Date</label>
   <select name="yearMonth">
-  <option value="2019-02">2019-02</option>
+  <option value="2019-03">2019-03</option>
   </select>
   <br />
 

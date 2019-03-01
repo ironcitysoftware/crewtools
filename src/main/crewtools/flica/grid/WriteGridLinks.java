@@ -31,7 +31,7 @@ import crewtools.flica.Proto.Rank;
 
 public class WriteGridLinks {
   private static final String OUTPUT_PATH = "/tmp/links.html";
-  private static final YearMonth YEAR_MONTH = new YearMonth(2019, 2);
+  private static final YearMonth YEAR_MONTH = new YearMonth(2019, 3);
   private static final int ROUND = FlicaService.BID_FIRST_COME;
 
   public static void main(String args[]) throws Exception {
