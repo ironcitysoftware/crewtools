@@ -26,6 +26,7 @@ import java.net.URISyntaxException;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
 import com.google.common.collect.ImmutableSet;
@@ -98,6 +99,13 @@ public class MonthlyDataRetriever {
             logger.info("SKIP " + outputFile + " as it exists");
             continue;
           }
+          if (new LocalDate().getDayOfMonth() < 15
+              && round == 2) {
+            logger.info("SKIP as round 2 has not been published");
+            continue;
+          }
+          logger.info("Retrieve lines for round " + round + " rank " + rank + " in "
+              + awardDomicile);
           String lines = service.getAllLines(awardDomicile, rank, round,
               yearMonth);
           LineParser lineParser = new LineParser(lines);
@@ -119,6 +127,8 @@ public class MonthlyDataRetriever {
         logger.info("SKIP " + outputFile + " as it exists");
         continue;
       }
+      logger.info("Retrieve pairings for " + awardDomicile + " (arbitrarily as "
+          + "FO round 1)");
       String pairings = service.getAllPairings(awardDomicile, Rank.FIRST_OFFICER, ROUND_ONE, yearMonth);
       PairingParser pairingParser = new PairingParser(pairings, yearMonth, true);
       PairingList pairingList = pairingParser.parse();
@@ -153,7 +163,13 @@ public class MonthlyDataRetriever {
             logger.info("SKIP " + outputFile + " as it exists");
             return;
           }
+          logger.info("Retrieve awards for round " + round + " rank " + rank + " in "
+              + awardDomicile);
           String award = service.getBidAward(awardDomicile, rank, round, yearMonth);
+          if (award.indexOf("An error has occurred") > -1) {
+            logger.info("SKIP as unpulished");
+            continue;
+          }
           AwardParser parser = new AwardParser(award, awardDomicile, rank, round);
           DomicileAward protoAward = parser.parse();
           protoAward.writeTo(new FileOutputStream(outputFile));
