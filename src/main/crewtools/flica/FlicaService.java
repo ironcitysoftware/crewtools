@@ -37,6 +37,7 @@ import com.google.common.collect.ImmutableMultimap;
 
 import crewtools.flica.Proto.Rank;
 import crewtools.flica.pojo.PairingKey;
+import crewtools.util.Calendar;
 import okhttp3.HttpUrl;
 import okhttp3.Response;
 
@@ -179,15 +180,9 @@ public class FlicaService {
       throws IOException, URISyntaxException {
     String bcid = getBidCloseId(round, yearMonth);
     String ccid = getCrewClassId(awardDomicile, rank);
-    LocalDate firstOfMonth = yearMonth.toLocalDate(1);
-    LocalDate lastOfMonth = firstOfMonth.dayOfMonth().withMaximumValue();
-    /* Probably doesn't belong here, but we want JAN 31 and MAR 1 with Feb. */
-    if (yearMonth.getMonthOfYear() == 2) {
-      firstOfMonth = firstOfMonth.minusDays(1);
-      lastOfMonth = lastOfMonth.plusDays(1);
-    }
-    String startDate = DIGITS_ONLY_DATE_FORMAT.print(firstOfMonth);
-    String endDate = DIGITS_ONLY_DATE_FORMAT.print(lastOfMonth);
+    Calendar calendar = new Calendar(yearMonth);
+    String startDate = DIGITS_ONLY_DATE_FORMAT.print(calendar.getFirstDateInPeriod());
+    String endDate = DIGITS_ONLY_DATE_FORMAT.print(calendar.getLastDateInPeriod());
 
     HttpUrl url = new HttpUrl.Builder()
         .scheme("https")

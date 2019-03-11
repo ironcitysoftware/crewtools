@@ -62,7 +62,7 @@ public class Calendar {
     return result;
   }
 
-  private LocalDate getFirstDateInPeriod() {
+  public LocalDate getFirstDateInPeriod() {
     if (yearMonth.getMonthOfYear() == 2) {
       return new LocalDate(yearMonth.getYear(), 1, 31);
     } else if (yearMonth.getMonthOfYear() == 3) {
@@ -72,7 +72,7 @@ public class Calendar {
     }
   }
 
-  private LocalDate getLastDateInPeriod() {
+  public LocalDate getLastDateInPeriod() {
     if (yearMonth.getMonthOfYear() == 1) {
       return new LocalDate(yearMonth.getYear(), 1, 30);
     } else if (yearMonth.getMonthOfYear() == 2) {
