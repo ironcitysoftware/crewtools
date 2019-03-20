@@ -88,13 +88,13 @@ public class AwardParser {
       Preconditions.checkState(matcher.matches(), "[" + trimmedHolder + "]");
       String lastNameSuffix = matcher.group(1);
       String firstName = matcher.group(2);
-      int seniorityNumber = Integer.parseInt(matcher.group(3));
+      int employeeId = Integer.parseInt(matcher.group(3));
       domicileAward.addAward(Award.newBuilder()
           .setLine(line)
           .setPilot(Pilot.newBuilder()
               .setFirstMiddleName(firstName)
               .setLastNameSuffix(lastNameSuffix)
-              .setSeniority(seniorityNumber)));
+              .setEmployeeId(employeeId)));
     }
     return domicileAward.build();
   }
