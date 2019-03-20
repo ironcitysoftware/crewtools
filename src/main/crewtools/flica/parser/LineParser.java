@@ -130,6 +130,7 @@ public class LineParser {
       logger.fine(components.toString());
       // "-, GSP" normally. "-" if this is a day of rest in the line.
       // also 0500, SCR or -, LCR or -, R2 or just 'R'
+      // Have also seen -, R3 and -, R1.
       if (components.size() != 1 && components.size() != 2) {
         throw new ParseException("Expected 1 or 2 components in [" + cell.text() + "]");
       }
@@ -154,7 +155,7 @@ public class LineParser {
           continue;
         } else if ((components.size() == 2
             && components.get(0).equals(DASH)
-            && components.get(1).equals("R2"))
+            && components.get(1).matches("R[1-3]"))
             || (components.size() == 1 && components.get(0).equals("R"))) {
           // Seriously? What is the difference beweeen "R" and "-, R2"
           // Short call reserve has -, R2 on subsequent days.
