@@ -161,13 +161,13 @@ public class MonthlyDataRetriever {
               yearMonth, awardDomicile, rank, round));
           if (outputFile.exists()) {
             logger.info("SKIP " + outputFile + " as it exists");
-            return;
+            continue;
           }
           logger.info("Retrieve awards for round " + round + " rank " + rank + " in "
               + awardDomicile);
           String award = service.getBidAward(awardDomicile, rank, round, yearMonth);
           if (award.indexOf("An error has occurred") > -1) {
-            logger.info("SKIP as unpulished");
+            logger.info("SKIP as unpublished");
             continue;
           }
           AwardParser parser = new AwardParser(award, awardDomicile, rank, round);
