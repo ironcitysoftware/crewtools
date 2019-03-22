@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -31,10 +32,13 @@ import java.util.logging.Logger;
 import org.joda.time.YearMonth;
 
 import com.google.common.base.Preconditions;
+import com.google.common.io.Files;
+import com.google.protobuf.TextFormat;
 
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.Proto.DomicileAward;
 import crewtools.flica.Proto.PairingList;
+import crewtools.flica.Proto.PeriodicAwards;
 import crewtools.flica.Proto.Rank;
 import crewtools.flica.Proto.SeniorityList;
 import crewtools.flica.Proto.ThinLineList;
@@ -48,21 +52,12 @@ public class DataReader {
     dataDir = FlicaConfig.readConfig().getDataDirectory();
   }
 
-//  public static void main(String args[]) throws Exception {
-//    DataReader dataReader = new DataReader();
-//    File f = new File(dataReader.getPairingFilename(YearMonth.parse("2018-01"), AwardDomicile.CLT));
-//    PairingList.Builder builder = PairingList.newBuilder();
-//    builder.mergeFrom(new FileInputStream(f));
-//    PairingList list = builder.build();
-//    for (Trip trip : list.getTripList()) {
-//      if (trip.getPairingName().equals("L7073")) {
-//        System.out.println(trip);
-//      }
-//    }
-//  }
-
   public String getSeniorityFilename(YearMonth yearMonth) {
     return dataDir + "seniority-" + yearMonth + ".io";
+  }
+
+  public String getPeriodicAwardFilename() {
+    return dataDir + "periodic-awards.txt";
   }
 
   public String getLineFilename(YearMonth yearMonth, AwardDomicile awardDomicile,
@@ -93,6 +88,11 @@ public class DataReader {
         + "-" + rank.name().toLowerCase()
         + "-rd" + round
         + ".io";
+  }
+
+  public boolean doesAwardExist(YearMonth yearMonth, AwardDomicile awardDomicile,
+      Rank rank, int round) {
+    return new File(getAwardFilename(yearMonth, awardDomicile, rank, round)).exists();
   }
 
   public Map<YearMonth, SeniorityList> readSeniorityLists() throws Exception {
@@ -228,6 +228,17 @@ public class DataReader {
     logger.info("Reading " + seniority.getAbsolutePath());
     SeniorityList.Builder builder = SeniorityList.newBuilder();
     builder.mergeFrom(new FileInputStream(seniority));
+    return builder.build();
+  }
+
+  public PeriodicAwards readPeriodicAwards() throws FileNotFoundException, IOException {
+    File periodicAward = new File(getPeriodicAwardFilename());
+    Preconditions.checkState(periodicAward.exists(),
+        "File doesn't exist: " + periodicAward.getAbsolutePath());
+    logger.info("Reading " + periodicAward.getAbsolutePath());
+    PeriodicAwards.Builder builder = PeriodicAwards.newBuilder();
+    TextFormat.getParser().merge(
+        Files.toString(periodicAward, StandardCharsets.UTF_8), builder);
     return builder.build();
   }
 }

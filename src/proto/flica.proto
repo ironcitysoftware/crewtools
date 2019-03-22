@@ -329,3 +329,21 @@ message SeniorityList {
   optional string print_date = 2;  // 11/10/2017
   repeated CrewMember crew_member = 3;
 }
+
+// Monthly award
+
+message PeriodicAwards {
+  repeated PeriodicAward periodic_award = 1;
+}
+
+message PeriodicAward {
+  optional string award_date = 1;
+  optional string effective_date = 2;
+  repeated BaseMove base_move = 3;
+}
+
+message BaseMove {
+  repeated int32 employee_id = 1;
+  optional Domicile from = 2;
+  optional Domicile to = 3;
+}
