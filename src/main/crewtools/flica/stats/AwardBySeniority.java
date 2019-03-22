@@ -35,6 +35,10 @@ import crewtools.flica.Proto.SeniorityList;
 
 public class AwardBySeniority {
   public static void main(String args[]) throws Exception {
+    new AwardBySeniority().run(args);
+  }
+
+  public void run(String args[]) throws Exception {
     AwardDomicile awardDomicile = AwardDomicile.valueOf(args[0]);
     Rank rank = Rank.valueOf(args[1]);
     YearMonth yearMonth = YearMonth.parse(args[2]);
