@@ -334,6 +334,12 @@ message SeniorityList {
 
 message PeriodicAwards {
   repeated PeriodicAward periodic_award = 1;
+  repeated KnownTermination known_termination = 2;
+}
+
+message KnownTermination {
+  optional string year_month = 1;
+  repeated int32 employee_id = 2;
 }
 
 message PeriodicAward {
