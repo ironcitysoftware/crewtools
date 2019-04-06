@@ -31,8 +31,7 @@ import crewtools.flica.Proto.Rank;
 
 public class WriteGridLinks {
   private static final String OUTPUT_PATH = "/tmp/links.html";
-  private static final YearMonth YEAR_MONTH = new YearMonth(2019, 3);
-  private static final int ROUND = FlicaService.BID_FIRST_COME;
+  private static final YearMonth YEAR_MONTH = new YearMonth(2019, 4);
 
   public static void main(String args[]) throws Exception {
     new WriteGridLinks().run();
@@ -57,7 +56,7 @@ public class WriteGridLinks {
     writer.println("<html><head><style>");
     writer.println(CSS);
     writer.println("</style></head><body>");
-    writer.println("<h2>Reserve Grids " + YEAR_MONTH + "</h2>");
+    writer.println("<h2>FLICA Links " + YEAR_MONTH + "</h2>");
     writer.println("<table>");
     writer.println("  <tr><th />");
     for (AwardDomicile domicile : AwardDomicile.values()) {
@@ -67,10 +66,24 @@ public class WriteGridLinks {
     for (Rank rank : Rank.values()) {
       writer.println("<tr><td>" + rank.name() + "</td>");
       for (AwardDomicile domicile : AwardDomicile.values()) {
-        writer.printf("  <td><a target=_blank href=\"%s\">grid</a>, "
-            + "<a target=_blank href=\"%s\">pot</a></td>\n",
-            FlicaService.getReserveGridUrl(domicile, rank, ROUND, YEAR_MONTH),
-            FlicaService.getOpenTimeUrl(domicile, rank, ROUND, YEAR_MONTH));
+        writer.printf("  <td><a target=_blank href=\"%s\">reserve grid</a>, "
+            + "<a target=_blank href=\"%s\">opentime pot</a></td>\n",
+            FlicaService.getReserveGridUrl(domicile, rank, FlicaService.BID_FIRST_COME,
+                YEAR_MONTH),
+            FlicaService.getOpenTimeUrl(domicile, rank, FlicaService.BID_FIRST_COME,
+                YEAR_MONTH));
+      }
+      writer.print("</tr>");
+    }
+    for (Rank rank : Rank.values()) {
+      writer.println("<tr><td>" + rank.name() + "</td>");
+      for (AwardDomicile domicile : AwardDomicile.values()) {
+        writer.printf("  <td><a target=_blank href=\"%s\">lines</a>, "
+            + "<a target=_blank href=\"%s\">pairings</a></td>\n",
+            FlicaService.getAllLinesUrl(domicile, rank, FlicaService.BID_ROUND_ONE,
+                YEAR_MONTH),
+            FlicaService.getAllPairingsUrl(domicile, rank, FlicaService.BID_ROUND_ONE,
+                YEAR_MONTH));
       }
       writer.print("</tr>");
     }
