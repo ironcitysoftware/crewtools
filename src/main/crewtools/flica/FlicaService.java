@@ -176,15 +176,15 @@ public class FlicaService {
   private static final DateTimeFormatter DIGITS_ONLY_DATE_FORMAT =
       DateTimeFormat.forPattern("yyyyMMdd");
 
-  public String getAllPairings(AwardDomicile awardDomicile, Rank rank, int round, YearMonth yearMonth)
-      throws IOException, URISyntaxException {
+  public static HttpUrl getAllPairingsUrl(AwardDomicile awardDomicile, Rank rank,
+      int round, YearMonth yearMonth) {
     String bcid = getBidCloseId(round, yearMonth);
     String ccid = getCrewClassId(awardDomicile, rank);
     Calendar calendar = new Calendar(yearMonth);
     String startDate = DIGITS_ONLY_DATE_FORMAT.print(calendar.getFirstDateInPeriod());
     String endDate = DIGITS_ONLY_DATE_FORMAT.print(calendar.getLastDateInPeriod());
 
-    HttpUrl url = new HttpUrl.Builder()
+    return new HttpUrl.Builder()
         .scheme("https")
         .host(HOST)
         .addPathSegment("full")
@@ -200,16 +200,21 @@ public class FlicaService {
         .addQueryParameter("PrintLines", "999999")
         .addQueryParameter("LinesPerPage", "999999")  // 22
         .build();
+  }
 
+  public String getAllPairings(AwardDomicile awardDomicile, Rank rank, int round,
+      YearMonth yearMonth)
+      throws IOException, URISyntaxException {
+    HttpUrl url = getAllPairingsUrl(awardDomicile, rank, round, yearMonth);
     return connection.retrieveUrl(url);
   }
 
-  public String getAllLines(AwardDomicile awardDomicile, Rank rank,
+  public static HttpUrl getAllLinesUrl(AwardDomicile awardDomicile, Rank rank,
       int round, YearMonth yearMonth) throws URISyntaxException, IOException {
     String bidCloseId = getBidCloseId(round, yearMonth);
     String crewClassId = getCrewClassId(awardDomicile, rank);
 
-    HttpUrl url = new HttpUrl.Builder()
+    return new HttpUrl.Builder()
         .scheme("https")
         .host(HOST)
         .addPathSegment("full")
@@ -231,6 +236,11 @@ public class FlicaService {
         .addQueryParameter("HSS", "HSS=1;")
         .addQueryParameter("CC", crewClassId)
         .build();
+  }
+
+  public String getAllLines(AwardDomicile awardDomicile, Rank rank,
+      int round, YearMonth yearMonth) throws URISyntaxException, IOException {
+    HttpUrl url = getAllLinesUrl(awardDomicile, rank, round, yearMonth);
     return connection.retrieveUrl(url);
   }
 
