@@ -39,7 +39,7 @@ public class BaseList {
   private final String header;
   private Map<Integer, Member> list = new TreeMap<>();
   private Set<Integer> employeeIds = new HashSet<>();
-  private Map<Integer, String> styles = new HashMap<>();
+  private Map<Integer, String> cssClasses = new HashMap<>();
 
   public BaseList(YearMonth yearMonth, String header) {
     this.yearMonth = yearMonth;
@@ -87,7 +87,7 @@ public class BaseList {
     Preconditions.checkState(employeeIds.contains(employeeId),
         "Removing " + employeeId + " where it does not exist: " + list);
     employeeIds.remove(employeeId);
-    styles.remove(employeeId);
+    cssClasses.remove(employeeId);
     for (Member member : list.values()) {
       if (member.employeeId == employeeId) {
         list.remove(member.seniorityId);
@@ -120,16 +120,16 @@ public class BaseList {
     return new ArrayList<>(list.values());
   }
 
-  public void setStyle(int employeeId, String style) {
-    styles.put(employeeId, style);
+  public void setCssClass(int employeeId, String clazz) {
+    cssClasses.put(employeeId, clazz);
   }
 
-  public boolean hasStyle(int employeeId) {
-    return styles.containsKey(employeeId);
+  public boolean hasCssClass(int employeeId) {
+    return cssClasses.containsKey(employeeId);
   }
 
-  public String getStyle(int employeeId) {
-    return styles.get(employeeId);
+  public String getCssClass(int employeeId) {
+    return cssClasses.get(employeeId);
   }
 
   public Set<Integer> getEmployeeIds() {

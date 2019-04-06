@@ -70,6 +70,11 @@ public class SeniorityPredictor {
   }
 
   public SeniorityPredictor(String args[]) throws IOException {
+    if (args.length != 4) {
+      System.err.println("SeniorityPredictor BASE CAPTAIN|FIRST_OFFICER "
+          + "2019-01 00000");
+      System.exit(-1);
+    }
     this.awardDomicile = AwardDomicile.valueOf(args[0]);
     this.domicile = Domicile.valueOf(awardDomicile.name());
     this.rank = Rank.valueOf(args[1]);
@@ -155,17 +160,16 @@ public class SeniorityPredictor {
     BaseList seniorityList = createBaseListFromSeniority(
         startingYearMonth, pilotsBySeniority);
     lists.add(seniorityList);
-    seniorityList.setStyle(interestingEmployeeId, "background-color: yellow");
+    seniorityList.setCssClass(interestingEmployeeId, "interesting");
 
     BaseList awardList = createBaseListFromAward(
         startingYearMonth, pilotsByEmployee, pilotsBySeniority);
-    awardList.setStyle(interestingEmployeeId, "background-color: yellow");
     lists.add(awardList);
 
     CrewMember interestingPilot = pilotsByEmployee.get(interestingEmployeeId);
     awardList.add(interestingEmployeeId, interestingPilot.getSeniorityId(),
         interestingPilot.getName());
-    awardList.setStyle(interestingEmployeeId, "background-color: yellow");
+    awardList.setCssClass(interestingEmployeeId, "interesting");
 
     YearMonth currentYearMonth = startingYearMonth.plusMonths(1);
     List<BaseList> colorize = new ArrayList<>();
@@ -177,7 +181,7 @@ public class SeniorityPredictor {
       BaseList previousList = colorize.get(colorize.size() - 1);
       BaseList currentList = previousList
           .copyWithoutStyles(currentYearMonth, "prediction");
-      currentList.setStyle(interestingEmployeeId, "background-color: yellow");
+      currentList.setCssClass(interestingEmployeeId, "interesting");
       lists.add(currentList);
       colorize.add(currentList);
       for (DatedBaseMove baseMove : moves.get(currentYearMonth)) {
@@ -188,7 +192,7 @@ public class SeniorityPredictor {
             currentYearMonth, pilotsByEmployee, pilotsBySeniority);
         anotherAwardList.add(interestingEmployeeId, interestingPilot.getSeniorityId(),
             interestingPilot.getName());
-        anotherAwardList.setStyle(interestingEmployeeId, "background-color: yellow");
+        anotherAwardList.setCssClass(interestingEmployeeId, "interesting");
         lists.add(anotherAwardList);
       }
       currentYearMonth = currentYearMonth.plusMonths(1);
@@ -268,12 +272,12 @@ public class SeniorityPredictor {
     for (int employeeId : previousList.getEmployeeIds()) {
       if (employeeId != interestingEmployeeId
           && !currentList.containsEmployeeId(employeeId)) {
-        previousList.setStyle(employeeId, "color: gray");  // left
+        previousList.setCssClass(employeeId, "departed");
       }
     }
     for (int employeeId : currentList.getEmployeeIds()) {
       if (!previousList.containsEmployeeId(employeeId)) {
-        currentList.setStyle(employeeId, "background-color: #addfff");  // arrived
+        currentList.setCssClass(employeeId, "arrived");
       }
     }
   }

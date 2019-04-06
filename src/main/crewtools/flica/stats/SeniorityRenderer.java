@@ -39,12 +39,12 @@ public class SeniorityRenderer {
   private final Domicile domicile;
 
   private static final String CSS = "html, body {\n"
-      + "  margin: 0;\n"
-      + "  padding: 0;\n"
       + "  font-family: \"Trebuchet MS, Helvetica, sans-serif\";\n"
       + "}\n"
       + "table {\n"
       + "  border-collapse: collapse;\n"
+      + "  margin: 0;\n"
+      + "  padding: 0;\n"
       + "}\n"
       + "table td {\n"
       + "  vertical-align: top;\n"
@@ -53,6 +53,23 @@ public class SeniorityRenderer {
       + "table.inner td {\n"
       + "  padding: 0.3em;\n"
       + "  border: 1px solid black;\n"
+      + "}\n"
+      + "td.arrived {\n"
+      + "  background-color: #addfff;\n"
+      + "}\n"
+      + "td.departed {\n"
+      + "  color: gray;\n"
+      + "}\n"
+      + "td.interesting {\n"
+      + "  background-color: yellow;\n"
+      + "}\n"
+      + "td.heading {\n"
+      + "  font-variant: small-caps;\n"
+      + "  text-align: center;\n"
+      + "  background-color: black;\n"
+      + "  color: white;\n"
+      + "  margin: 0;\n"
+      + "  padding: 0;\n"
       + "}\n";
 
   public SeniorityRenderer(
@@ -74,7 +91,10 @@ public class SeniorityRenderer {
     writer.println("</style></head><body>");
     writer.println(String.format("<h2>Seniority Predictions &bull; %s &bull; %s</h2>",
         startingYearMonth, domicile));
-    writer.println("<table><tr>");
+    writer.println("<p><table class=\"inner\">"
+        + "<tr><td class=\"departed\">Last month in base</td>"
+        + "<td class=\"arrived\">New to base this month</td></tr></table>");
+    writer.println("<p><table><tr>");
     for (BaseList list : lists) {
       writer.println("<td>");
       writer.println("  <table class=\"inner\"><tr><td colspan=2>");
@@ -83,19 +103,17 @@ public class SeniorityRenderer {
       List<Member> members = list.getMembers();
       for (int i = 0; i < members.size(); ++i) {
         int employeeId = members.get(i).employeeId;
-        String style = "";
-        if (list.hasStyle(employeeId)) {
-          style = String.format(" style=\"%s\"", list.getStyle(employeeId));
+        String cssClass = "";
+        if (list.hasCssClass(employeeId)) {
+          cssClass = String.format(" class=\"%s\"", list.getCssClass(employeeId));
         }
         writer.printf("<tr><td%s>%d</td><td%s>%s</td></tr>\n",
-            style,
+            cssClass,
             i + 1,
-            style,
+            cssClass,
             members.get(i).format());
         if (i + 1 == numRoundOneLines.get(list.getYearMonth())) {
-          writer.printf("<tr><td colspan=2 "
-              + "style=\"font-variant: small-caps; text-align: center; "
-              + "background-color: black; color: white; margin: 0; padding: 0\""
+          writer.printf("<tr><td colspan=2 class=\"heading\" "
               + ">Round One</td></tr>\n");
         }
       }
