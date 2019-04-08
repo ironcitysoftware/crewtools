@@ -22,6 +22,7 @@ package crewtools.flica.bid;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -48,12 +49,12 @@ public class LineScore {
   private final ThinLine line;
   private final Map<PairingKey, Trip> trips;
   private final BidConfig bidConfig;
-  private final Period gspCredit;
+  private final Period favoriteOvernightCredit;
   private final Period allCredit;
-  private final Period gspOvernightPeriod;
-  private final int numGspOvernights;
+  private final Period favoriteOvernightPeriod;
+  private final int numFavoriteOvernights;
   private final Map<Trip, Period> minimumTripsThatMeetMinCredit;
-  private final Period minimumTripGspOvernightPeriod;
+  private final Period minimumTripFavoriteOvernightPeriod;
   private final int startTimePoints;
   private final int endTimePoints;
   private final int scoreAdjustmentPoints;
@@ -65,10 +66,10 @@ public class LineScore {
     this.trips = trips;
     this.bidConfig = bidConfig;
 
-    Period gspCredit = Period.ZERO;
+    Period favoriteOvernightCredit = Period.ZERO;
     Period allCredit = Period.ZERO;
-    Period gspOvernightPeriod = Period.ZERO;
-    int numGspOvernights = 0;
+    Period favoriteOvernightPeriod = Period.ZERO;
+    int numFavoriteOvernights = 0;
 
     Map<Trip, Period> creditsInMonthMap = new HashMap<>();
 
@@ -79,45 +80,50 @@ public class LineScore {
       creditsInMonthMap.put(trip, creditInMonth);
       allCredit = allCredit.plus(creditInMonth);
 
-      boolean hasGspOvernight = false;
+      boolean hasFavoriteOvernight = false;
       for (Section section : trip.getSections()) {
         daysObligated.add(section.getDepartureDate().getDayOfMonth());
         if (bidConfig.getVacationDateList().contains(section.date.getDayOfMonth())) {
           // This day will be dropped as it falls on vacation.
           continue;
         }
-        if (section.hasLayoverAirportCode()
-            && section.getLayoverAirportCode().equals("GSP")) {
-          hasGspOvernight = true;
-          gspOvernightPeriod = gspOvernightPeriod.plus(section.getLayoverDuration());
-          numGspOvernights++;
+        if (bidConfig.getFavoriteOvernightCount() > 0
+            && section.hasLayoverAirportCode()
+            && bidConfig.getFavoriteOvernightList().contains(
+                section.getLayoverAirportCode())) {
+          hasFavoriteOvernight = true;
+          favoriteOvernightPeriod = favoriteOvernightPeriod
+              .plus(section.getLayoverDuration());
+          numFavoriteOvernights++;
         }
       }
-      if (hasGspOvernight) {
-        gspCredit = gspCredit.plus(creditInMonth);
+      if (hasFavoriteOvernight) {
+        favoriteOvernightCredit = favoriteOvernightCredit.plus(creditInMonth);
       }
     }
     for (LocalDate date : line.getCarryInDays()) {
       daysObligated.add(date.getDayOfMonth());
     }
 
-    this.gspCredit = gspCredit;
+    this.favoriteOvernightCredit = favoriteOvernightCredit;
     this.allCredit = allCredit;
-    this.gspOvernightPeriod = gspOvernightPeriod;
-    this.numGspOvernights = numGspOvernights;
+    this.favoriteOvernightPeriod = favoriteOvernightPeriod;
+    this.numFavoriteOvernights = numFavoriteOvernights;
     this.minimumTripsThatMeetMinCredit = evaluateMinCredit(creditsInMonthMap);
 
-    Period minimumTripGspOvernightPeriod = Period.ZERO;
+    Period minimumTripFavoriteOvernightPeriod = Period.ZERO;
     for (Trip trip : minimumTripsThatMeetMinCredit.keySet()) {
       for (Section section : trip.getSections()) {
-        if (section.hasLayoverAirportCode()
-            && section.getLayoverAirportCode().equals("GSP")) {
-          minimumTripGspOvernightPeriod =
-              minimumTripGspOvernightPeriod.plus(section.getLayoverDuration());
+        if (bidConfig.getFavoriteOvernightCount() > 0
+            && section.hasLayoverAirportCode()
+            && bidConfig.getFavoriteOvernightList().contains(
+                section.getLayoverAirportCode())) {
+          minimumTripFavoriteOvernightPeriod = minimumTripFavoriteOvernightPeriod
+              .plus(section.getLayoverDuration());
         }
       }
     }
-    this.minimumTripGspOvernightPeriod = minimumTripGspOvernightPeriod;
+    this.minimumTripFavoriteOvernightPeriod = minimumTripFavoriteOvernightPeriod;
 
     // more points are better.
     int startTimePoints = 0;
@@ -180,7 +186,7 @@ public class LineScore {
 
   /** Returns true if we want to consider this line for our bid. */
   public boolean isDesirableLine() {
-    boolean hasAnyGspOvernights = false;
+    boolean hasAnyFavoriteOvernights = false;
     for (Trip trip : getTrips()) {
       if (!bidConfig.getEnableAllTripsRespectRequiredDaysOff()) {
         if (hasMinimumTripsThatMeetMinCredit()) {
@@ -192,14 +198,20 @@ public class LineScore {
             continue;
           }
         } else {
-          int numGspOvernights = countGspOvernights(trip);
-          if (numGspOvernights == 0) {
-            // We're planning on dropping this trip in this line in the SAP anyway,
-            // because it isn't a GSP overnight.
-            continue;
+          if (bidConfig.getFavoriteOvernightCount() == 0) {
+            // We're planning on keeping this trip. "All overnights are favorites".
+            hasAnyFavoriteOvernights = true;
           } else {
-            // We're planning on keeping this trip.
-            hasAnyGspOvernights = true;
+            int numFavoriteLayoverOvernights = countFavoriteOvernights(
+                bidConfig.getFavoriteOvernightList(), trip);
+            if (numFavoriteLayoverOvernights == 0) {
+              // We're planning on dropping this trip in this line in the SAP anyway,
+              // because it isn't a favorite overnight.
+              continue;
+            } else {
+              // We're planning on keeping this trip.
+              hasAnyFavoriteOvernights = true;
+            }
           }
         }
       }
@@ -216,17 +228,18 @@ public class LineScore {
       }
     }
 
-    return hasMinimumTripsThatMeetMinCredit() || hasAnyGspOvernights;
+    return hasMinimumTripsThatMeetMinCredit() || hasAnyFavoriteOvernights;
   }
 
-  private int countGspOvernights(Trip trip) {
-    int numGspOvernights = 0;
+  private int countFavoriteOvernights(List<String> favoriteOvernights,
+      Trip trip) {
+    int numFavoriteOvernights = 0;
     for (Proto.Section section : trip.proto.getSectionList()) {
-      if (section.getLayoverAirportCode().equals("GSP")) {
-        numGspOvernights++;
+      if (favoriteOvernights.contains(section.getLayoverAirportCode())) {
+        numFavoriteOvernights++;
       }
     }
-    return numGspOvernights;
+    return numFavoriteOvernights;
   }
 
   public Collection<Trip> getTrips() {
@@ -241,20 +254,20 @@ public class LineScore {
     return line.getLineName();
   }
 
-  public Period getGspCredit() {
-    return gspCredit;
+  public Period getFavoriteOvernightCredit() {
+    return favoriteOvernightCredit;
   }
 
-  public int getNumGspOvernights() {
-    return numGspOvernights;
+  public int getNumFavoriteOvernights() {
+    return numFavoriteOvernights;
   }
 
   public Period getLineCredit() {
     return allCredit;
   }
 
-  public Period getGspOvernightPeriod() {
-    return gspOvernightPeriod;
+  public Period getFavoriteOvernightPeriod() {
+    return favoriteOvernightPeriod;
   }
 
   public Map<Trip, Period> getMinimumTripsThatMeetMinCredit() {
@@ -265,8 +278,8 @@ public class LineScore {
     return !minimumTripsThatMeetMinCredit.isEmpty();
   }
 
-  public Period getMinimumTripGspOvernightPeriod() {
-    return minimumTripGspOvernightPeriod;
+  public Period getMinimumTripFavoriteOvernightPeriod() {
+    return minimumTripFavoriteOvernightPeriod;
   }
 
   public int getStartTimePoints() {

@@ -138,7 +138,7 @@ public class MonthlyBidder {
     StringBuilder result = new StringBuilder();
     result.append("    ");
     datesInPeriod.forEach(date -> result.append(date.getDayOfMonth() % 10));
-    result.append("  (GSP)");
+    result.append("    (fav)");
     return result.toString();
   }
 
@@ -180,7 +180,7 @@ public class MonthlyBidder {
     result.append(dates);
     result.append("] ");  // fix blend
     result.append(lineScore.isDesirableLine() ? "D " : "U ");
-    result.append(lineScore.getGspOvernightPeriod());
+    result.append(lineScore.getFavoriteOvernightPeriod());
     result.append("  ");
     if (lineScore.hasEquipmentTwoHundredSegments()) {
       result.append("2");
