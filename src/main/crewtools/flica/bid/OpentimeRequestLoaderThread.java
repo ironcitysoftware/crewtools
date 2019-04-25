@@ -29,9 +29,11 @@ import org.joda.time.Duration;
 import org.joda.time.YearMonth;
 
 import crewtools.flica.FlicaService;
+import crewtools.flica.Proto.Rank;
 import crewtools.flica.parser.OpentimeRequestParser;
 import crewtools.flica.parser.ParseException;
 import crewtools.flica.pojo.OpentimeRequest;
+import crewtools.rpc.Proto.BidConfig;
 
 public class OpentimeRequestLoaderThread extends PeriodicDaemonThread {
   private final Logger logger = Logger.getLogger(OpentimeRequestLoaderThread.class.getName());
@@ -40,25 +42,30 @@ public class OpentimeRequestLoaderThread extends PeriodicDaemonThread {
   private final FlicaService service;
   private final ScheduleWrapperTree tree;
   private final AutoBidderCommandLineConfig cmdLine;
+  private final BidConfig config;
 
   public OpentimeRequestLoaderThread(YearMonth yearMonth,
       Duration initialDelay,
-      AutoBidderCommandLineConfig config,
-      FlicaService service, ScheduleWrapperTree tree) {
-    super(initialDelay, config.getOpentimeRequestRefreshInterval());
+      AutoBidderCommandLineConfig cmdLine,
+      FlicaService service,
+      ScheduleWrapperTree tree,
+      BidConfig config) {
+    super(initialDelay, cmdLine.getOpentimeRequestRefreshInterval());
     this.yearMonth = yearMonth;
     this.service = service;
     this.tree = tree;
-    this.cmdLine = config;
+    this.cmdLine = cmdLine;
+    this.config = config;
     setName("OpentimeRequestLoader");
     setDaemon(true);
   }
-  
+
   @Override
   public WorkResult doPeriodicWork() {
     logger.info("Refreshing opentime requests");
     try {
-      String raw = service.getOpentimeRequests(cmdLine.getRound(), yearMonth);
+      String raw = service.getOpentimeRequests(cmdLine.getRound(
+          Rank.valueOf(config.getRank())), yearMonth);
       List<OpentimeRequest> requests = new OpentimeRequestParser(raw).parse();
       for (OpentimeRequest request : requests) {
         switch (request.getStatus()) {

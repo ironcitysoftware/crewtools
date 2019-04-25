@@ -30,6 +30,7 @@ import org.subethamail.smtp.server.SMTPServer;
 import crewtools.flica.CachingFlicaService;
 import crewtools.flica.FlicaConnection;
 import crewtools.flica.FlicaService;
+import crewtools.flica.Proto.Rank;
 import crewtools.flica.pojo.Trip;
 import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.Clock;
@@ -53,6 +54,7 @@ public class AutoBidder {
 
   private void run(AutoBidderCommandLineConfig cmdLine) throws Exception {
     BidConfig bidConfig = FileUtils.readBidConfig();
+    Rank rank = Rank.valueOf(bidConfig.getRank());
     YearMonth yearMonth = YearMonth.parse(bidConfig.getYearMonth());
     logger.info("Welcome to AutoBidder for " + yearMonth);
 
@@ -83,7 +85,7 @@ public class AutoBidder {
 
     BlockingQueue<Trip> queue = new LinkedBlockingQueue<Trip>();
     Worker worker = new Worker(queue, service, tree, yearMonth,
-        cmdLine.getRound(), clock, stats, bidConfig, cmdLine.isDebug());
+        cmdLine.getRound(rank), clock, stats, bidConfig, cmdLine.isDebug());
     worker.start();
 
     if (cmdLine.isDebug()) {
@@ -100,7 +102,7 @@ public class AutoBidder {
     logger.info("Listening for SMTP on " + SMTP_PORT);
     smtpServer.start();
 
-    Duration initialDelay = cmdLine.getInitialDelay(clock);
+    Duration initialDelay = cmdLine.getInitialDelay(clock, rank);
 
     OpentimeLoaderThread opentimeLoader = new OpentimeLoaderThread(
         yearMonth,

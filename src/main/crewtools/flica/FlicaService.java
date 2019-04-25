@@ -103,7 +103,10 @@ public class FlicaService {
 
   public static final int BID_ROUND_ONE = 1;
   public static final int BID_ROUND_TWO = 2;
+  public static final int BID_SENIORITY_BASED = 4;
+  public static final int BID_OPENTIME = 5;
   public static final int BID_FIRST_COME = 5;
+  public static final int BID_SAP = 10;
 
   // BCID = 01[Round 1=0, Round 2=1, SeniorityBased=3, Opentime=5, FO SAP=9].xxx where 040 = March 2017
   public static String getBidCloseId(int round, YearMonth yearMonth) {

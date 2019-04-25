@@ -55,6 +55,7 @@ public class MonthlyDataRetriever {
   private final DataReader dataReader;
 
   private static final int ROUND_ONE = 1;
+  private static final int ROUND_TWO = 2;
   private static final Set<Rank> RANKS = ImmutableSet.of(Rank.FIRST_OFFICER,
       Rank.CAPTAIN);
 
@@ -132,8 +133,19 @@ public class MonthlyDataRetriever {
       String pairings = service.getAllPairings(awardDomicile, Rank.FIRST_OFFICER, ROUND_ONE, yearMonth);
       PairingParser pairingParser = new PairingParser(pairings, yearMonth, true);
       PairingList pairingList = pairingParser.parse();
+
+      String pairings2 = service.getAllPairings(awardDomicile, Rank.CAPTAIN,
+          ROUND_TWO, yearMonth);
+      PairingParser pairingParser2 = new PairingParser(pairings2, yearMonth, true);
+      PairingList pairingList2 = pairingParser2.parse();
+
+      PairingList combinedPairingList = PairingList.newBuilder()
+          .addAllTrip(pairingList.getTripList())
+          .addAllTrip(pairingList2.getTripList())
+          .build();
+
       FileOutputStream output = new FileOutputStream(outputFile);
-      pairingList.writeTo(output);
+      combinedPairingList.writeTo(output);
       output.close();
       logger.info("WROTE " + outputFile);
     }

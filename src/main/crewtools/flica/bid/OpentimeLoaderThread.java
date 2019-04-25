@@ -38,6 +38,7 @@ import crewtools.flica.parser.ParseException;
 import crewtools.flica.pojo.FlicaTask;
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Trip;
+import crewtools.rpc.Proto.BidConfig;
 
 public class OpentimeLoaderThread extends PeriodicDaemonThread {
   private final Logger logger = Logger.getLogger(OpentimeLoaderThread.class.getName());
@@ -48,10 +49,12 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
   private final TripDatabase tripDatabase;
   private final BlockingQueue<Trip> queue;
   private final RuntimeStats stats;
-  
+  private final BidConfig config;
+
   public OpentimeLoaderThread(YearMonth yearMonth, Duration initialDelay,
       AutoBidderCommandLineConfig cmdLine, FlicaService service,
-      TripDatabase tripDatabase, BlockingQueue<Trip> queue, RuntimeStats stats) {
+      TripDatabase tripDatabase, BlockingQueue<Trip> queue, RuntimeStats stats,
+      BidConfig config) {
     super(initialDelay, cmdLine.getOpentimeRefreshInterval());
     this.yearMonth = yearMonth;
     this.cmdLine = cmdLine;
@@ -59,10 +62,11 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
     this.tripDatabase = tripDatabase;
     this.queue = queue;
     this.stats = stats;
+    this.config = config;
     this.setName("OpenTimeLoader");
     this.setDaemon(true);
   }
-  
+
   @Override
   public void doInitialWork() {
     try {
@@ -76,7 +80,8 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
   public WorkResult doPeriodicWork() {
     logger.info("Refreshing opentime");
     try {
-      List<PairingKey> trips = getOpentimeTrips(service, yearMonth, cmdLine.getRound());
+      List<PairingKey> trips = getOpentimeTrips(service, yearMonth,
+          cmdLine.getRound(Rank.valueOf(config.getRank())));
       if (trips == null) {
         logger.info("Opentime not yet published");
         return WorkResult.INCOMPLETE;
