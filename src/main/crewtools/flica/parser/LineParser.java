@@ -165,13 +165,20 @@ public class LineParser {
           }
           currentPairing.addScheduleType(ScheduleType.SHORT_CALL_RESERVE);
           continue;
-        } else if (components.size() == 2 && components.get(1).equals("SCR")) {
+        } else if ((components.size() == 1 && components.get(0).equals("0500SCR"))
+            || (components.size() == 2 && components.get(1).equals("SCR"))) {
           // Short call reserve has 0500 SCR on the first day.
-          Preconditions.checkState(currentPairing == null);
-          currentPairing = builder.addThinPairingBuilder();
-          currentPairing.setDate(cellDate.toString());
-          currentPairing.addScheduleType(ScheduleType.SHORT_CALL_RESERVE);
-          currentPairing.setLocalReserveStartTime(components.get(0));
+          if (currentPairing != null
+              && (currentPairing.getScheduleTypeCount() == 0 ||
+                  !currentPairing.getScheduleType(0)
+                      .equals(ScheduleType.SHORT_CALL_RESERVE))) {
+              currentPairing.addScheduleType(ScheduleType.SHORT_CALL_RESERVE);
+          } else {
+            currentPairing = builder.addThinPairingBuilder();
+            currentPairing.setDate(cellDate.toString());
+            currentPairing.addScheduleType(ScheduleType.SHORT_CALL_RESERVE);
+            currentPairing.setLocalReserveStartTime(components.get(0));
+          }
           continue;
         }
         isFirstDayOfPairing = false;

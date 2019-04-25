@@ -32,14 +32,21 @@ public class ThinLine {
   private final String lineName;
   private final List<PairingKey> pairingKeys;
   private final List<LocalDate> carryInDays;
+  private final boolean hasReserve;
 
   public ThinLine(Proto.ThinLine protoThinLine) {
     this.lineName = protoThinLine.getLineName();
     this.pairingKeys = new ArrayList<>();
+    boolean hasReserve = false;
     for (Proto.ThinPairing protoThinPairing : protoThinLine.getThinPairingList()) {
-      LocalDate pairingDate = LocalDate.parse(protoThinPairing.getDate());
-      pairingKeys.add(new PairingKey(pairingDate, protoThinPairing.getPairingName()));
+      if (protoThinPairing.getScheduleTypeCount() > 0) {
+        hasReserve = true;
+      } else {
+        LocalDate pairingDate = LocalDate.parse(protoThinPairing.getDate());
+        pairingKeys.add(new PairingKey(pairingDate, protoThinPairing.getPairingName()));
+      }
     }
+    this.hasReserve = hasReserve;
     this.carryInDays = new ArrayList<>();
     protoThinLine.getCarryInDayList().forEach(
         str -> carryInDays.add(new LocalDate(str)));
@@ -47,6 +54,10 @@ public class ThinLine {
 
   public String getLineName() {
     return lineName;
+  }
+
+  public boolean hasReserve() {
+    return hasReserve;
   }
 
   public List<PairingKey> getPairingKeys() {
