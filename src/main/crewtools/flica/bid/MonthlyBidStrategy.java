@@ -49,6 +49,11 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
     if (aOverrideIndex == -1 && bOverrideIndex > -1) {
       return +1;
     }
+    int isReserve = new Boolean(a.hasReserve()).compareTo(b.hasReserve());
+    if (isReserve != 0) {
+      return -isReserve;
+    }
+
     int isDesirable = new Boolean(a.isDesirableLine())
         .compareTo(b.isDesirableLine());
     if (isDesirable != 0) {

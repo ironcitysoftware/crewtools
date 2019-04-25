@@ -59,6 +59,7 @@ public class LineScore {
   private final int endTimePoints;
   private final int scoreAdjustmentPoints;
   private final boolean hasEquipmentTwoHundredSegments;
+  private final boolean hasReserve;
 
   public LineScore(ThinLine line,
       Map<PairingKey, Trip> trips, BidConfig bidConfig) {
@@ -151,6 +152,7 @@ public class LineScore {
     this.endTimePoints = endTimePoints;
     this.hasEquipmentTwoHundredSegments = hasEquipmentTwoHundredSegments;
     this.scoreAdjustmentPoints = getScoreAdjustments(daysObligated);
+    this.hasReserve = line.hasReserve();
   }
 
   private int getScoreAdjustments(Set<Integer> daysObligated) {
@@ -296,5 +298,9 @@ public class LineScore {
 
   public boolean hasEquipmentTwoHundredSegments() {
     return hasEquipmentTwoHundredSegments;
+  }
+
+  public boolean hasReserve() {
+    return hasReserve;
   }
 }
