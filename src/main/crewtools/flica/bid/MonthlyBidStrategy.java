@@ -69,6 +69,15 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
 
     // both LineScores either are or are not N-trip eligible.
 
+    if (bidConfig.getEnableMonthlySortByCredit()) {
+      int creditCmp = new Integer(
+          a.getNHighestCreditsPlusCarryIn().compareTo(
+              b.getNHighestCreditsPlusCarryIn()));
+      if (creditCmp != 0) {
+        return -creditCmp;
+      }
+    }
+
     int aPoints = 0;
     String aTrips = "";
     for (Trip trip : getTrips(a)) {

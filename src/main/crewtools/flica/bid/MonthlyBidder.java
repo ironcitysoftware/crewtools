@@ -19,6 +19,7 @@
 
 package crewtools.flica.bid;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,9 +40,13 @@ import crewtools.flica.FlicaService;
 import crewtools.flica.Proto;
 import crewtools.flica.Proto.Rank;
 import crewtools.flica.adapters.PairingAdapter;
+import crewtools.flica.adapters.ScheduleAdapter;
 import crewtools.flica.parser.LineParser;
 import crewtools.flica.parser.PairingParser;
+import crewtools.flica.parser.ParseException;
+import crewtools.flica.parser.ScheduleParser;
 import crewtools.flica.pojo.PairingKey;
+import crewtools.flica.pojo.Schedule;
 import crewtools.flica.pojo.Section;
 import crewtools.flica.pojo.ThinLine;
 import crewtools.flica.pojo.Trip;
@@ -51,6 +56,7 @@ import crewtools.rpc.Proto.PairingOverride;
 import crewtools.util.Calendar;
 import crewtools.util.FileUtils;
 import crewtools.util.FlicaConfig;
+import crewtools.util.Period;
 import okhttp3.Response;
 
 public class MonthlyBidder {
@@ -92,6 +98,10 @@ public class MonthlyBidder {
     logger.info(lines.size() + " lines read for " + yearMonth);
     Map<String, ThinLine> linesByName = new HashMap<>();
 
+    Schedule priorMonthSchedule = getSchedule(service, yearMonth.minusMonths(1));
+    Map<LocalDate, Period> carryInCredit = priorMonthSchedule
+        .getTripCreditInMonth(yearMonth);
+
     List<LineScore> lineScores = new ArrayList<>();
     for (ThinLine line : lines) {
       linesByName.put(line.getLineName(), line);
@@ -102,8 +112,8 @@ public class MonthlyBidder {
             Preconditions.checkNotNull(pairings.get(key),
                 "Pairing not found: " + key));
       }
-      LineScore lineScore = new LineScore(line, trips, bidConfig);
-      if (cmdLine.softDaysOff() || lineScore.isDesirableLine()) {
+      LineScore lineScore = new LineScore(line, trips, bidConfig, carryInCredit);
+      if (!cmdLine.desirableOnly() || lineScore.isDesirableLine()) {
         lineScores.add(lineScore);
       }
     }
@@ -173,7 +183,7 @@ public class MonthlyBidder {
           layover += proto.getLayoverAirportCode();
         }
       }
-      layover += "/" + trip.credit;
+      layover += "/" + lineScore.getAdjustedCredit(trip);
       supplement.add(layover);
     }
     result.append("[");  // TODO fix blend
@@ -242,5 +252,14 @@ public class MonthlyBidder {
     List<ThinLine> result = new ArrayList<>();
     lineList.getThinLineList().forEach(line -> result.add(new ThinLine(line)));
     return result;
+  }
+
+  private Schedule getSchedule(FlicaService service, YearMonth yearMonth)
+      throws IOException, ParseException {
+    String scheduleText = service.getSchedule(yearMonth);
+    ScheduleParser parser = new ScheduleParser(scheduleText);
+    Proto.Schedule proto = parser.parse();
+    ScheduleAdapter adapter = new ScheduleAdapter();
+    return adapter.adapt(proto);
   }
 }

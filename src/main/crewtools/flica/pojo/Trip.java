@@ -21,6 +21,7 @@ package crewtools.flica.pojo;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -31,6 +32,7 @@ import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
 
@@ -178,28 +180,50 @@ public class Trip implements Comparable<Trip> {
   }
 
   /** Does not include vacation. */
-  public Period getCreditInMonth(YearMonth yearMonth) {
+  public Map<LocalDate, Period> getCreditInMonth(YearMonth yearMonth) {
+    ImmutableMap.Builder<LocalDate, Period> result = ImmutableMap.builder();
     Calendar calendar = new Calendar(yearMonth);
-    Period outOfMonthCredit = Period.ZERO;
     for (Section section : sections) {
-      if (!calendar.isWithinPeriod(section.date)) {
-        outOfMonthCredit = outOfMonthCredit.plus(section.credit);
+      if (calendar.isWithinPeriod(section.date)) {
+        result.put(section.date, section.credit);
       }
     }
-    return credit.minus(outOfMonthCredit);
+    return result.build();
   }
 
-  public Period getCreditInMonth(List<Integer> vacationDays, YearMonth yearMonth) {
-    Period outOfMonthCredit = Period.ZERO;
-    Period vacationCredit = Period.ZERO;
+  /** Carry-in credit will override any trip credit for the specified day. */
+  public Period getCreditInMonth(List<Integer> vacationDays, YearMonth yearMonth,
+      Map<LocalDate, Period> carryInCredit) {
+    Calendar calendar = new Calendar(yearMonth);
+    Period credit = Period.ZERO;
+
+    LocalDate priorDay = earliestDepartureDate.minusDays(1);
+    // We may need a day off between the carry ins and this trip.
+    boolean needFirstDayOff = false;
+    if (carryInCredit.size() + sections.size() > 5
+        && calendar.isWithinPeriod(priorDay)
+        && carryInCredit.containsKey(priorDay)) {
+      needFirstDayOff = true;
+    }
+
     for (Section section : sections) {
-      if (section.date.getMonthOfYear() != yearMonth.getMonthOfYear()) {
-        outOfMonthCredit = outOfMonthCredit.plus(section.credit);
+      if (needFirstDayOff && section.date.equals(earliestDepartureDate)) {
+        // This day will probably get dropped in the blend.
+        continue;
+      } else if (!calendar.isWithinPeriod(section.date)) {
+        // This day of the trip is in a different bid period.
+        continue;
       } else if (vacationDays.contains(section.date.getDayOfMonth())) {
-        vacationCredit = vacationCredit.plus(section.credit);
+        // This day of the trip overlaps with vacation.
+        continue;
+      } else if (carryInCredit.containsKey(section.date)) {
+        // Blend; use the scheduled trip credit to be conservative.
+        credit = credit.plus(carryInCredit.get(section.date));
+      } else {
+        credit = credit.plus(section.credit);
       }
     }
-    return credit.minus(outOfMonthCredit).minus(vacationCredit);
+    return credit;
   }
 
   private static final DateTimeZone EASTERN = DateTimeZone.forID("America/New_York");

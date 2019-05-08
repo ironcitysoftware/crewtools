@@ -27,14 +27,14 @@ public class MonthlyBidderCommandLineConfig {
   private final boolean submitBids;
   private final boolean useCachingService;
   private final boolean parseCanceled;
-  private final boolean softDaysOff;
+  private final boolean desirable;
   private final boolean useProto;
 
   public MonthlyBidderCommandLineConfig(String args[]) {
     boolean submitBids = false;
     boolean useCachingService = false;
     boolean parseCanceled = false;
-    boolean softDaysOff = false;
+    boolean desirable = false;
     boolean useProto = false;
     for (String arg : args) {
       if (arg.equals("--submit")) {
@@ -43,8 +43,8 @@ public class MonthlyBidderCommandLineConfig {
         useCachingService = true;
       } else if (arg.equals("--canceled")) {
         parseCanceled = true;
-      } else if (arg.equals("--softDaysOff")) {
-        softDaysOff = true;
+      } else if (arg.equals("--desirable")) {
+        desirable = true;
       } else if (arg.equals("--proto")) {
         useProto = true;
       } else {
@@ -55,13 +55,13 @@ public class MonthlyBidderCommandLineConfig {
     this.submitBids = submitBids;
     this.useCachingService = useCachingService;
     this.parseCanceled = parseCanceled;
-    this.softDaysOff = softDaysOff;
+    this.desirable = desirable;
     this.useProto = useProto;
-    logger.info("Submit bids    (--submit)     : " + submitBids);
-    logger.info("Use cache      (--cache)      : " + useCachingService);
-    logger.info("Parse canceled (--canceled)   : " + parseCanceled);
-    logger.info("Soft days off  (--softDaysOff): " + softDaysOff);
-    logger.info("Use proto      (--proto)      : " + useProto);
+    logger.info("Submit bids    (--submit)    : " + submitBids);
+    logger.info("Use cache      (--cache)     : " + useCachingService);
+    logger.info("Parse canceled (--canceled)  : " + parseCanceled);
+    logger.info("Desirable only (--desirable) : " + desirable);
+    logger.info("Use proto      (--proto)     : " + useProto);
   }
 
   public boolean submitBids() {
@@ -76,8 +76,8 @@ public class MonthlyBidderCommandLineConfig {
     return parseCanceled;
   }
 
-  public boolean softDaysOff() {
-    return softDaysOff;
+  public boolean desirableOnly() {
+    return desirable;
   }
 
   public boolean useProto() {

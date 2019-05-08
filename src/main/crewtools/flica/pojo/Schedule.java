@@ -20,16 +20,21 @@
 package crewtools.flica.pojo;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
 
 import crewtools.flica.Proto;
 import crewtools.util.Period;
@@ -60,7 +65,10 @@ public class Schedule {
     Period nonTripCreditInMonth = Period.ZERO;
     ImmutableMap.Builder<PairingKey, Period> tripCreditsInMonth = ImmutableMap.builder();
     for (Trip trip : trips) {
-      Period creditInMonth = trip.getCreditInMonth(yearMonth);
+      Period creditInMonth = Period.ZERO;
+      for (Period tripCredit : trip.getCreditInMonth(yearMonth).values()) {
+        creditInMonth = creditInMonth.plus(tripCredit);
+      }
       totalCreditInMonth = totalCreditInMonth.plus(creditInMonth);
       if (trip.hasScheduleType()) {
         // vacation, training...
@@ -73,6 +81,32 @@ public class Schedule {
     this.creditInMonth = totalCreditInMonth;
     this.nonTripCreditInMonth = nonTripCreditInMonth;
     this.tripCreditsInMonth = tripCreditsInMonth.build();
+  }
+
+  /** Returns the credit per-day in a given month for all trips */
+  public Map<LocalDate, Period> getTripCreditInMonth(YearMonth yearMonth) {
+    Map<LocalDate, Period> result = new HashMap<>();
+    for (Trip trip : trips) {
+      Map<LocalDate, Period> tripCredit = trip.getCreditInMonth(yearMonth);
+      Preconditions.checkState(
+          Sets.intersection(result.keySet(), tripCredit.keySet()).isEmpty());
+      result.putAll(tripCredit);
+    }
+    return result;
+  }
+
+  /** Returns days in a given month for all trips */
+  public Set<LocalDate> getTripDaysInMonth(YearMonth yearMonth) {
+    Set<LocalDate> days = new HashSet<>();
+    for (Trip trip : trips) {
+      for (LocalDate date : trip.getDepartureDates()) {
+        if (date.getYear() == yearMonth.getYear()
+            && date.getMonthOfYear() == yearMonth.getMonthOfYear()) {
+          days.add(date);
+        }
+      }
+    }
+    return days;
   }
 
   /**
@@ -102,7 +136,7 @@ public class Schedule {
     ImmutableMap.Builder<PairingKey, Trip> result = ImmutableMap.builder();
     Ordering.natural().sortedCopy(trips).forEach(trip -> {
       if (!trip.hasScheduleType()) {
-        result.put(trip.getPairingKey(), trip);  
+        result.put(trip.getPairingKey(), trip);
       }
     });
     return result.build();
@@ -136,7 +170,7 @@ public class Schedule {
       }
     }
     Preconditions.checkState(numDropped == drops.size(), "Drops: " + drops + ", trips: " + trips);
-    
+
     // process adds
     for (Trip addedTrip : adds) {
       newTrips.add(addedTrip);

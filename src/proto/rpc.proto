@@ -115,6 +115,10 @@ message BidConfig {
   optional bool enable_carry_ins_respect_required_days_off = 19;
 
   optional bool enable_all_trips_respect_required_days_off = 20;
+
+  optional bool enable_monthly_sort_by_credit = 21;
+
+  optional bool enable_monthly_preferred_overnights_are_desirable = 22;
 }
 
 message ScoreAdjustment {

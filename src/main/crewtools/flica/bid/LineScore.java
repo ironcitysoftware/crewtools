@@ -50,8 +50,9 @@ public class LineScore {
   private final Map<PairingKey, Trip> trips;
   private final BidConfig bidConfig;
   private final Period favoriteOvernightCredit;
-  private final Period allCredit;
   private final Period favoriteOvernightPeriod;
+  private final Period nonOverlappingCarryInCredit;
+  private final Period NHighestCreditsPlusCarryIn;
   private final int numFavoriteOvernights;
   private final Map<Trip, Period> minimumTripsThatMeetMinCredit;
   private final Period minimumTripFavoriteOvernightPeriod;
@@ -60,9 +61,11 @@ public class LineScore {
   private final int scoreAdjustmentPoints;
   private final boolean hasEquipmentTwoHundredSegments;
   private final boolean hasReserve;
+  private Map<Trip, Period> creditsInMonthMap = new HashMap<>();
 
   public LineScore(ThinLine line,
-      Map<PairingKey, Trip> trips, BidConfig bidConfig) {
+      Map<PairingKey, Trip> trips, BidConfig bidConfig,
+      Map<LocalDate, Period> carryInCredit) {
     this.line = line;
     this.trips = trips;
     this.bidConfig = bidConfig;
@@ -72,12 +75,14 @@ public class LineScore {
     Period favoriteOvernightPeriod = Period.ZERO;
     int numFavoriteOvernights = 0;
 
-    Map<Trip, Period> creditsInMonthMap = new HashMap<>();
-
     Set<Integer> daysObligated = new HashSet<>();  // Carry-ins or trips
     for (Trip trip : trips.values()) {
+      // credit of this trip, handling overlapping CI credit, vacation credit,
+      // and trips extending beyond the month.
       Period creditInMonth = trip.getCreditInMonth(
-          bidConfig.getVacationDateList(), YearMonth.parse(bidConfig.getYearMonth()));
+          bidConfig.getVacationDateList(),
+          YearMonth.parse(bidConfig.getYearMonth()),
+          carryInCredit);
       creditsInMonthMap.put(trip, creditInMonth);
       allCredit = allCredit.plus(creditInMonth);
 
@@ -106,11 +111,20 @@ public class LineScore {
       daysObligated.add(date.getDayOfMonth());
     }
 
+    // Include non-overlapping CI credit in allCredit.
+    Period nonOverlappingCarryInCredit = Period.ZERO;
+    for (LocalDate date : carryInCredit.keySet()) {
+      if (!daysObligated.contains(date.getDayOfMonth())) {
+        nonOverlappingCarryInCredit = nonOverlappingCarryInCredit
+            .plus(carryInCredit.get(date));
+      }
+    }
+    this.nonOverlappingCarryInCredit = nonOverlappingCarryInCredit;
     this.favoriteOvernightCredit = favoriteOvernightCredit;
-    this.allCredit = allCredit;
     this.favoriteOvernightPeriod = favoriteOvernightPeriod;
     this.numFavoriteOvernights = numFavoriteOvernights;
     this.minimumTripsThatMeetMinCredit = evaluateMinCredit(creditsInMonthMap);
+    this.NHighestCreditsPlusCarryIn = evaluateNCredit(creditsInMonthMap);
 
     Period minimumTripFavoriteOvernightPeriod = Period.ZERO;
     for (Trip trip : minimumTripsThatMeetMinCredit.keySet()) {
@@ -172,6 +186,7 @@ public class LineScore {
         .sortByValueDescending(creditsInMonth);
     ImmutableMap.Builder<Trip, Period> result = ImmutableMap.builder();
     Period requiredCredit = Period.hours(bidConfig.getMinimumCreditHours());
+    requiredCredit = requiredCredit.minus(nonOverlappingCarryInCredit);
     for (Map.Entry<Trip, Period> entry : largestToSmallestCredit.entrySet()) {
       result.put(entry.getKey(), entry.getValue());
       if (requiredCredit.compareTo(entry.getValue()) <= 0) {
@@ -184,6 +199,20 @@ public class LineScore {
       requiredCredit = requiredCredit.minus(entry.getValue());
     }
     return ImmutableMap.of();
+  }
+
+  public Period evaluateNCredit(Map<Trip, Period> creditsInMonth) {
+    Map<Trip, Period> largestToSmallestCredit = Collections
+        .sortByValueDescending(creditsInMonth);
+    Period result = Period.ZERO.plus(nonOverlappingCarryInCredit);
+    int num = 0;
+    for (Map.Entry<Trip, Period> entry : largestToSmallestCredit.entrySet()) {
+      result = result.plus(entry.getValue());
+      if (num++ == bidConfig.getMinimumNumberOfTrips()) {
+        break;
+      }
+    }
+    return result;
   }
 
   /** Returns true if we want to consider this line for our bid. */
@@ -230,7 +259,12 @@ public class LineScore {
       }
     }
 
-    return hasMinimumTripsThatMeetMinCredit() || hasAnyFavoriteOvernights;
+    if (bidConfig.getEnableMonthlyPreferredOvernightsAreDesirable()
+        && hasAnyFavoriteOvernights) {
+      return true;
+    }
+
+    return hasMinimumTripsThatMeetMinCredit();
   }
 
   private int countFavoriteOvernights(List<String> favoriteOvernights,
@@ -262,10 +296,6 @@ public class LineScore {
 
   public int getNumFavoriteOvernights() {
     return numFavoriteOvernights;
-  }
-
-  public Period getLineCredit() {
-    return allCredit;
   }
 
   public Period getFavoriteOvernightPeriod() {
@@ -302,5 +332,13 @@ public class LineScore {
 
   public boolean hasReserve() {
     return hasReserve;
+  }
+
+  public Period getNHighestCreditsPlusCarryIn() {
+    return NHighestCreditsPlusCarryIn;
+  }
+
+  public Period getAdjustedCredit(Trip trip) {
+    return creditsInMonthMap.get(trip);
   }
 }

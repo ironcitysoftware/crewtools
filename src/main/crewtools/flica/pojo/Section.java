@@ -39,7 +39,7 @@ import crewtools.util.Period;
 public class Section implements Comparable<Section> {
   private final Logger logger = Logger.getLogger(Section.class.getName());
 
-  public Section(Proto.Section protoSection, LocalDate date, 
+  public Section(Proto.Section protoSection, LocalDate date,
       Period block, Period credit, Period duty,
       DateTime startDuty, DateTime endDuty) {
     this.protoSection = protoSection;
@@ -57,7 +57,7 @@ public class Section implements Comparable<Section> {
       }
     }
   }
-  
+
   public Section copyWithDateOffset(int daysBetween) {
     // TODO protoSection change?
     return new Section(protoSection, date.plusDays(daysBetween), block, credit,
@@ -98,7 +98,7 @@ public class Section implements Comparable<Section> {
     }
     return airports;
   }
-  
+
   public boolean isEquipmentTwoHundred() {
     if (protoSection.getLegCount() == 0) {
       return false;
@@ -108,7 +108,7 @@ public class Section implements Comparable<Section> {
         continue;
       }
       if (!leg.hasEquipment()) {
-        logger.warning("Section should have an equipment.");
+        logger.fine("Section should have an equipment.");
         return false;
       }
       return leg.getEquipment().equals(Equipment.RJ2);
@@ -116,15 +116,15 @@ public class Section implements Comparable<Section> {
     logger.warning("Ambiguius equipment");
     return false;
   }
-  
+
   public LocalDate getShowDate() {
     return startDuty.toLocalDate();
   }
-  
+
   public LocalDate getDepartureDate() {
     return date;
   }
-  
+
   public DateTime getStart() {
     return startDuty;
   }
@@ -136,20 +136,20 @@ public class Section implements Comparable<Section> {
   public boolean hasLayoverAirportCode() {
     return protoSection.hasLayoverAirportCode();
   }
-  
+
   public String getLayoverAirportCode() {
     return protoSection.getLayoverAirportCode();
   }
-  
+
   public Period getLayoverDuration() {
     return Period.fromText(protoSection.getLayoverDuration());
   }
-  
+
   /** Returns the number of actual flying legs. */
   public int getNumLegs() {
     return legs.size();
   }
-  
+
   /** Returns the actual flying legs. */
   public List<Leg> getLegs() {
     return legs;
