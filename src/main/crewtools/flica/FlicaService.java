@@ -87,6 +87,8 @@ public class FlicaService {
   private static final String SHOW_DOCUMENT_STAGE_TWO_FORMAT_SPEC =
       DOMAIN + "public/getdoc.dll/%s_Document%03d.pdf?type=bc&bc=%d";
 
+  private static final String TRADE_BOARD_ALL_REQUESTS_URL = "online/TB_otherrequests.cgi";
+
   public FlicaService(BaseFlicaConnection connection) {
     this.connection = connection;
   }
@@ -106,12 +108,13 @@ public class FlicaService {
   public static final int BID_SENIORITY_BASED = 4;
   public static final int BID_OPENTIME = 5;
   public static final int BID_FIRST_COME = 5;
+  public static final int BID_TRADEBOARD = 6;
   public static final int BID_SAP = 10;
 
   // BCID = 01[Round 1=0, Round 2=1, SeniorityBased=3, Opentime=5, FO SAP=9].xxx where 040 = March 2017
   public static String getBidCloseId(int round, YearMonth yearMonth) {
     Preconditions.checkState(round == 1 || round == 2 || round == 3
-        || round == 4 || round == 5 || round == 10);
+        || round == 4 || round == 5 || round == 6 || round == 10);
     int roundCode = round - 1;
     int yearMonthCode;
     if (roundCode == 9) {
@@ -324,6 +327,18 @@ public class FlicaService {
       int round, YearMonth yearMonth) throws URISyntaxException, IOException {
     HttpUrl url = getReserveGridJsonUrl(awardDomicile, rank, round, yearMonth);
     return connection.retrieveUrl(url);
+  }
+
+  public static HttpUrl getTradeBoardAllRequestsUrl(AwardDomicile awardDomicile,
+      int round, YearMonth yearMonth) {
+    String bidCloseId = getBidCloseId(round, yearMonth.plusMonths(1));
+    return new HttpUrl.Builder()
+        .scheme("https")
+        .host(HOST)
+        .addPathSegments(TRADE_BOARD_ALL_REQUESTS_URL)
+        .addQueryParameter("BCID", bidCloseId)
+        .addQueryParameter("hdnBase", awardDomicile.name())
+        .build();
   }
 
   public String submitSwap(int round, YearMonth yearMonth,

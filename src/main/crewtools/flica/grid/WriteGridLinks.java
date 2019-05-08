@@ -20,10 +20,15 @@
 package crewtools.flica.grid;
 
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.net.URISyntaxException;
+import java.util.Map;
 
 import org.joda.time.YearMonth;
+
+import com.google.common.collect.ImmutableMap;
 
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.FlicaService;
@@ -31,7 +36,7 @@ import crewtools.flica.Proto.Rank;
 
 public class WriteGridLinks {
   private static final String OUTPUT_PATH = "/tmp/links.html";
-  private static final YearMonth YEAR_MONTH = new YearMonth(2019, 4);
+  private static final YearMonth YEAR_MONTH = new YearMonth(2019, 5);
 
   public static void main(String args[]) throws Exception {
     new WriteGridLinks().run();
@@ -56,7 +61,22 @@ public class WriteGridLinks {
     writer.println("<html><head><style>");
     writer.println(CSS);
     writer.println("</style></head><body>");
-    writer.println("<h2>FLICA Links " + YEAR_MONTH + "</h2>");
+    writer.println(
+        "<br/><font size=2>Notes: Log into FLICA first.  Opentime pot and tradeboard are restricted to your seat.</font>");
+    writeLinks(writer, YEAR_MONTH);
+    writer.println("<hr/>");
+    writeLinks(writer, YEAR_MONTH.plusMonths(1));
+    writer.println("</body></html>");
+    writer.close();
+    System.err.println("Wrote to " + OUTPUT_PATH);
+  }
+
+  private static final Map<Rank, String> SHORT_RANK = ImmutableMap.of(Rank.CAPTAIN, "CA",
+      Rank.FIRST_OFFICER, "FO");
+
+  private void writeLinks(PrintWriter writer, YearMonth yearMonth)
+      throws IOException, URISyntaxException {
+    writer.println("<h2>FLICA Links " + yearMonth + "</h2>");
     writer.println("<table>");
     writer.println("  <tr><th />");
     for (AwardDomicile domicile : AwardDomicile.values()) {
@@ -64,32 +84,27 @@ public class WriteGridLinks {
     }
     writer.println("  </tr>");
     for (Rank rank : Rank.values()) {
-      writer.println("<tr><td>" + rank.name() + "</td>");
+      writer.println("<tr><td>" + SHORT_RANK.get(rank) + "</td>");
       for (AwardDomicile domicile : AwardDomicile.values()) {
-        writer.printf("  <td><a target=_blank href=\"%s\">reserve grid</a>, "
-            + "<a target=_blank href=\"%s\">opentime pot</a></td>\n",
+        writer.printf("  <td><a target=_blank href=\"%s\">reserve grid</a>,<br />\n"
+            + "<a target=_blank href=\"%s\">opentime pot</a>,<br />\n"
+            + "<a target=_blank href=\"%s\">lines</a>,<br />\n"
+            + "<a target=_blank href=\"%s\">pairings</a>,<br />\n"
+            + "<a target=_blank href=\"%s\">tradeboard</a></td>",
             FlicaService.getReserveGridUrl(domicile, rank, FlicaService.BID_FIRST_COME,
-                YEAR_MONTH),
+                yearMonth),
             FlicaService.getOpenTimeUrl(domicile, rank, FlicaService.BID_FIRST_COME,
-                YEAR_MONTH));
-      }
-      writer.print("</tr>");
-    }
-    for (Rank rank : Rank.values()) {
-      writer.println("<tr><td>" + rank.name() + "</td>");
-      for (AwardDomicile domicile : AwardDomicile.values()) {
-        writer.printf("  <td><a target=_blank href=\"%s\">lines</a>, "
-            + "<a target=_blank href=\"%s\">pairings</a></td>\n",
+                yearMonth),
             FlicaService.getAllLinesUrl(domicile, rank, FlicaService.BID_ROUND_ONE,
-                YEAR_MONTH),
+                yearMonth),
             FlicaService.getAllPairingsUrl(domicile, rank, FlicaService.BID_ROUND_ONE,
-                YEAR_MONTH));
+                yearMonth),
+            FlicaService.getTradeBoardAllRequestsUrl(domicile,
+                FlicaService.BID_TRADEBOARD,
+                yearMonth));
       }
       writer.print("</tr>");
     }
     writer.println("</table>");
-    writer.println("</body></html>");
-    writer.close();
-    System.err.println("Wrote to " + OUTPUT_PATH);
   }
 }
