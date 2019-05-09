@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import crewtools.flica.FlicaService;
+import crewtools.flica.Proto.Rank;
 import crewtools.flica.bid.AutoBidderCommandLineConfig;
 import crewtools.flica.pojo.FlicaTask;
 import crewtools.flica.pojo.PairingKey;
@@ -171,7 +172,8 @@ public class ScheduleWrapper {
 
     PairingKey addKey = new PairingKey(addTask.pairingDate, addTask.pairingName);
     if (!cmdLine.isDebug()) {
-      service.submitSwap(cmdLine.getRound(), yearMonth, TODAY,
+      service.submitSwap(cmdLine.getRound(
+          Rank.valueOf(bidConfig.getRank())), yearMonth, TODAY,
           ImmutableList.of(addKey),
           ImmutableList.of(dropKey));
     }

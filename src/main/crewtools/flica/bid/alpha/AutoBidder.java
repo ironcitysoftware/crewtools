@@ -117,7 +117,7 @@ public class AutoBidder {
     Thread.sleep(delay);
 
     List<FlicaTask> openTimeTasks = getOpentimeTrips(service, yearMonth,
-        cmdLine.getRound());
+        cmdLine.getRound(Rank.valueOf(bidConfig.getRank())));
     if (openTimeTasks != null) {
       Map<Integer, FlicaTask> oneDay = getHighestCreditWithNumDays(openTimeTasks, 1);
       Map<Integer, FlicaTask> twoDay = getHighestCreditWithNumDays(openTimeTasks, 2);
@@ -154,7 +154,8 @@ public class AutoBidder {
       if (clock.now().isAfter(nextOpentimeCheck)) {
         logger.info("Refresh opentime");
         nextOpentimeCheck = clock.now().plusMinutes(OPENTIME_CHECK_INTERVAL_MINUTES);
-        openTimeTasks = getOpentimeTrips(service, yearMonth, cmdLine.getRound());
+        openTimeTasks = getOpentimeTrips(service, yearMonth,
+            cmdLine.getRound(Rank.valueOf(bidConfig.getRank())));
         if (openTimeTasks != null) {
           Map<Integer, FlicaTask> oneDay = getHighestCreditWithNumDays(openTimeTasks, 1);
           Map<Integer, FlicaTask> twoDay = getHighestCreditWithNumDays(openTimeTasks, 2);
