@@ -180,7 +180,7 @@ public class Trip implements Comparable<Trip> {
   }
 
   /** Does not include vacation. */
-  public Map<LocalDate, Period> getCreditInMonth(YearMonth yearMonth) {
+  public Map<LocalDate, Period> getDailyCreditInMonth(YearMonth yearMonth) {
     ImmutableMap.Builder<LocalDate, Period> result = ImmutableMap.builder();
     Calendar calendar = new Calendar(yearMonth);
     for (Section section : sections) {
@@ -189,6 +189,18 @@ public class Trip implements Comparable<Trip> {
       }
     }
     return result.build();
+  }
+
+  /** Does not include vacation. */
+  public Period getCreditInMonth(YearMonth yearMonth) {
+    Period result = credit;
+    Calendar calendar = new Calendar(yearMonth);
+    for (Section section : sections) {
+      if (!calendar.isWithinPeriod(section.date)) {
+        result = result.minus(section.credit);
+      }
+    }
+    return result;
   }
 
   /** Carry-in credit will override any trip credit for the specified day. */

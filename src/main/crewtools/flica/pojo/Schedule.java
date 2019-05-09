@@ -65,10 +65,7 @@ public class Schedule {
     Period nonTripCreditInMonth = Period.ZERO;
     ImmutableMap.Builder<PairingKey, Period> tripCreditsInMonth = ImmutableMap.builder();
     for (Trip trip : trips) {
-      Period creditInMonth = Period.ZERO;
-      for (Period tripCredit : trip.getCreditInMonth(yearMonth).values()) {
-        creditInMonth = creditInMonth.plus(tripCredit);
-      }
+      Period creditInMonth = trip.getCreditInMonth(yearMonth);
       totalCreditInMonth = totalCreditInMonth.plus(creditInMonth);
       if (trip.hasScheduleType()) {
         // vacation, training...
@@ -87,7 +84,7 @@ public class Schedule {
   public Map<LocalDate, Period> getTripCreditInMonth(YearMonth yearMonth) {
     Map<LocalDate, Period> result = new HashMap<>();
     for (Trip trip : trips) {
-      Map<LocalDate, Period> tripCredit = trip.getCreditInMonth(yearMonth);
+      Map<LocalDate, Period> tripCredit = trip.getDailyCreditInMonth(yearMonth);
       Preconditions.checkState(
           Sets.intersection(result.keySet(), tripCredit.keySet()).isEmpty());
       result.putAll(tripCredit);

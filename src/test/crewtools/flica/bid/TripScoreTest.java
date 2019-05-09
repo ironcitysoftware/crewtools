@@ -33,9 +33,9 @@ import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.Period;
 
 public class TripScoreTest {
-  
+
   private final Trip SAMPLE_TRIP;
-  
+
   public TripScoreTest() {
     Trip.Builder builder = Trip.newBuilder();
     builder.setStartDate("2018-01-01");
@@ -52,7 +52,7 @@ public class TripScoreTest {
             .setArrivalLocalTime("0815");
     this.SAMPLE_TRIP = builder.build();
   }
-      
+
   @Test
   public void testFavoriteOvernightPeriodAndNum() throws ParseException {
     Trip.Builder trip = Trip.newBuilder(SAMPLE_TRIP);
@@ -68,13 +68,13 @@ public class TripScoreTest {
     TripScore score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
         BidConfig.getDefaultInstance());
     assertEquals(0, score.getStartTimePoints());
-    
-    trip.getSectionBuilder(0).setLocalDutyStartTime("1000");
+
+    trip.getSectionBuilder(0).setLocalDutyStartTime("1200");
     score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
         BidConfig.getDefaultInstance());
-    assertEquals(1, score.getStartTimePoints());
+    assertEquals(TripScore.START_END_SCORE_FACTOR, score.getStartTimePoints());
   }
-  
+
   @Test
   public void testEndTimePoints() throws ParseException {
     Trip.Builder trip = Trip.newBuilder(SAMPLE_TRIP);
@@ -82,13 +82,13 @@ public class TripScoreTest {
     TripScore score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
         BidConfig.getDefaultInstance());
     assertEquals(0, score.getEndTimePoints());
-    
+
     trip.getSectionBuilder(0).setLocalDutyEndTime("0830");
     score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
         BidConfig.getDefaultInstance());
-    assertEquals(1, score.getEndTimePoints());
+    assertEquals(TripScore.START_END_SCORE_FACTOR, score.getEndTimePoints());
   }
-  
+
   @Test
   public void testNumLegs() throws ParseException {
     Trip.Builder trip = Trip.newBuilder(SAMPLE_TRIP);
@@ -96,14 +96,14 @@ public class TripScoreTest {
         BidConfig.getDefaultInstance());
     assertEquals(1, score.getNumLegs());
   }
-  
+
   @Test
   public void testEquipment() throws ParseException {
     Trip.Builder trip = Trip.newBuilder(SAMPLE_TRIP);
     TripScore score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
         BidConfig.getDefaultInstance());
     assertFalse(score.hasEquipmentTwoHundredSegments());
-    
+
     trip.getSectionBuilder(0).getLegBuilder(0).setEquipment(Equipment.RJ2);
     score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
         BidConfig.getDefaultInstance());

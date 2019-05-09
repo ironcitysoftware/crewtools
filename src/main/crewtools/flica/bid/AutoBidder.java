@@ -110,7 +110,9 @@ public class AutoBidder {
         cmdLine,
         service,
         trips,
-        queue, stats);
+        queue,
+        stats,
+        bidConfig);
     opentimeLoader.start();
 
     OpentimeRequestLoaderThread opentimeRequestLoader = new OpentimeRequestLoaderThread(
@@ -118,7 +120,8 @@ public class AutoBidder {
         initialDelay,
         cmdLine,
         service,
-        tree);
+        tree,
+        bidConfig);
     opentimeRequestLoader.start();
   }
 }

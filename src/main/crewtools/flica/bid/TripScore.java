@@ -39,6 +39,10 @@ import crewtools.util.Period;
 public class TripScore implements Comparable<TripScore> {
   private final Logger logger = Logger.getLogger(TripScore.class.getName());
 
+  public static final int START_END_SCORE_FACTOR = 5;
+  public static final int START_HOUR_INCLUSIVE = 12;
+  public static final int END_HOUR_INCLUSIVE = 18;
+
   private final Period favoriteOvernightPeriod;
   private final int numFavoriteOvernights;
   private final int startTimePoints;
@@ -47,14 +51,14 @@ public class TripScore implements Comparable<TripScore> {
   private final int numLegs;
   private final int points;
   private final List<String> scoreExplanation = new ArrayList<>();
-  
+
   public TripScore(Trip trip, BidConfig config) {
     int goodPoints = 0;
     int badPoints = 0;
-    
+
     Period favoriteOvernightPeriod = Period.ZERO;
     int numFavoriteOvernights = 0;
-    
+
     int numLegs = 0;
     for (Section section : trip.getSections()) {
       if (section.hasLayoverAirportCode()
@@ -66,7 +70,7 @@ public class TripScore implements Comparable<TripScore> {
       }
       numLegs += section.getNumLegs();
     }
-    
+
     this.favoriteOvernightPeriod = favoriteOvernightPeriod;
     this.numFavoriteOvernights = numFavoriteOvernights;
     this.numLegs = numLegs;
@@ -111,33 +115,33 @@ public class TripScore implements Comparable<TripScore> {
     int startTimePoints = 0;
     int endTimePoints = 0;
     boolean hasEquipmentTwoHundredSegments = false;
-    
+
     Section firstSection = trip.getFirstSection();
     if (firstSection != null) {
       LocalTime reportTime = firstSection.getStart().toLocalTime();
-      if (reportTime.getHourOfDay() > 9 && reportTime.getHourOfDay() <= 20) {
-        startTimePoints++;
-        goodPoints++;
-        scoreExplanation.add("+1 for good start time");
+      if (reportTime.getHourOfDay() >= START_HOUR_INCLUSIVE) {
+        startTimePoints += START_END_SCORE_FACTOR;
+        goodPoints += START_END_SCORE_FACTOR;
+        scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for good start time");
       } else {
-        badPoints++;
-        scoreExplanation.add("-1 for bad start time");
+        badPoints += START_END_SCORE_FACTOR;
+        scoreExplanation.add("-" + START_END_SCORE_FACTOR + " for bad start time");
       }
     }
-      
+
     Section lastSection = trip.getLastSection();
     if (lastSection != null) {
       LocalTime endTime = lastSection.getEnd().toLocalTime();
-      if (endTime.getHourOfDay() <= 18) {
-        endTimePoints++;
-        goodPoints++;        
-        scoreExplanation.add("+1 for good end time");
+      if (endTime.getHourOfDay() <= END_HOUR_INCLUSIVE) {
+        endTimePoints += START_END_SCORE_FACTOR;
+        goodPoints += START_END_SCORE_FACTOR;
+        scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for good end time");
       } else {
-        badPoints++;
-        scoreExplanation.add("-1 for bad end time");
+        badPoints += 5;
+        scoreExplanation.add("-" + START_END_SCORE_FACTOR + " for bad end time");
       }
     }
-    
+
     for (Section section : trip.getSections()) {
       if (section.isEquipmentTwoHundred()) {
         hasEquipmentTwoHundredSegments = true;
@@ -151,7 +155,7 @@ public class TripScore implements Comparable<TripScore> {
     this.startTimePoints = startTimePoints;
     this.endTimePoints = endTimePoints;
     this.hasEquipmentTwoHundredSegments = hasEquipmentTwoHundredSegments;
-    
+
     if (config.getEnableEfficiencyScore()
         && trip.credit.isMoreThan(Period.ZERO)) {
       // 0.0 is no flying when away from home.
@@ -193,7 +197,7 @@ public class TripScore implements Comparable<TripScore> {
     this.points = goodPoints - badPoints;
     scoreExplanation.add("Final score: " + points);
   }
-  
+
   //@formatter:off
 
   private static final Set<Integer> WEEKDAYS = ImmutableSet.of(
@@ -218,7 +222,7 @@ public class TripScore implements Comparable<TripScore> {
     }
     return dayAdjustment;
   }
-  
+
   //@formatter:on
 
   public int getNumFavoriteOvernights() {
@@ -238,15 +242,15 @@ public class TripScore implements Comparable<TripScore> {
   public int getEndTimePoints() {
     return endTimePoints;
   }
-  
+
   public int getNumLegs() {
     return numLegs;
   }
-  
+
   public boolean hasEquipmentTwoHundredSegments() {
     return hasEquipmentTwoHundredSegments;
   }
-  
+
   public int getPoints() {
     return points;
   }

@@ -147,13 +147,13 @@ public class ScheduleWrapperTest {
 
   @Test
   public void testIdentifyBaggageTrips() {
-    Trip trip1 = new TripBuilder()
+    Trip baggage1 = new TripBuilder()
         .withName("baggage1")
         .withDayOfMonth(1)
         .withLeg("CLT", "GSP", Period.hours(1))
         .build();
 
-    Trip trip2 = new TripBuilder()
+    Trip keeper1 = new TripBuilder()
         .withName("keeper1")
         .withDayOfMonth(9)
         .withLeg("CLT", "GSP", Period.hours(11))
@@ -163,7 +163,7 @@ public class ScheduleWrapperTest {
         .withLeg("CLT", "GSP", Period.hours(10))
         .build();
 
-    Trip trip3 = new TripBuilder()
+    Trip keeper2 = new TripBuilder()
         .withName("keeper2")
         .withDayOfMonth(14)
         .withLeg("CLT", "GSP", Period.hours(6))
@@ -171,14 +171,14 @@ public class ScheduleWrapperTest {
         .withLeg("GSP", "CLT", Period.hours(6))
         .build();
 
-    Trip trip4 = new TripBuilder()
+    Trip baggage2 = new TripBuilder()
         .withName("baggage2")
         .withDayOfMonth(19)
         .withLeg("CLT", "GSP", Period.hours(2))
         .build();
     
     Schedule schedule = new ScheduleBuilder()
-        .withTrips(trip1, trip2, trip3, trip4)
+        .withTrips(baggage1, keeper1, keeper2, baggage2)
         .withVacation(25, 27)
         .build();
 
@@ -186,7 +186,7 @@ public class ScheduleWrapperTest {
         schedule, TripBuilder.DEFAULT_YEAR_MONTH, FAKE_CLOCK,
         BidConfig.getDefaultInstance());
 
-    assertEquals(ImmutableList.of(trip4.getPairingKey(), trip1.getPairingKey()),
+    assertEquals(ImmutableList.of(baggage2.getPairingKey(), baggage1.getPairingKey()),
         wrapper.identifyBaggageTrips(schedule));
   }
   // @formatter:on
