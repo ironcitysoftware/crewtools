@@ -87,11 +87,15 @@ public class WriteGridLinks {
       writer.println("<tr><td>" + SHORT_RANK.get(rank) + "</td>");
       for (AwardDomicile domicile : AwardDomicile.values()) {
         writer.printf("  <td><a target=_blank href=\"%s\">reserve grid</a>,<br />\n"
+            + "<a target=_blank href=\"%s\">reserve avail</a>,<br />\n"
             + "<a target=_blank href=\"%s\">opentime pot</a>,<br />\n"
             + "<a target=_blank href=\"%s\">lines</a>,<br />\n"
             + "<a target=_blank href=\"%s\">pairings</a>,<br />\n"
             + "<a target=_blank href=\"%s\">tradeboard</a></td>",
             FlicaService.getReserveGridUrl(domicile, rank, FlicaService.BID_FIRST_COME,
+                yearMonth),
+            FlicaService.getReserveAvailabilityUrl(domicile, rank,
+                FlicaService.BID_FIRST_COME,
                 yearMonth),
             FlicaService.getOpenTimeUrl(domicile, rank, FlicaService.BID_FIRST_COME,
                 yearMonth),

@@ -39,7 +39,7 @@ import crewtools.util.Period;
 public class TripScore implements Comparable<TripScore> {
   private final Logger logger = Logger.getLogger(TripScore.class.getName());
 
-  public static final int START_END_SCORE_FACTOR = 5;
+  public static final int START_END_SCORE_FACTOR = 1;
   public static final int START_HOUR_INCLUSIVE = 12;
   public static final int END_HOUR_INCLUSIVE = 18;
 

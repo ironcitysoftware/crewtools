@@ -102,6 +102,8 @@ public class FlicaService {
   private static final YearMonth AUG_2017 = YearMonth.parse("2017-08");
   private static final int JAN_2017_CODE = 38;
   private static final String BID_CLOSE_ID_FORMAT_SPEC = "01%d.%03d";
+  private static final int JUN_2019_CODE_CA_SAP = 38;
+  private static final YearMonth JUN_2019 = YearMonth.parse("2019-06");
 
   public static final int BID_ROUND_ONE = 1;
   public static final int BID_ROUND_TWO = 2;
@@ -109,16 +111,21 @@ public class FlicaService {
   public static final int BID_OPENTIME = 5;
   public static final int BID_FIRST_COME = 5;
   public static final int BID_TRADEBOARD = 6;
-  public static final int BID_SAP = 10;
+  public static final int BID_CA_SAP = 9;
+  public static final int BID_FO_SAP = 10;
 
-  // BCID = 01[Round 1=0, Round 2=1, SeniorityBased=3, Opentime=5, FO SAP=9].xxx where 040 = March 2017
+  // BCID = 01[Round 1=0, Round 2=1, SeniorityBased=3, Opentime=5, CA SAP=8, FO
+  // SAP=9].xxx where 040 = March 2017
   public static String getBidCloseId(int round, YearMonth yearMonth) {
     Preconditions.checkState(round == 1 || round == 2 || round == 3
-        || round == 4 || round == 5 || round == 6 || round == 10);
+        || round == 4 || round == 5 || round == 6 || round == 9 || round == 10);
     int roundCode = round - 1;
     int yearMonthCode;
     if (roundCode == 9) {
       yearMonthCode = AUG_2017_CODE_FO_SAP + Months.monthsBetween(AUG_2017, yearMonth).getMonths();
+    } else if (roundCode == 8) {
+      yearMonthCode = JUN_2019_CODE_CA_SAP
+          + Months.monthsBetween(JUN_2019, yearMonth).getMonths();
     } else {
       int monthsBetween = Months.monthsBetween(JAN_2017, yearMonth).getMonths();
       if (roundCode == 4) {
@@ -261,8 +268,8 @@ public class FlicaService {
         .addPathSegment(OPEN_TIME_BASE_URL)
         .addQueryParameter("BCID", bidCloseId)
         .addQueryParameter("ViewOT", "1")
-        .addQueryParameter("SubmitBids", "NO")
-        .addQueryParameter("CC", crewClassId)
+        // .addQueryParameter("SubmitBids", "NO")
+        // .addQueryParameter("CC", crewClassId)
         .build();
   }
 
@@ -302,6 +309,22 @@ public class FlicaService {
         .addPathSegment("ui")
         .addPathSegment("private")
         .addPathSegment("bidCloseReserveGrid")
+        .addPathSegment("index.html")
+        .addQueryParameter("BCID", bidCloseId)
+        .addQueryParameter("CC", crewClassId)
+        .build();
+  }
+
+  public static HttpUrl getReserveAvailabilityUrl(AwardDomicile awardDomicile, Rank rank,
+      int round, YearMonth yearMonth) {
+    String bidCloseId = FlicaService.getBidCloseId(round, yearMonth);
+    String crewClassId = FlicaService.getCrewClassId(awardDomicile, rank);
+    return new HttpUrl.Builder()
+        .scheme("https")
+        .host("jia.flica.net")
+        .addPathSegment("ui")
+        .addPathSegment("private")
+        .addPathSegment("reserveAvail")
         .addPathSegment("index.html")
         .addQueryParameter("BCID", bidCloseId)
         .addQueryParameter("CC", crewClassId)

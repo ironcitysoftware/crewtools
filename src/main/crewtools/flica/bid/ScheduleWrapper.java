@@ -32,12 +32,14 @@ import java.util.logging.Logger;
 import org.joda.time.Duration;
 import org.joda.time.Interval;
 import org.joda.time.LocalDate;
+import org.joda.time.LocalTime;
 import org.joda.time.YearMonth;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
 
+import crewtools.flica.pojo.FlicaTask;
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Schedule;
 import crewtools.flica.pojo.Trip;
@@ -69,6 +71,7 @@ public class ScheduleWrapper {
   private Map<PairingKey, Period> creditInMonthMap;  // least first
   private Period minRequiredCredit;
   private Period baggageCredit;
+  private Period nonDroppableTripCredit;
   private Calendar calendar;
 
   private static final Period SIXTY_FIVE = Period.hours(65);
@@ -100,10 +103,15 @@ public class ScheduleWrapper {
     populate(schedule, yearMonth);
   }
 
+  public Schedule getSchedule() {
+    return schedule;
+  }
+
   private void populate(Schedule schedule, YearMonth yearMonth) {
     Collection<PairingKey> allBaggageTrips = identifyBaggageTrips(schedule);
     Period nonBaggageCreditThisMonth = Period.ZERO;
     Period baggageCreditThisMonth = Period.ZERO;
+    Period nonDroppableTripCredit = Period.ZERO;
     for (Trip trip : schedule.trips) {
       if (trip.hasScheduleType()) {
         // Vacation, training, etc.
@@ -118,6 +126,9 @@ public class ScheduleWrapper {
               && trip.getDutyStart().isAfter(clock.now())
               && calendar.isWithinPeriod(trip.getDutyStart().toLocalDate())) {
             droppableSchedule.put(trip.getPairingKey(), trip);
+          } else {
+            nonDroppableTripCredit = nonDroppableTripCredit.plus(
+                trip.getCreditInMonth(yearMonth));
           }
           Period tripCredit = trip.getCreditInMonth(yearMonth);
           this.creditInMonthMap.put(trip.getPairingKey(), tripCredit);
@@ -144,6 +155,11 @@ public class ScheduleWrapper {
     logger.info("Minimum credit for an added trip: " + minRequiredCredit);
     logger.info("Baggage trips: " + baggageTrips);
     this.baggageCredit = baggageCreditThisMonth;
+    this.nonDroppableTripCredit = nonDroppableTripCredit;
+  }
+
+  public Period getNonDroppableTripCredit() {
+    return nonDroppableTripCredit;
   }
 
   public boolean containsKey(PairingKey key) {
@@ -207,6 +223,43 @@ public class ScheduleWrapper {
     public boolean noOverlap;
     public Collection<Trip> droppable;
 
+    public OverlapEvaluation(Set<LocalDate> dates) {
+      LocalDate first = Ordering.natural().min(dates);
+      LocalDate last = Ordering.natural().max(dates);
+      // Company vacation or training.
+      Interval taskInterval = new Interval(first.toDateTimeAtStartOfDay(),
+          last.toDateTime(LocalTime.parse("23:59")));
+      if (overlapsNonTrip(taskInterval)) {
+        overlapsUndroppable = true;
+        droppable = ImmutableSet.of();
+        return;
+      }
+
+      // Hard-and-fast days off.
+      if (overlaps(dates, requiredDaysOff)) {
+        overlapsUndroppable = true;
+        droppable = ImmutableSet.of();
+        return;
+      }
+
+      Set<Trip> result = new HashSet<>();
+      for (Map.Entry<PairingKey, Trip> entry : trips.entrySet()) {
+        if (overlapsDates(entry.getValue(), dates)) {
+          // The dates overlap.
+          if (!droppableSchedule.containsKey(entry.getKey())) {
+            // overlaps with something not droppable. Useless.
+            overlapsUndroppable = true;
+            droppable = ImmutableSet.of();
+            return;
+          } else {
+            result.add(entry.getValue());
+          }
+        }
+      }
+      noOverlap = result.isEmpty();
+      droppable = noOverlap ? droppableSchedule.values() : result;
+    }
+
     public OverlapEvaluation(Trip trip) {
       // Company vacation or training.
       if (overlapsNonTrip(trip.getInterval())) {
@@ -224,7 +277,7 @@ public class ScheduleWrapper {
 
       Set<Trip> result = new HashSet<>();
       for (Map.Entry<PairingKey, Trip> entry : trips.entrySet()) {
-        if (overlapsDates(entry.getValue(), trip)) {
+        if (overlapsDates(entry.getValue(), trip.getDepartureDates())) {
           // The dates overlap.
           if (!droppableSchedule.containsKey(entry.getKey())) {
             // overlaps with something not droppable. Useless.
@@ -241,14 +294,14 @@ public class ScheduleWrapper {
     }
 
     // TODO use Interval instead.
-    private boolean overlapsDates(Trip scheduledTrip, Trip potentialTrip) {
+    private boolean overlapsDates(Trip scheduledTrip, Set<LocalDate> potentialTripDates) {
       // Add the day before and after a scheduled trip.
       // We don't want to end up with adjacent trips.
       Set<LocalDate> scheduledDates = new HashSet<>(scheduledTrip.getDepartureDates());
       Preconditions.checkState(!scheduledDates.isEmpty());
       scheduledDates.add(Ordering.natural().min(scheduledDates).minusDays(1));
       scheduledDates.add(Ordering.natural().max(scheduledDates).plusDays(1));
-      return overlaps(scheduledDates, potentialTrip.getDepartureDates());
+      return overlaps(scheduledDates, potentialTripDates);
     }
 
     private boolean overlaps(Collection<LocalDate> a, Collection<LocalDate> b) {
@@ -258,6 +311,20 @@ public class ScheduleWrapper {
 
   public OverlapEvaluation evaluateOverlap(Trip trip) {
     return new OverlapEvaluation(trip);
+  }
+
+  public OverlapEvaluation evaluateOverlap(FlicaTask task) {
+    return new OverlapEvaluation(getTaskDates(task));
+  }
+
+  Set<LocalDate> getTaskDates(FlicaTask task) {
+    Set<LocalDate> dates = new HashSet<>();
+    LocalDate startDate = task.pairingDate;
+    dates.add(startDate);
+    for (int i = 1; i < task.numDays; ++i) {
+      dates.add(startDate.plusDays(i));
+    }
+    return dates;
   }
 
   public Collection<Trip> getAllDroppable() {
@@ -337,27 +404,6 @@ public class ScheduleWrapper {
    */
   Collection<PairingKey> identifyBaggageTrips(Schedule schedule) {
     List<PairingKey> baggageKeys = new ArrayList<>();
-    if (bidConfig.getBaggagePairingKeyCount() > 0) {
-      // manual
-      for (String keyText : bidConfig.getBaggagePairingKeyList()) {
-        PairingKey key = PairingKey.parseShort(keyText,
-            YearMonth.parse(bidConfig.getYearMonth()));
-        baggageKeys.add(key);
-      }
-    } else {
-      // automatic
-      Map<PairingKey, Period> sortedTripCreditsInMonth = crewtools.util.Collections
-          .sortByValueDescending(
-              schedule.getTripCreditInMonth());
-      Period totalCredit = schedule.getNonTripCreditInMonth();
-      for (PairingKey key : sortedTripCreditsInMonth.keySet()) {
-        if (totalCredit.isLessThan(SIXTY_FIVE)) {
-          totalCredit = totalCredit.plus(sortedTripCreditsInMonth.get(key));
-        } else {
-          baggageKeys.add(key);
-        }
-      }
-    }
     return baggageKeys;
   }
 

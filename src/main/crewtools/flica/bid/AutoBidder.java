@@ -19,19 +19,18 @@
 
 package crewtools.flica.bid;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 import org.joda.time.Duration;
 import org.joda.time.YearMonth;
-import org.subethamail.smtp.server.SMTPServer;
 
 import crewtools.flica.CachingFlicaService;
 import crewtools.flica.FlicaConnection;
 import crewtools.flica.FlicaService;
 import crewtools.flica.Proto.Rank;
-import crewtools.flica.pojo.Trip;
+import crewtools.flica.pojo.FlicaTask;
 import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.Clock;
 import crewtools.util.FileUtils;
@@ -72,56 +71,49 @@ public class AutoBidder {
 
     RuntimeStats stats = new RuntimeStats(clock, tree);
 
-    TripDatabase trips = new TripDatabase(service, cmdLine.getUseProto(), yearMonth);
+    TripDatabase tripDatabase = new TripDatabase(service, cmdLine.getUseProto(), yearMonth);
 
-    StatusService statusService = new StatusService(stats, trips, bidConfig);
+    StatusService statusService = new StatusService(stats, tripDatabase, bidConfig);
     statusService.start();
 
     ScheduleLoaderThread scheduleLoaderThread = new ScheduleLoaderThread(
         cmdLine.getScheduleRefreshInterval(), yearMonth,
-        tree, trips, service, bidConfig);
+        tree, tripDatabase, service, bidConfig);
     scheduleLoaderThread.start();
     scheduleLoaderThread.blockCurrentThreadUntilScheduleIsLoaded();
 
-    BlockingQueue<Trip> queue = new LinkedBlockingQueue<Trip>();
-    Worker worker = new Worker(queue, service, tree, yearMonth,
-        cmdLine.getRound(rank), clock, stats, bidConfig, cmdLine.isDebug());
-    worker.start();
-
-    if (cmdLine.isDebug()) {
-      DebugInjector debugTripProvider = new DebugInjector(queue, tree);
-      debugTripProvider.start();
-      return;
-    }
-
-    SMTPServer smtpServer = new SMTPServer(
-        (context) -> {
-          return new FlicaMessageHandler(context, yearMonth, queue, stats);
-        });
-    smtpServer.setPort(SMTP_PORT);
-    logger.info("Listening for SMTP on " + SMTP_PORT);
-    smtpServer.start();
-
     Duration initialDelay = cmdLine.getInitialDelay(clock, rank);
 
-    OpentimeLoaderThread opentimeLoader = new OpentimeLoaderThread(
-        yearMonth,
-        initialDelay.minus(Duration.standardMinutes(2)),
-        cmdLine,
-        service,
-        trips,
-        queue,
-        stats,
-        bidConfig);
-    opentimeLoader.start();
+    List<FlicaTask> taskList = new ArrayList<FlicaTask>();
+    Worker worker = new Worker(bidConfig, yearMonth, tree, taskList, service,
+        cmdLine.getRound(rank), clock, tripDatabase);
 
-    OpentimeRequestLoaderThread opentimeRequestLoader = new OpentimeRequestLoaderThread(
+    OpentimeLoaderThread opentimeLoader = new OpentimeLoaderThread(
         yearMonth,
         initialDelay,
         cmdLine,
         service,
-        tree,
-        bidConfig);
-    opentimeRequestLoader.start();
+        tripDatabase,
+        taskList,
+        stats,
+        bidConfig,
+        worker);
+    opentimeLoader.start();
+
+    /*
+     * if (cmdLine.isDebug()) {
+     * DebugInjector debugTripProvider = new DebugInjector(queue, tree);
+     * debugTripProvider.start();
+     * return;
+     * }
+     * 
+     * SMTPServer smtpServer = new SMTPServer(
+     * (context) -> {
+     * return new FlicaMessageHandler(context, yearMonth, queue, stats);
+     * });
+     * smtpServer.setPort(SMTP_PORT);
+     * logger.info("Listening for SMTP on " + SMTP_PORT);
+     * smtpServer.start();
+     */
   }
 }

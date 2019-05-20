@@ -31,9 +31,9 @@ public abstract class PeriodicDaemonThread extends Thread {
   private static final Duration FAILURE_DURATION = Duration.standardSeconds(10);
 
   private final Duration initialDelay;
-  private final Duration interval;
+  protected Duration interval;
   private final AtomicBoolean initialRunComplete;
-  
+
   public enum WorkResult {
     COMPLETE,
     INCOMPLETE
@@ -44,7 +44,7 @@ public abstract class PeriodicDaemonThread extends Thread {
     this.interval = interval;
     this.initialRunComplete = new AtomicBoolean(false);
   }
-  
+
   public void blockCurrentThreadUntilScheduleIsLoaded() {
     if (initialRunComplete.get()) {
       return;
@@ -58,7 +58,7 @@ public abstract class PeriodicDaemonThread extends Thread {
       }
     }
   }
-  
+
   @Override
   public void run() {
     String prefix = String.format("[%s] ", getName());
@@ -79,14 +79,14 @@ public abstract class PeriodicDaemonThread extends Thread {
           continue;
         }
       }
-      
+
       numFailures = 0;
 
       initialRunComplete.set(true);
       synchronized (initialRunComplete) {
         initialRunComplete.notifyAll();
       }
-      
+
       safeSleep(prefix, interval);
     }
   }

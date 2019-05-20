@@ -119,7 +119,7 @@ public class AutoBidderCommandLineConfig {
   public Duration getOpentimeRefreshInterval() {
     switch (mode) {
       case SAP:
-        return Duration.standardMinutes(45);
+        return Duration.standardMinutes(2);
       case SBB:
       case OPENTIME:
         return Duration.standardHours(3);
@@ -163,14 +163,15 @@ public class AutoBidderCommandLineConfig {
   public int getRound(Rank rank) {
     if (rank == Rank.CAPTAIN) {
       switch (mode) {
-        // case SAP: return FlicaService.BID_SAP;
+        case SAP:
+          return FlicaService.BID_CA_SAP;
         // case SBB: return FlicaService.BID_SENIORITY_BASED;
         // case OPENTIME: return FlicaService.BID_OPENTIME;
       }
     } else if (rank == Rank.FIRST_OFFICER) {
       switch (mode) {
         case SAP:
-          return FlicaService.BID_SAP;
+          return FlicaService.BID_FO_SAP;
         case SBB:
           return FlicaService.BID_SENIORITY_BASED;
         case OPENTIME:

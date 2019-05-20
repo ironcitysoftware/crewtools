@@ -246,6 +246,7 @@ public class Trip implements Comparable<Trip> {
     } else if (proto.getScheduleType() == ScheduleType.VACATION
         || proto.getScheduleType() == ScheduleType.VACATION_START
         || proto.getScheduleType() == ScheduleType.VACATION_END
+        || proto.getScheduleType() == ScheduleType.RELOCATION_DAY
         || proto.getScheduleType() == ScheduleType.LONG_CALL_RESERVE) {
       // TODO Daylight savings?
       return LocalDate.parse(proto.getStartDate())
@@ -261,6 +262,7 @@ public class Trip implements Comparable<Trip> {
     } else if (proto.getScheduleType() == ScheduleType.VACATION
         || proto.getScheduleType() == ScheduleType.VACATION_START
         || proto.getScheduleType() == ScheduleType.VACATION_END
+        || proto.getScheduleType() == ScheduleType.RELOCATION_DAY
         || proto.getScheduleType() == ScheduleType.LONG_CALL_RESERVE) {
       // TODO Daylight savings?
       return LocalDate.parse(proto.getEndDate())

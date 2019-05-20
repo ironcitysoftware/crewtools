@@ -92,7 +92,7 @@ message BidConfig {
   // The autobidder will select the least-credit trips as baggage.
   // Override this behavior by explicitly specifying baggage trips.
   // 17May:L1234
-  repeated string baggage_pairing_key = 10;
+  repeated string UNUSED_baggage_pairing_key = 10;
 
   // Enable experimental feature for handling approved transitions.
   optional bool enable_reroot_on_approved_transition = 11;

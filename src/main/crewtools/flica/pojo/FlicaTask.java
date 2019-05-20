@@ -41,6 +41,38 @@ public class FlicaTask {
   private static final DateTimeFormatter LOCAL_TIME = DateTimeFormat.forPattern("HH:mm");
   private static final DateTimeFormatter LOCAL_PERIOD = DateTimeFormat.forPattern("HHmm");
 
+  public FlicaTask(PairingKey key, Period creditTime, int numDays) {
+    this.tradeboardRequestId = null;
+    this.creditTime = creditTime;
+    this.pairingName = key.getPairingName();
+    this.pairingDate = key.getPairingDate();
+    isTruePairing = true;
+    date = null;
+    this.numDays = numDays;
+    reportTime = null;
+    departureTime = null;
+    arrivalTime = null;
+    blockTime = null;
+    layoverAirportCodes = null;
+    bidPos = "";
+    position = "";
+    rpt = 0;
+    end = 0;
+    asterisk = "";
+    isQualified = false;
+    unqmsg = "";
+    carryOver = 0;
+    canSplit = false;
+    created = "";
+    AOTS = 0;
+    unpub = "";
+    isPairUnpublished = false;
+    repeqpd = false;
+    repdate = null;
+    isReserveDate = false;
+    maxDutyPeriod = null;
+  }
+
   public FlicaTask(PairingKey key, Period creditTime) {
     this.tradeboardRequestId = null;
     this.creditTime = creditTime;

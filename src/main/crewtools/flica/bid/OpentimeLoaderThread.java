@@ -21,9 +21,7 @@ package crewtools.flica.bid;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -36,8 +34,6 @@ import crewtools.flica.Proto.Rank;
 import crewtools.flica.parser.OpenTimeParser;
 import crewtools.flica.parser.ParseException;
 import crewtools.flica.pojo.FlicaTask;
-import crewtools.flica.pojo.PairingKey;
-import crewtools.flica.pojo.Trip;
 import crewtools.rpc.Proto.BidConfig;
 
 public class OpentimeLoaderThread extends PeriodicDaemonThread {
@@ -47,24 +43,26 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
   private final AutoBidderCommandLineConfig cmdLine;
   private final FlicaService service;
   private final TripDatabase tripDatabase;
-  private final BlockingQueue<Trip> queue;
+  private final List<FlicaTask> taskList;
   private final RuntimeStats stats;
   private final BidConfig config;
+  private final Worker worker;
 
   public OpentimeLoaderThread(YearMonth yearMonth, Duration initialDelay,
       AutoBidderCommandLineConfig cmdLine, FlicaService service,
-      TripDatabase tripDatabase, BlockingQueue<Trip> queue, RuntimeStats stats,
-      BidConfig config) {
-    super(initialDelay, cmdLine.getOpentimeRefreshInterval());
+      TripDatabase tripDatabase, List<FlicaTask> taskList, RuntimeStats stats,
+      BidConfig config, Worker worker) {
+    super(initialDelay, worker.getOpentimeRefreshInterval());
     this.yearMonth = yearMonth;
     this.cmdLine = cmdLine;
     this.service = service;
     this.tripDatabase = tripDatabase;
-    this.queue = queue;
+    this.taskList = taskList;
     this.stats = stats;
     this.config = config;
+    this.worker = worker;
     this.setName("OpenTimeLoader");
-    this.setDaemon(true);
+    this.setDaemon(false);
   }
 
   @Override
@@ -80,18 +78,15 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
   public WorkResult doPeriodicWork() {
     logger.info("Refreshing opentime");
     try {
-      List<PairingKey> trips = getOpentimeTrips(service, yearMonth,
+      List<FlicaTask> trips = getOpentimeTrips(service, yearMonth,
           cmdLine.getRound(Rank.valueOf(config.getRank())));
       if (trips == null) {
         logger.info("Opentime not yet published");
         return WorkResult.INCOMPLETE;
       }
-      for (PairingKey tripKey : trips) {
-        Trip trip = tripDatabase.getTrip(tripKey);
-        logger.info("Adding " + tripKey + " from opentime refresh");
-        stats.incrementOpentimeTrip();
-        queue.add(trip);
-      }
+      taskList.addAll(trips);
+      worker.run();
+      interval = worker.getOpentimeRefreshInterval();
       return WorkResult.COMPLETE;
     } catch (URISyntaxException | IOException | ParseException e) {
       logger.severe(e.getMessage());
@@ -107,20 +102,16 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
     return 18;  // 3 minutes
   }
 
-  private List<PairingKey> getOpentimeTrips(FlicaService service, YearMonth yearMonth,
+  private List<FlicaTask> getOpentimeTrips(FlicaService service, YearMonth yearMonth,
       int round) throws URISyntaxException, IOException, ParseException {
     String rawOpenTime = service.getOpenTime(
-        AwardDomicile.CLT, Rank.FIRST_OFFICER, round, yearMonth);
+        AwardDomicile.CLT, Rank.CAPTAIN, round, yearMonth);
     OpenTimeParser openTimeParser = new OpenTimeParser(
         yearMonth.getYear(), rawOpenTime);
     List<FlicaTask> tasks = openTimeParser.parse();
     if (!openTimeParser.isPublished()) {
       return null;
     }
-    List<PairingKey> openTimeTrips = new ArrayList<>();
-    for (FlicaTask task : tasks) {
-      openTimeTrips.add(new PairingKey(task.pairingDate, task.pairingName));
-    }
-    return openTimeTrips;
+    return tasks;
   }
 }

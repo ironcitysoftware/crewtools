@@ -58,6 +58,10 @@ public class ScheduleWrapperTree {
     this.bidConfig = bidConfig;
   }
 
+  public ScheduleWrapper getRoot() {
+    return root;
+  }
+
   public abstract class Visitor {
     public abstract void visit(ScheduleWrapper wrapper);
     public void add(ScheduleWrapper wrapper, Transition transition, ScheduleWrapper newChild) {
