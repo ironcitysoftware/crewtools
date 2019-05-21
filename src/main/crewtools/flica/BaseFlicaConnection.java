@@ -83,7 +83,13 @@ public class BaseFlicaConnection implements Closeable {
         .header(USER_AGENT_KEY, CHROME_USER_AGENT)
         .post(form)
         .build();
-    Response response = httpclient.newCall(request).execute();
+    cookieJar.setReadonly(true);
+    Response response;
+    try {
+      response = httpclient.newCall(request).execute();
+    } finally {
+      cookieJar.setReadonly(false);
+    }
     try {
       return response.code() == HttpURLConnection.HTTP_OK;
     } finally {
