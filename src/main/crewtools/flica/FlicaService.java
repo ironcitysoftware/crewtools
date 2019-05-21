@@ -261,17 +261,20 @@ public class FlicaService {
       int round, YearMonth yearMonth) {
     String bidCloseId = getBidCloseId(round, yearMonth);
     String crewClassId = getCrewClassId(awardDomicile, rank);
-    return new HttpUrl.Builder()
+    HttpUrl.Builder builder = new HttpUrl.Builder()
         .scheme("https")
         .host(HOST)
         .addPathSegment("full")
         .addPathSegment(OPEN_TIME_BASE_URL)
         .addQueryParameter("BCID", bidCloseId)
-        .addQueryParameter("ViewOT", "1")
-        // CC not needed for SAP?
-        .addQueryParameter("SubmitBids", "NO")
-        .addQueryParameter("CC", crewClassId)
-        .build();
+        .addQueryParameter("ViewOT", "1");
+    if (round != FlicaService.BID_CA_SAP
+        && round != FlicaService.BID_FO_SAP) {
+        builder
+            .addQueryParameter("SubmitBids", "NO")
+            .addQueryParameter("CC", crewClassId)
+    }
+    return builder.build();
   }
 
   public synchronized String getOpenTime(AwardDomicile awardDomicile, Rank rank,
