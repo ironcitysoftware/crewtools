@@ -272,7 +272,7 @@ public class FlicaService {
         && round != FlicaService.BID_FO_SAP) {
         builder
             .addQueryParameter("SubmitBids", "NO")
-            .addQueryParameter("CC", crewClassId)
+            .addQueryParameter("CC", crewClassId);
     }
     return builder.build();
   }
