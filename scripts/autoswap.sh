@@ -14,4 +14,4 @@ CLASSPATH=$CLASSPATH:lib/slf4j-jdk14-1.7.25.jar
 java \
   -Djava.util.logging.config.file=scripts/logging.properties \
   -cp $CLASSPATH \
-  crewtools.flica.grid.AutoSwap DCA CLT CAPTAIN 2019-05 $@
+  crewtools.flica.grid.AutoSwap $@
