@@ -69,6 +69,7 @@ public class AutoSwap {
   public void run() throws Exception {
     logger.info(String.format("Welcome to AutoSwap for %s->%s %s %s",
         fromDomicile, toDomicile, rank, yearMonth));
+    service.connect();
     BidConfig bidConfig = FileUtils.readBidConfig();
     TripDatabase tripDatabase = new TripDatabase(service);
     Processor processor = new Processor(new SystemClock(), yearMonth,

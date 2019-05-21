@@ -24,8 +24,11 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Multimap;
 
 import crewtools.util.FlicaConfig;
@@ -46,13 +49,22 @@ public class BaseFlicaConnection implements Closeable {
   protected final SimpleCookieJar cookieJar = new SimpleCookieJar();
   private final Logger logger = Logger.getLogger(BaseFlicaConnection.class.getName());
 
+  private static final String HOST = "jia.flica.net";
+
   private static final String USER_AGENT_KEY = "User-Agent";
   private static final String CHROME_USER_AGENT =
       "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36";
-  protected static final HttpUrl FLICA_LOGIN_URL = HttpUrl
-      .parse("https://jia.flica.net/public/flicaLogon.cgi");
-  private static final HttpUrl FLICA_LOGOUT_URL = HttpUrl
-      .parse("https://jia.flica.net/logoff");
+
+  protected static final HttpUrl FLICA_LOGIN_URL = new HttpUrl.Builder()
+      .scheme("https")
+      .host(HOST)
+      .addPathSegments("public/flicaLogon.cgi")
+      .build();
+  private static final HttpUrl FLICA_LOGOUT_URL = new HttpUrl.Builder()
+      .scheme("https")
+      .host(HOST)
+      .addPathSegments("logoff")
+      .build();
 
   public BaseFlicaConnection(FlicaConfig config) throws IOException {
     this(config.getFlicaUsername(), config.getFlicaPassword());
@@ -83,13 +95,7 @@ public class BaseFlicaConnection implements Closeable {
         .header(USER_AGENT_KEY, CHROME_USER_AGENT)
         .post(form)
         .build();
-    cookieJar.setReadonly(true);
-    Response response;
-    try {
-      response = httpclient.newCall(request).execute();
-    } finally {
-      cookieJar.setReadonly(false);
-    }
+    Response response = httpclient.newCall(request).execute();
     try {
       return response.code() == HttpURLConnection.HTTP_OK;
     } finally {

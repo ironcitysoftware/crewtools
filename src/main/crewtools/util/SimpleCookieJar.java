@@ -30,17 +30,10 @@ import okhttp3.HttpUrl;
 public class SimpleCookieJar implements CookieJar {
   private final Logger logger = Logger.getLogger(CookieJar.class.getName());
   private final HashMap<String, List<okhttp3.Cookie>> cookieStore = new HashMap<>();
-  private boolean readOnly = false;
-
-  public void setReadonly(boolean readOnly) {
-    this.readOnly = readOnly;
-  }
 
   @Override
   public void saveFromResponse(HttpUrl url, List<okhttp3.Cookie> cookies) {
-    if (!readOnly) {
-      cookieStore.put(url.host(), cookies);
-    }
+    cookieStore.put(url.host(), cookies);
   }
 
   @Override
