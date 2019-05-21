@@ -32,6 +32,7 @@ import crewtools.util.FlicaConfig;
 import crewtools.util.SimpleCookieJar;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -62,6 +63,7 @@ public class BaseFlicaConnection implements Closeable {
     this.username = username;
     this.password = password;
     this.httpclient = new OkHttpClient().newBuilder()
+        //.addNetworkInterceptor(new LoggingInterceptor())
         .followRedirects(false)
         .followSslRedirects(false)
         .cookieJar(cookieJar)
@@ -173,6 +175,23 @@ public class BaseFlicaConnection implements Closeable {
       return body.string();
     } finally {
       body.close();
+    }
+  }
+
+  private int i = 1;
+
+  class LoggingInterceptor implements Interceptor {
+    @Override
+    public Response intercept(Chain chain) throws IOException {
+      Request request = chain.request();
+      logger.info(String.format("-[%02d]-------------------------------------", i++));
+      logger.info(String.format("Request %s %s%n%s",
+          request.method(), request.url(), request.headers()));
+      Response response = chain.proceed(request);
+      logger.info(String.format("Response for %s %s%n%d %s%n%s",
+          response.request().method(), response.request().url(),
+          response.code(), response.message(), response.headers()));
+      return response;
     }
   }
 }

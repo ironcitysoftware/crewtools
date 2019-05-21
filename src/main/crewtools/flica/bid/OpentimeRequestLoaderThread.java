@@ -34,6 +34,7 @@ import crewtools.flica.parser.OpentimeRequestParser;
 import crewtools.flica.parser.ParseException;
 import crewtools.flica.pojo.OpentimeRequest;
 import crewtools.rpc.Proto.BidConfig;
+import crewtools.util.PeriodicDaemonThread;
 
 public class OpentimeRequestLoaderThread extends PeriodicDaemonThread {
   private final Logger logger = Logger.getLogger(OpentimeRequestLoaderThread.class.getName());

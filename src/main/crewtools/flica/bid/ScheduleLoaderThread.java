@@ -33,6 +33,7 @@ import crewtools.flica.parser.ScheduleParser;
 import crewtools.flica.pojo.Schedule;
 import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.FileUtils;
+import crewtools.util.PeriodicDaemonThread;
 import crewtools.util.SystemClock;
 
 public class ScheduleLoaderThread extends PeriodicDaemonThread {

@@ -80,7 +80,7 @@ public class AutoBidder {
         cmdLine.getScheduleRefreshInterval(), yearMonth,
         tree, tripDatabase, service, bidConfig);
     scheduleLoaderThread.start();
-    scheduleLoaderThread.blockCurrentThreadUntilScheduleIsLoaded();
+    scheduleLoaderThread.blockCurrentThreadUntilInitialRunCompletes();
 
     Duration initialDelay = cmdLine.getInitialDelay(clock, rank);
 

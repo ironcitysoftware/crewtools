@@ -49,9 +49,14 @@ public class TripDatabase {
   private final FlicaService service;
   private final boolean useProto;
   private final Map<PairingKey, Trip> trips;
-  
-  public TripDatabase(FlicaService service, boolean useProto, YearMonth yearMonth)
-      throws Exception {
+
+  public TripDatabase(FlicaService service) {
+    this.service = service;
+    this.trips = new HashMap<>();
+    this.useProto = false;
+  }
+
+  public TripDatabase(FlicaService service, boolean useProto, YearMonth yearMonth) throws IOException, URISyntaxException, ParseException {
     this.service = service;
     this.useProto = useProto;
     // The same pairing name in adjacent months refer to totally different trips,
@@ -64,7 +69,7 @@ public class TripDatabase {
       trips.merge(key, value, (k, v) ->
         { throw new AssertionError("duplicate values for key: " + key); }));
   }
-  
+
   public void addTripsFromSchedule(Schedule schedule) {
     // Modified trips don't show up in 'getAllPairings'.  Wonder why?
     schedule.getTrips().forEach((key, value) ->
@@ -73,7 +78,7 @@ public class TripDatabase {
         trips.put(key, value); } }
     );
   }
-  
+
   public Trip getTrip(PairingKey key)
       throws URISyntaxException, IOException, ParseException {
     if (!trips.containsKey(key)) {
@@ -82,8 +87,8 @@ public class TripDatabase {
     }
     return trips.get(key);
   }
-  
-  private Map<PairingKey, Trip> getAllPairings(YearMonth yearMonth) throws Exception {
+
+  private Map<PairingKey, Trip> getAllPairings(YearMonth yearMonth) throws IOException, URISyntaxException, ParseException {
     Proto.PairingList pairingList;
     if (!useProto) {
       String rawPairings = service.getAllPairings(AwardDomicile.CLT, Rank.FIRST_OFFICER,
@@ -110,7 +115,7 @@ public class TripDatabase {
     }
     return trips;
   }
-  
+
   private Trip getIndividualPairingDetails(PairingKey key)
       throws URISyntaxException, IOException, ParseException {
     String rawPairingDetail = service.getPairingDetail(key.getPairingName(), key.getPairingDate());

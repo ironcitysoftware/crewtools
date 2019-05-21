@@ -17,7 +17,7 @@
  * along with CrewTools.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package crewtools.flica.bid;
+package crewtools.util;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -45,7 +45,7 @@ public abstract class PeriodicDaemonThread extends Thread {
     this.initialRunComplete = new AtomicBoolean(false);
   }
 
-  public void blockCurrentThreadUntilScheduleIsLoaded() {
+  public void blockCurrentThreadUntilInitialRunCompletes() {
     if (initialRunComplete.get()) {
       return;
     }

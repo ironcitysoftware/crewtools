@@ -168,7 +168,7 @@ public class FlicaService {
 
   // Month is 1-based
   // Year is either 201x or 1x
-  public String getSchedule(YearMonth yearMonth)
+  public synchronized String getSchedule(YearMonth yearMonth)
       throws IOException {
     int year = yearMonth.getYear();
     if (year > 2000) {
@@ -268,12 +268,13 @@ public class FlicaService {
         .addPathSegment(OPEN_TIME_BASE_URL)
         .addQueryParameter("BCID", bidCloseId)
         .addQueryParameter("ViewOT", "1")
-        // .addQueryParameter("SubmitBids", "NO")
-        // .addQueryParameter("CC", crewClassId)
+        // CC not needed for SAP?
+        .addQueryParameter("SubmitBids", "NO")
+        .addQueryParameter("CC", crewClassId)
         .build();
   }
 
-  public String getOpenTime(AwardDomicile awardDomicile, Rank rank,
+  public synchronized String getOpenTime(AwardDomicile awardDomicile, Rank rank,
       int round, YearMonth yearMonth)
       throws URISyntaxException, IOException {
     HttpUrl url = getOpenTimeUrl(awardDomicile, rank, round, yearMonth);
@@ -346,7 +347,7 @@ public class FlicaService {
         .build();
   }
 
-  public String getReserveGrid(AwardDomicile awardDomicile, Rank rank,
+  public synchronized String getReserveGrid(AwardDomicile awardDomicile, Rank rank,
       int round, YearMonth yearMonth) throws URISyntaxException, IOException {
     HttpUrl url = getReserveGridJsonUrl(awardDomicile, rank, round, yearMonth);
     return connection.retrieveUrl(url);
@@ -364,7 +365,7 @@ public class FlicaService {
         .build();
   }
 
-  public String submitSwap(int round, YearMonth yearMonth,
+  public synchronized String submitSwap(int round, YearMonth yearMonth,
       LocalDate today, List<PairingKey> addTrips,
       List<PairingKey> dropTrips) throws URISyntaxException, IOException {
     String bidCloseId = getBidCloseId(round, yearMonth);
