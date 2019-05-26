@@ -46,18 +46,17 @@ import crewtools.flica.pojo.Schedule;
 import crewtools.util.FlicaConfig;
 
 // Submits a swap request (opentime or SAP)
-public class SubmitSapBid {
-  private final Logger logger = Logger.getLogger(SubmitSapBid.class.getName());
+public class SubmitSwap {
+  private final Logger logger = Logger.getLogger(SubmitSwap.class.getName());
+
+  private static final int ROUND = FlicaService.BID_SENIORITY_BASED;
 
   public static void main(String args[]) throws Exception {
-    new SubmitSapBid().run(args);
+    new SubmitSwap().run(args);
   }
 
-  private static final int FO_SAP_ROUND = 10;
-  private static final int FO_SBB_ROUND = 4;
-
   public void run(String args[]) throws Exception {
-    YearMonth yearMonth = YearMonth.parse("2018-8");
+    YearMonth yearMonth = YearMonth.parse("2019-5");
 
     FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
     FlicaService service = new FlicaService(connection);
@@ -80,9 +79,6 @@ public class SubmitSapBid {
         parsingDrop = false;
         continue;
       }
-      if (!arg.startsWith("L")) {
-        arg = "L" + arg;
-      }
       PairingKey key;
       if (parsingDrop) {
         key = getPairingKey(schedule, arg);
@@ -98,7 +94,7 @@ public class SubmitSapBid {
     }
 
     if (addTrips.isEmpty()) {
-      System.err.println("Usage: L1234 L2345 ..drops -> L4567 ..adds");
+      System.err.println("Usage: L1234 L2345 ..drops - L4567 ..adds");
       System.exit(1);
     }
 
@@ -106,7 +102,7 @@ public class SubmitSapBid {
     logger.info("ADD : " + addTrips);
     logger.info("DROP: " + dropTrips);
     String result = service.submitSwap(
-        FO_SBB_ROUND,
+        ROUND,
         yearMonth,
         firstDayOfMonth,
         addTrips,
@@ -116,7 +112,7 @@ public class SubmitSapBid {
 
   private List<PairingKey> getOpenTimeTrips(FlicaService service, YearMonth yearMonth) throws Exception {
     String rawOpenTime = service.getOpenTime(
-        AwardDomicile.CLT, Rank.FIRST_OFFICER, FO_SAP_ROUND, yearMonth);
+        AwardDomicile.CLT, Rank.FIRST_OFFICER, ROUND, yearMonth);
     OpenTimeParser openTimeParser =
         new OpenTimeParser(yearMonth.getYear(), rawOpenTime);
     List<FlicaTask> tasks = openTimeParser.parse();
