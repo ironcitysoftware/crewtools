@@ -69,7 +69,9 @@ public class RuntimeStats {
     builder.setNumEmail(numEmailTrips.get());
     builder.setNumOpentime(numOpentimeTrips.get());
     builder.setNumSwaps(submittedSwaps.size());
-    tree.populate(builder);
+    if (tree != null) {
+      tree.populate(builder);
+    }
   }
 
   @Override
@@ -86,7 +88,9 @@ public class RuntimeStats {
     for (String swap : submittedSwaps) {
       result += swap + "\n";
     }
-    result += tree.toString();
+    if (tree != null) {
+      result += tree.toString();
+    }
     return result;
   }
 }

@@ -40,33 +40,31 @@ public class ScheduleLoaderThread extends PeriodicDaemonThread {
   private final Logger logger = Logger.getLogger(ScheduleLoaderThread.class.getName());
 
   private final YearMonth yearMonth;
-  private final ScheduleWrapperTree tree;
+  private final Collector collector;
   private final TripDatabase tripDatabase;
   private final FlicaService service;
   private final BidConfig bidConfig;
-  
-  public ScheduleLoaderThread(Duration interval, YearMonth yearMonth, 
-      ScheduleWrapperTree tree, TripDatabase tripDatabase, FlicaService service,
+
+  public ScheduleLoaderThread(Duration interval, YearMonth yearMonth,
+      Collector collector, TripDatabase tripDatabase, FlicaService service,
       BidConfig bidConfig) {
     super(Duration.ZERO, interval);
     this.yearMonth = yearMonth;
-    this.tree = tree;
+    this.collector = collector;
     this.tripDatabase = tripDatabase;
     this.service = service;
     this.bidConfig = bidConfig;
     this.setName("ScheduleLoader");
     this.setDaemon(true);
   }
-  
+
   @Override
   public WorkResult doPeriodicWork() {
     logger.info("Refreshing schedule");
     try {
       Schedule schedule = getSchedule(service, yearMonth);
       tripDatabase.addTripsFromSchedule(schedule);
-      ScheduleWrapper scheduleWrapper = new ScheduleWrapper(
-          schedule, yearMonth, new SystemClock(), bidConfig);
-      tree.setRootScheduleWrapper(scheduleWrapper);
+      collector.offer(schedule);
       return WorkResult.COMPLETE;
     } catch (Exception e) {
       if (shouldDebug(e)) {

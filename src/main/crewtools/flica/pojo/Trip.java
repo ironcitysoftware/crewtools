@@ -79,6 +79,10 @@ public class Trip implements Comparable<Trip> {
     return earliestDepartureDate.getDayOfMonth();
   }
 
+  public LocalDate getEarliestDepartureDate() {
+    return earliestDepartureDate;
+  }
+
   // TODO: define this list.
   private static final Set<ScheduleType> UNDROPPABLE_SCHEDULE_TYPES = ImmutableSet.of(
       ScheduleType.RELOCATION_DAY,
@@ -182,25 +186,14 @@ public class Trip implements Comparable<Trip> {
   /** Does not include vacation. */
   public Map<LocalDate, Period> getDailyCreditInMonth(YearMonth yearMonth) {
     ImmutableMap.Builder<LocalDate, Period> result = ImmutableMap.builder();
-    Calendar calendar = new Calendar(yearMonth);
     for (Section section : sections) {
-      if (calendar.isWithinPeriod(section.date)) {
-        result.put(section.date, section.credit);
-      }
+      result.put(section.date, section.credit);
     }
     return result.build();
   }
 
-  /** Does not include vacation. */
-  public Period getCreditInMonth(YearMonth yearMonth) {
-    Period result = credit;
-    Calendar calendar = new Calendar(yearMonth);
-    for (Section section : sections) {
-      if (!calendar.isWithinPeriod(section.date)) {
-        result = result.minus(section.credit);
-      }
-    }
-    return result;
+  public Period getCredit() {
+    return credit;
   }
 
   /** Carry-in credit will override any trip credit for the specified day. */

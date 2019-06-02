@@ -42,6 +42,7 @@ public class TripScore implements Comparable<TripScore> {
   public static final int START_END_SCORE_FACTOR = 1;
   public static final int START_HOUR_INCLUSIVE = 12;
   public static final int END_HOUR_INCLUSIVE = 18;
+  private static final int DEUCE_CANOE_FACTOR = 2;
 
   private final Period favoriteOvernightPeriod;
   private final int numFavoriteOvernights;
@@ -149,7 +150,7 @@ public class TripScore implements Comparable<TripScore> {
     }
     if (hasEquipmentTwoHundredSegments) {
       scoreExplanation.add("-" + numLegs + " for 200 segments");
-      badPoints += numLegs;
+      badPoints += numLegs * DEUCE_CANOE_FACTOR;
     }
 
     this.startTimePoints = startTimePoints;

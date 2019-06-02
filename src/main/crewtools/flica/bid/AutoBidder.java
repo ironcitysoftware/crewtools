@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Iron City Software LLC
+ * Copyright 2019 Iron City Software LLC
  *
  * This file is part of CrewTools.
  *
@@ -67,26 +67,27 @@ public class AutoBidder {
     }
 
     Clock clock = new SystemClock();
-    ScheduleWrapperTree tree = new ScheduleWrapperTree(bidConfig);
+    Collector collector = new Collector();
 
-    RuntimeStats stats = new RuntimeStats(clock, tree);
+    RuntimeStats stats = new RuntimeStats(clock, null);
 
-    TripDatabase tripDatabase = new TripDatabase(service, cmdLine.getUseProto(), yearMonth);
+    TripDatabase tripDatabase = new TripDatabase(
+        service, cmdLine.getUseProto(), yearMonth);
 
-    StatusService statusService = new StatusService(stats, tripDatabase, bidConfig);
+    StatusService statusService = new StatusService(
+        stats, tripDatabase, bidConfig);
     statusService.start();
 
     ScheduleLoaderThread scheduleLoaderThread = new ScheduleLoaderThread(
         cmdLine.getScheduleRefreshInterval(), yearMonth,
-        tree, tripDatabase, service, bidConfig);
+        collector, tripDatabase, service, bidConfig);
     scheduleLoaderThread.start();
     scheduleLoaderThread.blockCurrentThreadUntilInitialRunCompletes();
 
     Duration initialDelay = cmdLine.getInitialDelay(clock, rank);
 
-    List<FlicaTask> taskList = new ArrayList<FlicaTask>();
-    Worker worker = new Worker(bidConfig, yearMonth, tree, taskList, service,
-        cmdLine.getRound(rank), clock, tripDatabase);
+    Worker worker = new Worker(bidConfig, yearMonth, collector, service,
+        clock, tripDatabase);
 
     OpentimeLoaderThread opentimeLoader = new OpentimeLoaderThread(
         yearMonth,
@@ -94,7 +95,7 @@ public class AutoBidder {
         cmdLine,
         service,
         tripDatabase,
-        taskList,
+        collector,
         stats,
         bidConfig,
         worker);
@@ -106,7 +107,7 @@ public class AutoBidder {
      * debugTripProvider.start();
      * return;
      * }
-     * 
+     *
      * SMTPServer smtpServer = new SMTPServer(
      * (context) -> {
      * return new FlicaMessageHandler(context, yearMonth, queue, stats);

@@ -204,7 +204,7 @@ public class Processor extends Thread implements Observer {
 
   private Map<Trip, TripScore> getEligibleAdds(ScheduleWrapper scheduleWrapper, Trip dropTrip) throws URISyntaxException, IOException, ParseException {
     Period creditWithoutDropTrip = scheduleWrapper.getSchedule()
-        .getCreditInMonth().minus(dropTrip.getCreditInMonth(yearMonth));
+        .getCreditInMonth().minus(dropTrip.getCredit(yearMonth));
     Map<Trip, TripScore> result = new HashMap<>();
     for (FlicaTask task : getOpentimeTrips()) {
       PairingKey key = new PairingKey(task.pairingDate, task.pairingName);
@@ -218,7 +218,7 @@ public class Processor extends Thread implements Observer {
         logger.info("Considered " + key + " but it overlaps something other than drop trip");
         continue;
       }
-      Period newCredit = creditWithoutDropTrip.plus(addTrip.getCreditInMonth(yearMonth));
+      Period newCredit = creditWithoutDropTrip.plus(addTrip.getCredit(yearMonth));
       if (newCredit.isLessThan(Period.hours(65))) {
         logger.info("Considered " + key + " but the new credit would be " + newCredit);
         continue;

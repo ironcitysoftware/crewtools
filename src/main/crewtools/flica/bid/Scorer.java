@@ -48,7 +48,7 @@ public class Scorer {
       System.err.println("scorer.sh 2018-1-1:L1234 [2018-1-1:L1234]");
       System.exit(-1);
     }
-    Map<PairingKey, Trip> pairings = getAllPairings(YearMonth.parse("2018-8"));
+    Map<PairingKey, Trip> pairings = getAllPairings(YearMonth.parse("2019-6"));
     FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
     FlicaService service = new FlicaService(connection);
     BidConfig bidConfig = FileUtils.readBidConfig();

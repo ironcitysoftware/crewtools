@@ -21,6 +21,7 @@ package crewtools.flica.bid;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -44,21 +45,21 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
   private final AutoBidderCommandLineConfig cmdLine;
   private final FlicaService service;
   private final TripDatabase tripDatabase;
-  private final List<FlicaTask> taskList;
+  private final Collector collector;
   private final RuntimeStats stats;
   private final BidConfig config;
   private final Worker worker;
 
   public OpentimeLoaderThread(YearMonth yearMonth, Duration initialDelay,
       AutoBidderCommandLineConfig cmdLine, FlicaService service,
-      TripDatabase tripDatabase, List<FlicaTask> taskList, RuntimeStats stats,
+      TripDatabase tripDatabase, Collector collector, RuntimeStats stats,
       BidConfig config, Worker worker) {
     super(initialDelay, worker.getOpentimeRefreshInterval());
     this.yearMonth = yearMonth;
     this.cmdLine = cmdLine;
     this.service = service;
     this.tripDatabase = tripDatabase;
-    this.taskList = taskList;
+    this.collector = collector;
     this.stats = stats;
     this.config = config;
     this.worker = worker;
@@ -80,12 +81,14 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
     logger.info("Refreshing opentime");
     try {
       List<FlicaTask> trips = getOpentimeTrips(service, yearMonth,
-          cmdLine.getRound(Rank.valueOf(config.getRank())));
+          AwardDomicile.valueOf(config.getAwardDomicile()),
+          Rank.valueOf(config.getRank()),
+          config.getRound());
       if (trips == null) {
         logger.info("Opentime not yet published");
         return WorkResult.INCOMPLETE;
       }
-      taskList.addAll(trips);
+      collector.offer(new HashSet<>(trips));
       worker.run();
       interval = worker.getOpentimeRefreshInterval();
       return WorkResult.COMPLETE;
@@ -104,9 +107,9 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
   }
 
   private List<FlicaTask> getOpentimeTrips(FlicaService service, YearMonth yearMonth,
-      int round) throws URISyntaxException, IOException, ParseException {
-    String rawOpenTime = service.getOpenTime(
-        AwardDomicile.CLT, Rank.CAPTAIN, round, yearMonth);
+      AwardDomicile domicile, Rank rank, int round) throws URISyntaxException, IOException, ParseException {
+    String rawOpenTime = service.getOpenTime(domicile, rank,
+        round, yearMonth);
     OpenTimeParser openTimeParser = new OpenTimeParser(
         yearMonth.getYear(), rawOpenTime);
     List<FlicaTask> tasks = openTimeParser.parse();

@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Iron City Software LLC
+ * Copyright 2019 Iron City Software LLC
  *
  * This file is part of CrewTools.
  *
@@ -28,6 +28,8 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import org.joda.time.Duration;
+import org.joda.time.Interval;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
@@ -37,10 +39,10 @@ import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 
 import crewtools.flica.Proto;
+import crewtools.util.Calendar;
 import crewtools.util.Period;
 
 // Represents a month and blend.
-// TODO combine Schedule and ScheduleWrapper
 public class Schedule {
   private final Logger logger = Logger.getLogger(Schedule.class.getName());
 
@@ -49,10 +51,14 @@ public class Schedule {
   public final Period creditTime;
   public final YearMonth yearMonth;
   public final Proto.Schedule proto;
+  private Set<Interval> nonTripIntervals;
 
   public final Map<PairingKey, Period> tripCreditsInMonth;
   public final Period creditInMonth;
   public final Period nonTripCreditInMonth;
+  private final Map<PairingKey, Trip> tripsByKey;
+  private final Map<PairingKey, Integer> numWorkDays;
+  private final int totalNumWorkDays;
 
   public Schedule(List<Trip> trips, Period block, Period credit, YearMonth yearMonth, Proto.Schedule proto) {
     this.trips = trips;
@@ -60,50 +66,77 @@ public class Schedule {
     this.creditTime = credit;
     this.yearMonth = yearMonth;
     this.proto = proto;
+    this.nonTripIntervals = new HashSet<>();
 
+    Calendar calendar = new Calendar(yearMonth);
     Period totalCreditInMonth = Period.ZERO;
     Period nonTripCreditInMonth = Period.ZERO;
+    int totalNumWorkDays = 0;
     ImmutableMap.Builder<PairingKey, Period> tripCreditsInMonth = ImmutableMap.builder();
+    ImmutableMap.Builder<PairingKey, Integer> numWorkDays = ImmutableMap.builder();
     for (Trip trip : trips) {
-      Period creditInMonth = trip.getCreditInMonth(yearMonth);
-      totalCreditInMonth = totalCreditInMonth.plus(creditInMonth);
-      if (trip.hasScheduleType()) {
-        // vacation, training...
-        nonTripCreditInMonth = nonTripCreditInMonth.plus(creditInMonth);
-      } else {
-        tripCreditsInMonth.put(trip.getPairingKey(), creditInMonth);
+      if (calendar.isWithinPeriod(trip.getEarliestDepartureDate())) {
+        Period creditInMonth = trip.getCredit();
+        totalCreditInMonth = totalCreditInMonth.plus(creditInMonth);
+        if (trip.hasScheduleType()) {
+          // vacation, training...
+          mergeNonTripInterval(trip.getInterval());
+          nonTripCreditInMonth = nonTripCreditInMonth.plus(creditInMonth);
+        } else {
+          tripCreditsInMonth.put(trip.getPairingKey(), creditInMonth);
+          int numDays = 0;
+          for (LocalDate date : trip.getDepartureDates()) {
+            if (calendar.isWithinPeriod(date)) {
+              numDays++;
+            }
+          }
+          totalNumWorkDays += numDays;
+          numWorkDays.put(trip.getPairingKey(), numDays);
+        }
       }
     }
 
+    this.totalNumWorkDays = totalNumWorkDays;
+    this.numWorkDays = numWorkDays.build();
     this.creditInMonth = totalCreditInMonth;
     this.nonTripCreditInMonth = nonTripCreditInMonth;
     this.tripCreditsInMonth = tripCreditsInMonth.build();
-  }
 
-  /** Returns the credit per-day in a given month for all trips */
-  public Map<LocalDate, Period> getTripCreditInMonth(YearMonth yearMonth) {
-    Map<LocalDate, Period> result = new HashMap<>();
-    for (Trip trip : trips) {
-      Map<LocalDate, Period> tripCredit = trip.getDailyCreditInMonth(yearMonth);
-      Preconditions.checkState(
-          Sets.intersection(result.keySet(), tripCredit.keySet()).isEmpty());
-      result.putAll(tripCredit);
-    }
-    return result;
+    ImmutableMap.Builder<PairingKey, Trip> result = ImmutableMap.builder();
+    Ordering.natural().sortedCopy(trips).forEach(trip -> {
+      if (!trip.hasScheduleType()) {
+        result.put(trip.getPairingKey(), trip);
+      }
+    });
+    this.tripsByKey = result.build();
+
   }
 
   /** Returns days in a given month for all trips */
   public Set<LocalDate> getTripDaysInMonth(YearMonth yearMonth) {
     Set<LocalDate> days = new HashSet<>();
+    Calendar calendar = new Calendar(yearMonth);
     for (Trip trip : trips) {
-      for (LocalDate date : trip.getDepartureDates()) {
-        if (date.getYear() == yearMonth.getYear()
-            && date.getMonthOfYear() == yearMonth.getMonthOfYear()) {
+      if (calendar.isWithinPeriod(trip.getEarliestDepartureDate())) {
+        for (LocalDate date : trip.getDepartureDates()) {
           days.add(date);
         }
       }
     }
     return days;
+  }
+
+  public Map<LocalDate, Period> getTripCreditInMonth(YearMonth yearMonth) {
+    Map<LocalDate, Period> result = new HashMap<>();
+    Calendar calendar = new Calendar(yearMonth);
+    for (Trip trip : trips) {
+      for (Section section : trip.getSections()) {
+        if (calendar.isWithinPeriod(section.date)) {
+          result.put(section.date, section.credit);
+        }
+      }
+    }
+    return result;
   }
 
   /**
@@ -125,18 +158,72 @@ public class Schedule {
     return nonTripCreditInMonth;
   }
 
+  public Set<Interval> getNonTripIntervals() {
+    return nonTripIntervals;
+  }
+
+  public Map<PairingKey, Integer> getNumWorkDays() {
+    return numWorkDays;
+  }
+
+  public int getTotalNumWorkDays() {
+    return totalNumWorkDays;
+  }
+
   /**
    * Returns trips with PairingKeys, that is, actual line flying,
    * in the natural ordering of Trip (which is first by date).
    */
   public Map<PairingKey, Trip> getTrips() {
-    ImmutableMap.Builder<PairingKey, Trip> result = ImmutableMap.builder();
-    Ordering.natural().sortedCopy(trips).forEach(trip -> {
-      if (!trip.hasScheduleType()) {
-        result.put(trip.getPairingKey(), trip);
+    return tripsByKey;
+  }
+
+  /**
+   * Vacation shows up as abutting trips (therefore abutting intervals). Combine
+   * these as they are added into the set of nontrip intervals.
+   */
+  private void mergeNonTripInterval(Interval interval) {
+    Interval abut = null;
+    while (true) {
+      abut = findAbuttingNonTripIntervalOrNull(interval);
+      if (abut == null) {
+        break;
       }
-    });
-    return result.build();
+      nonTripIntervals.remove(abut);
+      if (interval.getStart().minusMinutes(1).equals(abut.getEnd())) {
+        interval = new Interval(abut.getStart(), interval.getEnd());
+      } else {
+        Preconditions
+            .checkState(interval.getEnd().plusMinutes(1).equals(abut.getStart()));
+        interval = new Interval(interval.getStart(), abut.getEnd());
+      }
+    }
+    nonTripIntervals.add(interval);
+  }
+
+  private static final long ONE_MINUTE = Duration.standardMinutes(1).getMillis();
+
+  private Interval findAbuttingNonTripIntervalOrNull(Interval interval) {
+    for (Interval existingInterval : nonTripIntervals) {
+      if (isAdjacent(interval, existingInterval)) {
+        return existingInterval;
+      }
+    }
+    return null;
+  }
+
+  private boolean isAdjacent(Interval left, Interval right) {
+    // RIGHT.LEFT
+    long delta = left.getStartMillis() - right.getEndMillis();
+    if (delta >= 0) {
+      return delta <= ONE_MINUTE;
+    }
+    // LEFT.RIGHT
+    delta = right.getStartMillis() - left.getEndMillis();
+    if (delta >= 0) {
+      return delta <= ONE_MINUTE;
+    }
+    return false;
   }
 
   public Schedule copyAndModify(List<Trip> adds, List<PairingKey> drops) {

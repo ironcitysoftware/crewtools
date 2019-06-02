@@ -23,23 +23,32 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import crewtools.flica.pojo.PairingKey;
 
 public class Transition {
-  private final List<PairingKey> addTrips;
-  private final List<PairingKey> dropTrips;
-  
-  public Transition(List<PairingKey> addTrips, List<PairingKey> dropTrips) {
-    this.addTrips = new ArrayList<>(addTrips);
-    this.dropTrips = new ArrayList<>(dropTrips);
-    Collections.sort(this.addTrips);
-    Collections.sort(this.dropTrips);
+  private final List<PairingKey> addKeys;
+  private final List<PairingKey> dropKeys;
+
+  public Transition(Set<PairingKey> addKeys, Set<PairingKey> dropKeys) {
+    this.addKeys = new ArrayList<>(addKeys);
+    this.dropKeys = new ArrayList<>(dropKeys);
+    Collections.sort(this.addKeys);
+    Collections.sort(this.dropKeys);
   }
-  
+
+  public List<PairingKey> getAddKeys() {
+    return addKeys;
+  }
+
+  public List<PairingKey> getDropKeys() {
+    return dropKeys;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(addTrips, dropTrips);
+    return Objects.hash(addKeys, dropKeys);
   }
 
   @Override
@@ -51,12 +60,12 @@ public class Transition {
       return false;
     }
     Transition that = (Transition) o;
-    return addTrips.equals(that.addTrips)
-        && dropTrips.equals(that.dropTrips);
+    return addKeys.equals(that.addKeys)
+        && dropKeys.equals(that.dropKeys);
   }
 
   @Override
   public String toString() {
-    return String.format("Add %s; Drop %s", addTrips, dropTrips);
+    return String.format("Add %s; Drop %s", addKeys, dropKeys);
   }
 }
