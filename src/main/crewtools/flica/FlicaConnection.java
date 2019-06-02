@@ -46,7 +46,7 @@ public class FlicaConnection extends BaseFlicaConnection {
   private File sessionCacheFile;
 
   // TODO: determine correct value.
-  private static final Minutes SESSION_DURATION = Minutes.minutes(30);
+  private static final Minutes SESSION_DURATION = Minutes.minutes(20);
 
   public FlicaConnection(FlicaConfig config) throws IOException {
     super(config);
