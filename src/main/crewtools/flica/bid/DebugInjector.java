@@ -24,6 +24,7 @@ import java.util.Queue;
 import org.joda.time.LocalDate;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Trip;
@@ -74,9 +75,9 @@ public class DebugInjector extends Thread {
     }
 
     Transition transition = new Transition(
-        ImmutableList.of(
+        ImmutableSet.of(
             PairingKey.parse("2018-7-24:L2018-07-24")),
-        ImmutableList.of(
+        ImmutableSet.of(
             PairingKey.parse("2018-7-17:L7350"),
             PairingKey.parse("2018-7-23:L7462"),
             PairingKey.parse("2018-7-30:L7630")));
