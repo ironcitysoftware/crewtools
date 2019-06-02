@@ -41,7 +41,7 @@ public class OpentimeRequestLoaderThread extends PeriodicDaemonThread {
 
   private final YearMonth yearMonth;
   private final FlicaService service;
-  private final ScheduleWrapperTree tree;
+  private final Collector collector;
   private final AutoBidderCommandLineConfig cmdLine;
   private final BidConfig config;
 
@@ -49,12 +49,12 @@ public class OpentimeRequestLoaderThread extends PeriodicDaemonThread {
       Duration initialDelay,
       AutoBidderCommandLineConfig cmdLine,
       FlicaService service,
-      ScheduleWrapperTree tree,
+      Collector collector,
       BidConfig config) {
     super(initialDelay, cmdLine.getOpentimeRequestRefreshInterval());
     this.yearMonth = yearMonth;
     this.service = service;
-    this.tree = tree;
+    this.collector = collector;
     this.cmdLine = cmdLine;
     this.config = config;
     setName("OpentimeRequestLoader");
@@ -71,10 +71,10 @@ public class OpentimeRequestLoaderThread extends PeriodicDaemonThread {
       for (OpentimeRequest request : requests) {
         switch (request.getStatus()) {
           case OpentimeRequest.APPROVED:
-            tree.markApproved(request.getTransition());
+          // tree.markApproved(request.getTransition());
             break;
           case OpentimeRequest.DENIED:
-            tree.markDenied(request.getTransition());
+          // tree.markDenied(request.getTransition());
             break;
           case OpentimeRequest.PENDING:
           case OpentimeRequest.PROCESSING:

@@ -107,7 +107,7 @@ public class Worker implements Runnable {
     Schedule schedule = collector.getCurrentSchedule();
 
     int numTrips = schedule.getTripCreditInMonth().size();
-    if (numTrips > 3) {
+    if (numTrips > bidConfig.getMinimumNumberOfTrips()) {
       logger.info("| Mode: minimize number of trips (currently " + numTrips + ")");
       TripMinimizer minimizer = new TripMinimizer(
           schedule, collector.getCurrentTasks(), yearMonth, bidConfig, tripDatabase);
@@ -123,9 +123,8 @@ public class Worker implements Runnable {
         swap(transition);
       }
     } else {
-      logger.info("| Mode: maximize quality of trips");
       opentimeRefreshInterval = Duration.standardMinutes(10);
-      //maximizeQualityOfTrips(schedule);
+      logger.info("| Mode: maximize quality of trips");
     }
   }
 

@@ -30,16 +30,14 @@ import crewtools.util.Clock;
 
 public class RuntimeStats {
   private final Clock clock;
-  private final ScheduleWrapperTree tree;
   private DateTime lastEmailTrip;
   private DateTime lastOpentimeTrip;
   private AtomicInteger numEmailTrips;
   private AtomicInteger numOpentimeTrips;
   private Queue<String> submittedSwaps;
 
-  public RuntimeStats(Clock clock, ScheduleWrapperTree tree) {
+  public RuntimeStats(Clock clock) {
     this.clock = clock;
-    this.tree = tree;
     this.lastEmailTrip = new DateTime();
     this.lastOpentimeTrip = new DateTime();
     this.numEmailTrips = new AtomicInteger();
@@ -69,9 +67,6 @@ public class RuntimeStats {
     builder.setNumEmail(numEmailTrips.get());
     builder.setNumOpentime(numOpentimeTrips.get());
     builder.setNumSwaps(submittedSwaps.size());
-    if (tree != null) {
-      tree.populate(builder);
-    }
   }
 
   @Override
@@ -87,9 +82,6 @@ public class RuntimeStats {
         numOpentimeTrips.get() > 0 ? lastOpentimeTrip : "none");
     for (String swap : submittedSwaps) {
       result += swap + "\n";
-    }
-    if (tree != null) {
-      result += tree.toString();
     }
     return result;
   }

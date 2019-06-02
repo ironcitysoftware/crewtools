@@ -19,8 +19,6 @@
 
 package crewtools.flica.bid;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Logger;
 
 import org.joda.time.Duration;
@@ -30,7 +28,6 @@ import crewtools.flica.CachingFlicaService;
 import crewtools.flica.FlicaConnection;
 import crewtools.flica.FlicaService;
 import crewtools.flica.Proto.Rank;
-import crewtools.flica.pojo.FlicaTask;
 import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.Clock;
 import crewtools.util.FileUtils;
@@ -69,7 +66,7 @@ public class AutoBidder {
     Clock clock = new SystemClock();
     Collector collector = new Collector();
 
-    RuntimeStats stats = new RuntimeStats(clock, null);
+    RuntimeStats stats = new RuntimeStats(clock);
 
     TripDatabase tripDatabase = new TripDatabase(
         service, cmdLine.getUseProto(), yearMonth);
