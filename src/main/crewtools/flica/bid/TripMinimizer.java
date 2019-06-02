@@ -134,9 +134,8 @@ public class TripMinimizer {
         return;
       }
     }
-    // secret sauce!
-    boolean workLess = reducedSchedule.getOriginalNumWorkingDays() < numWorkingDays;
-    boolean workSame = reducedSchedule.getOriginalNumWorkingDays() == numWorkingDays;
+    boolean workLess = numWorkingDays < reducedSchedule.getOriginalNumWorkingDays();
+    boolean workSame = numWorkingDays == reducedSchedule.getOriginalNumWorkingDays();
     boolean betterSchedule = score > originalScore;
     if (workLess || (workSame && betterSchedule)) {
       solutions.put(transition, score);

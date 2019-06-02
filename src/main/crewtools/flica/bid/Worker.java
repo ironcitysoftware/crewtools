@@ -23,34 +23,22 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.joda.time.Duration;
-import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 
 import crewtools.flica.FlicaService;
-import crewtools.flica.bid.OverlapEvaluator.OverlapEvaluation.Overlap;
-import crewtools.flica.parser.ParseException;
 import crewtools.flica.parser.SwapResponseParser;
-import crewtools.flica.pojo.FlicaTask;
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Schedule;
 import crewtools.flica.pojo.Trip;
 import crewtools.rpc.Proto.BidConfig;
-import crewtools.util.Calendar;
 import crewtools.util.Clock;
 import crewtools.util.Period;
 
@@ -236,7 +224,6 @@ public class Worker implements Runnable {
     }
     swaps.add(key);
     logger.info("SWAP!!!! DROP " + drops + " for " + adds);
-    if (true) return true;  // KRW KRW KRW
     try {
       String html = service.submitSwap(bidConfig.getRound(), yearMonth, clock.today(), adds,
           drops);

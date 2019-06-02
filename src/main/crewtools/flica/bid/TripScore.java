@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Iron City Software LLC
+ * Copyright 2019 Iron City Software LLC
  *
  * This file is part of CrewTools.
  *
@@ -119,27 +119,41 @@ public class TripScore implements Comparable<TripScore> {
 
     Section firstSection = trip.getFirstSection();
     if (firstSection != null) {
-      LocalTime reportTime = firstSection.getStart().toLocalTime();
-      if (reportTime.getHourOfDay() >= START_HOUR_INCLUSIVE) {
-        startTimePoints += START_END_SCORE_FACTOR;
+      if (firstSection.getInitialDeadheadToAirport() != null
+          && firstSection.getInitialDeadheadToAirport().equals(
+              config.getPreferredOriginAirportCode())) {
         goodPoints += START_END_SCORE_FACTOR;
-        scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for good start time");
+        scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for initial DH");
       } else {
-        badPoints += START_END_SCORE_FACTOR;
-        scoreExplanation.add("-" + START_END_SCORE_FACTOR + " for bad start time");
+        LocalTime reportTime = firstSection.getStart().toLocalTime();
+        if (reportTime.getHourOfDay() >= START_HOUR_INCLUSIVE) {
+          startTimePoints += START_END_SCORE_FACTOR;
+          goodPoints += START_END_SCORE_FACTOR;
+          scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for good start time");
+        } else {
+          badPoints += START_END_SCORE_FACTOR;
+          scoreExplanation.add("-" + START_END_SCORE_FACTOR + " for bad start time");
+        }
       }
     }
 
     Section lastSection = trip.getLastSection();
     if (lastSection != null) {
-      LocalTime endTime = lastSection.getEnd().toLocalTime();
-      if (endTime.getHourOfDay() <= END_HOUR_INCLUSIVE) {
-        endTimePoints += START_END_SCORE_FACTOR;
+      if (lastSection.getFinalDeadheadFromAirport() != null
+          && lastSection.getFinalDeadheadFromAirport().equals(
+              config.getPreferredOriginAirportCode())) {
         goodPoints += START_END_SCORE_FACTOR;
-        scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for good end time");
+        scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for final DH");
       } else {
-        badPoints += 5;
-        scoreExplanation.add("-" + START_END_SCORE_FACTOR + " for bad end time");
+        LocalTime endTime = lastSection.getEnd().toLocalTime();
+        if (endTime.getHourOfDay() <= END_HOUR_INCLUSIVE) {
+          endTimePoints += START_END_SCORE_FACTOR;
+          goodPoints += START_END_SCORE_FACTOR;
+          scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for good end time");
+        } else {
+          badPoints += START_END_SCORE_FACTOR;
+          scoreExplanation.add("-" + START_END_SCORE_FACTOR + " for bad end time");
+        }
       }
     }
 

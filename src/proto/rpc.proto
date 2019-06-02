@@ -119,6 +119,8 @@ message BidConfig {
   optional bool enable_monthly_sort_by_credit = 21;
 
   optional bool enable_monthly_preferred_overnights_are_desirable = 22;
+
+  optional string preferred_origin_airport_code = 23;
 }
 
 message ScoreAdjustment {

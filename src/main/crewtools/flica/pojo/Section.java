@@ -39,6 +39,9 @@ import crewtools.util.Period;
 public class Section implements Comparable<Section> {
   private final Logger logger = Logger.getLogger(Section.class.getName());
 
+  private final String initialDeadheadToAirport;
+  private final String finalDeadheadFromAirport;
+
   public Section(Proto.Section protoSection, LocalDate date,
       Period block, Period credit, Period duty,
       DateTime startDuty, DateTime endDuty) {
@@ -56,6 +59,30 @@ public class Section implements Comparable<Section> {
         legs.add(new Leg(leg, startDuty, i++));
       }
     }
+    if (protoSection.getLegCount() > 0) {
+      if (protoSection.getLeg(0).getIsDeadhead()) {
+        this.initialDeadheadToAirport = protoSection.getLeg(0).getArrivalAirportCode();
+      } else {
+        this.initialDeadheadToAirport = null;
+      }
+      Proto.Leg lastLeg = protoSection.getLeg(protoSection.getLegCount() - 1);
+      if (lastLeg.getIsDeadhead()) {
+        this.finalDeadheadFromAirport = lastLeg.getDepartureAirportCode();
+      } else {
+        this.finalDeadheadFromAirport = null;
+      }
+    } else {
+      this.initialDeadheadToAirport = null;
+      this.finalDeadheadFromAirport = null;
+    }
+  }
+
+  public String getInitialDeadheadToAirport() {
+    return initialDeadheadToAirport;
+  }
+
+  public String getFinalDeadheadFromAirport() {
+    return finalDeadheadFromAirport;
   }
 
   public Section copyWithDateOffset(int daysBetween) {
