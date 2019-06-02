@@ -36,10 +36,18 @@ import crewtools.flica.Proto.Rank;
 
 public class WriteGridLinks {
   private static final String OUTPUT_PATH = "/tmp/links.html";
-  private static final YearMonth YEAR_MONTH = new YearMonth(2019, 5);
+  private final YearMonth yearMonth;
 
   public static void main(String args[]) throws Exception {
-    new WriteGridLinks().run();
+    if (args.length == 0) {
+      System.err.println("writeGridLinks 2019-6");
+      System.exit(-1);
+    }
+    new WriteGridLinks(YearMonth.parse(args[0])).run();
+  }
+
+  public WriteGridLinks(YearMonth yearMonth) {
+    this.yearMonth = yearMonth;
   }
 
   private static final String CSS = "html, body {\n"
@@ -63,9 +71,9 @@ public class WriteGridLinks {
     writer.println("</style></head><body>");
     writer.println(
         "<br/><font size=2>Notes: Log into FLICA first.  Opentime pot and tradeboard are restricted to your seat.</font>");
-    writeLinks(writer, YEAR_MONTH);
+    writeLinks(writer, yearMonth);
     writer.println("<hr/>");
-    writeLinks(writer, YEAR_MONTH.plusMonths(1));
+    writeLinks(writer, yearMonth.plusMonths(1));
     writer.println("</body></html>");
     writer.close();
     System.err.println("Wrote to " + OUTPUT_PATH);
