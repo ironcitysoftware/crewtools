@@ -58,6 +58,8 @@ enum Status {
   WC = 11;
   ADMINISTRATIVE_LEAVE = 12 [(flica_name)="ADM"];  // ?
   TER = 13 [(flica_name)="TER"]; // ?
+  TERM = 14 [(flica_name)="TERM"];
+  INST = 15 [(flica_name)="INST"];
 }
 
 message Award {
