@@ -125,7 +125,15 @@ public class Trip implements Comparable<Trip> {
   private LocalDate earliestDepartureDate;
 
   public boolean isTwoHundred() {
-    return proto.getEquipment().equals(Proto.Equipment.RJ2);
+    if (proto.getEquipment().equals(Proto.Equipment.RJ2)) {
+      return true;
+    }
+    for (Section section : sections) {
+      if (section.isEquipmentTwoHundred()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   // This is the first date of departure, not the date of the first show time.
