@@ -191,6 +191,8 @@ enum LegType {
   PCR = 13 [(flica_name)="PCR"];
   THS = 14 [(flica_name)="THS"];  // training of some sort
   HTL = 15 [(flica_name)="HTL"];  // hotel?
+  GND = 16 [(flica_name)="GND"];
+  FKE = 17 [(flica_name)="FKE"];
 }
 
 message Leg {
