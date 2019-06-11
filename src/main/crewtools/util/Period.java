@@ -30,19 +30,25 @@ public class Period implements Comparable<Period> {
       new PeriodFormatterBuilder().maximumParsedDigits(2).appendHours().appendMinutes().toFormatter();
 
   private final int minutes;
-  
+
   public static final Period ZERO = new Period(0);
 
   public static Period hours(int hours) {
     return new Period(hours * 60);
   }
-  
+
   public static Period minutes(int minutes) {
     return new Period(minutes);
   }
-  
+
   public static Period fromText(String hhMmText) {
-    return Period.fromJodaPeriod(HHMM_PERIOD.parsePeriod(hhMmText));
+    if (hhMmText.length() == 5) {
+      int hours = Integer.parseInt(hhMmText.substring(0, 3));
+      int minutes = Integer.parseInt(hhMmText.substring(3));
+      return Period.hours(hours).plus(Period.minutes(minutes));
+    } else {
+      return Period.fromJodaPeriod(HHMM_PERIOD.parsePeriod(hhMmText));
+    }
   }
 
   private static Period fromJodaPeriod(org.joda.time.Period jodaPeriod) {
@@ -63,15 +69,15 @@ public class Period implements Comparable<Period> {
   public Period(Period other) {
     this(other.minutes);
   }
-  
+
   private Period(int minutes) {
     this.minutes = minutes;
   }
-    
+
   public Period plus(Period that) {
     return new Period(minutes + that.minutes);
   }
-  
+
   public Period minus(Period that) {
     return new Period(minutes - that.minutes);
   }
@@ -79,7 +85,7 @@ public class Period implements Comparable<Period> {
   public Period half() {
     return Period.minutes((minutes + 1) / 2);
   }
-  
+
   public float dividedBy(Period that) {
     return ((float) minutes) / that.minutes;
   }
@@ -91,12 +97,12 @@ public class Period implements Comparable<Period> {
   public int getTotalMinutes() {
     return minutes;
   }
-  
+
   public String toHhMmString() {
     Preconditions.checkState(minutes >= 0);
     return String.format("%02d%02d", minutes / 60, minutes % 60);
   }
-  
+
   public boolean isLessThan(Period period) {
     return minutes < period.minutes;
   }
@@ -108,7 +114,7 @@ public class Period implements Comparable<Period> {
   @Override
   public String toString() {
     int absMinutes = Math.abs(minutes);
-    return String.format("%s%02d:%02d", 
+    return String.format("%s%02d:%02d",
         minutes < 0 ? "-" : "", absMinutes / 60, absMinutes % 60);
   }
 
@@ -116,7 +122,7 @@ public class Period implements Comparable<Period> {
   public int hashCode() {
     return minutes;
   }
-  
+
   @Override
   public boolean equals(Object that) {
     if (that == null) {
