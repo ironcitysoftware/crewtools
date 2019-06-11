@@ -35,8 +35,7 @@ import crewtools.flica.pojo.PairingKey;
 import crewtools.util.Period;
 
 public class ProposedSchedule {
-  private final Logger logger = Logger
-      .getLogger(ProposedSchedule.class.getName());
+  private final Logger logger = Logger.getLogger(ProposedSchedule.class.getName());
 
   private final ReducedSchedule reducedSchedule;
   private final Set<FlicaTask> tasks;
@@ -82,7 +81,7 @@ public class ProposedSchedule {
     for (FlicaTask task : tasks) {
       credit = credit.plus(task.creditTime);
     }
-    if (false && credit.isLessThan(SIXTY_FIVE)) {
+    if (credit.isLessThan(SIXTY_FIVE)) {
       logger.fine("Invalid: credit is " + credit);
       return false;
     }

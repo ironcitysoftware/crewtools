@@ -87,12 +87,9 @@ public class Worker implements Runnable {
       if (count++ > MAX_SWAPS_PER_RUN) {
         break;
       }
-      swap(solution.getProposedSchedule().getTransition());
+      Transition transition = solution.getProposedSchedule().getTransition();
+      swap(transition.getAddKeys(), transition.getDropKeys());
     }
-  }
-
-  private boolean swap(Transition transition) {
-    return swap(transition.getAddKeys(), transition.getDropKeys());
   }
 
   private boolean swap(List<PairingKey> adds, List<PairingKey> drops) {

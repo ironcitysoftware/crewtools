@@ -52,7 +52,10 @@ public class AutoBidder {
     BidConfig bidConfig = FileUtils.readBidConfig();
     Rank rank = Rank.valueOf(bidConfig.getRank());
     YearMonth yearMonth = YearMonth.parse(bidConfig.getYearMonth());
-    logger.info("Welcome to AutoBidder for " + yearMonth);
+    logger.info("Welcome to AutoBidder for " + yearMonth
+        + ", " + rank
+        + " round " + bidConfig.getRound()
+        + " " + bidConfig.getAwardDomicile());
 
     FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
     FlicaService service;
@@ -86,25 +89,23 @@ public class AutoBidder {
     Worker worker = new Worker(bidConfig, yearMonth, collector, service,
         clock, tripDatabase, cmdLine.isDebug());
 
+    if (cmdLine.isDebug()) {
+      DebugInjector debugInjector = new DebugInjector(collector, tripDatabase);
+      debugInjector.offer();
+      worker.run();
+      scheduleLoaderThread.join();
+    }
+
     OpentimeLoaderThread opentimeLoader = new OpentimeLoaderThread(
         yearMonth,
         initialDelay,
-        cmdLine,
         service,
-        tripDatabase,
         collector,
-        stats,
         bidConfig,
         worker);
     opentimeLoader.start();
 
     /*
-     * if (cmdLine.isDebug()) {
-     * DebugInjector debugTripProvider = new DebugInjector(queue, tree);
-     * debugTripProvider.start();
-     * return;
-     * }
-     *
      * SMTPServer smtpServer = new SMTPServer(
      * (context) -> {
      * return new FlicaMessageHandler(context, yearMonth, queue, stats);

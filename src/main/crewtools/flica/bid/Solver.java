@@ -51,7 +51,6 @@ public class Solver {
   private final Calendar calendar;
   private final TripDatabase tripDatabase;
   private final int originalScore;
-  private final Clock clock;
   private final ScheduleFilter scheduleFilter;
 
   public Solver(Schedule schedule, Collection<FlicaTask> tasks,
@@ -67,20 +66,17 @@ public class Solver {
       originalScore += new TripScore(trip, bidConfig).getPoints();
     }
     this.originalScore = originalScore;
-    this.clock = clock;
     this.scheduleFilter = new ScheduleFilter(schedule, clock);
   }
 
   public List<Solution> solve() {
     List<Solution> solutions = new ArrayList<>();
 
-    // @formatter:off
     Iterator<Set<PairingKey>> retainedTripsSet = Sets
         .powerSet(schedule.getTripCreditInMonth().keySet())
         .stream()
         .filter(scheduleFilter)
         .iterator();
-    // @formatter:on
 
     int count = 1;
     while (retainedTripsSet.hasNext()) {
@@ -90,6 +86,7 @@ public class Solver {
       ReducedSchedule reducedSchedule = new ReducedSchedule(schedule, retainedTrips, bidConfig);
       enumerateSolutions(solutions, reducedSchedule);
     }
+    logger.info("Considered " + count + " schedule combinations.");
     return solutions;
   }
 
@@ -126,10 +123,11 @@ public class Solver {
         boolean workLess = schedule.getNumWorkingDays() < reducedSchedule.getOriginalNumWorkingDays();
         boolean workSame = schedule.getNumWorkingDays() == reducedSchedule.getOriginalNumWorkingDays();
         boolean betterSchedule = solution.getScore() > originalScore;
-        // @formatter:off
-        logger.fine("workLess: " + workLess
-            + " workSame: " + workSame + " betterSchedule: " + betterSchedule);
-        // @formatter:on
+        logger.fine(schedule.getTransition()
+            + " workLess: " + workLess
+            + " workSame: " + workSame
+            + " betterSchedule: " + betterSchedule
+            + " (" + solution.getScore() + " vs " + originalScore + ")");
         if (workLess || (workSame && betterSchedule)) {
           solutions.add(solution);
         }

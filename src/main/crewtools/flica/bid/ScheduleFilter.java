@@ -29,8 +29,7 @@ import crewtools.util.Clock;
 
 public class ScheduleFilter implements Predicate<Set<PairingKey>> {
 
-  private final Logger logger = Logger
-      .getLogger(ScheduleFilter.class.getName());
+  private final Logger logger = Logger.getLogger(ScheduleFilter.class.getName());
 
   private final Schedule schedule;
   private final Clock clock;

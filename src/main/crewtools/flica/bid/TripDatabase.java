@@ -79,6 +79,10 @@ public class TripDatabase {
     );
   }
 
+  public void addTrip(Trip trip) {
+    trips.put(trip.getPairingKey(), trip);
+  }
+
   public Trip getTrip(PairingKey key)
       throws URISyntaxException, IOException, ParseException {
     if (!trips.containsKey(key)) {

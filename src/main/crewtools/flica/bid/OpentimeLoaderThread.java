@@ -42,25 +42,17 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
   private final Logger logger = Logger.getLogger(OpentimeLoaderThread.class.getName());
 
   private final YearMonth yearMonth;
-  private final AutoBidderCommandLineConfig cmdLine;
   private final FlicaService service;
-  private final TripDatabase tripDatabase;
   private final Collector collector;
-  private final RuntimeStats stats;
   private final BidConfig config;
   private final Worker worker;
 
   public OpentimeLoaderThread(YearMonth yearMonth, Duration initialDelay,
-      AutoBidderCommandLineConfig cmdLine, FlicaService service,
-      TripDatabase tripDatabase, Collector collector, RuntimeStats stats,
-      BidConfig config, Worker worker) {
+      FlicaService service, Collector collector, BidConfig config, Worker worker) {
     super(initialDelay, worker.getOpentimeRefreshInterval());
     this.yearMonth = yearMonth;
-    this.cmdLine = cmdLine;
     this.service = service;
-    this.tripDatabase = tripDatabase;
     this.collector = collector;
-    this.stats = stats;
     this.config = config;
     this.worker = worker;
     this.setName("OpenTimeLoader");

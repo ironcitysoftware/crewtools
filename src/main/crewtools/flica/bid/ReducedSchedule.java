@@ -38,7 +38,6 @@ public class ReducedSchedule {
   private final Logger logger = Logger.getLogger(ReducedSchedule.class.getName());
 
   private final Schedule schedule;
-  private final Set<PairingKey> retainedTripKeys;
   private final int numWorkingDays;
   private final Set<Trip> retainedTrips;
   private final Period credit;
@@ -48,7 +47,6 @@ public class ReducedSchedule {
   public ReducedSchedule(Schedule schedule, Set<PairingKey> retainedTripKeys,
       BidConfig bidConfig) {
     this.schedule = schedule;
-    this.retainedTripKeys = retainedTripKeys;
 
     int numWorkingDays = 0;
     Map<PairingKey, Integer> workDays = schedule.getNumWorkDays();

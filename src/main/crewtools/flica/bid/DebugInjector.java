@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Iron City Software LLC
+ * Copyright 2019 Iron City Software LLC
  *
  * This file is part of CrewTools.
  *
@@ -19,80 +19,43 @@
 
 package crewtools.flica.bid;
 
-import java.util.Queue;
-
 import org.joda.time.LocalDate;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
+import crewtools.flica.pojo.FlicaTask;
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Trip;
 import crewtools.test.TripBuilder;
 import crewtools.util.Period;
 
-public class DebugInjector extends Thread {
-  private final Queue<Trip> queue;
-  private final ScheduleWrapperTree tree;
+public class DebugInjector {
+  private final Collector collector;
+  private final TripDatabase tripDatabase;
 
-  public DebugInjector(Queue<Trip> queue, ScheduleWrapperTree tree) {
-    this.queue = queue;
-    this.tree = tree;
+  public DebugInjector(Collector collector, TripDatabase tripDatabase) {
+    this.collector = collector;
+    this.tripDatabase = tripDatabase;
   }
 
-  public void run() {
+  public void offer() {
     Trip trip = new TripBuilder()
-        .withLocalDate(LocalDate.parse("2018-7-23"))
-        .withLeg("CLT", "FAY", Period.hours(6))
+        .withLocalDate(LocalDate.parse("2019-7-15"))
+        .withName("L1234")
+        .withLeg("CLT", "FAY", Period.fromText("1554"))
         .withLayover("FAY", Period.hours(15))
-        .withLeg("FAY", "CHS", Period.hours(6))
+        .withLeg("FAY", "CHS", Period.hours(1))
         .withLayover("CHS", Period.hours(12))
-        .withLeg("CHS", "BTV", Period.hours(6))
+        .withLeg("CHS", "BTV", Period.hours(1))
         .withLayover("BTV", Period.hours(13))
-        .withLeg("BTV", "CLT", Period.hours(3))
+        .withLeg("BTV", "CLT", Period.hours(1))
         .build();
-    queue.offer(trip);
+    tripDatabase.addTrip(trip);
 
-    trip = new TripBuilder()
-        .withLocalDate(LocalDate.parse("2018-7-24"))
-        .withLeg("CLT", "FAY", Period.hours(6))
-        .withLayover("FAY", Period.hours(15))
-        .withLeg("FAY", "GSP", Period.hours(6))
-        .withLayover("CHS", Period.hours(12))
-        .withLeg("GSP", "BTV", Period.hours(6))
-        .withLayover("BTV", Period.hours(13))
-        .withLeg("BTV", "CLT", Period.hours(3))
-        .build();
-    queue.offer(trip);
-
-    try {
-      while (!queue.isEmpty()) {
-        Thread.sleep(1000);
-      }
-      Thread.sleep(3000);
-    } catch (InterruptedException e) {
-      ;
-    }
-
-    Transition transition = new Transition(
-        ImmutableSet.of(
-            PairingKey.parse("2018-7-24:L2018-07-24")),
-        ImmutableSet.of(
-            PairingKey.parse("2018-7-17:L7350"),
-            PairingKey.parse("2018-7-23:L7462"),
-            PairingKey.parse("2018-7-30:L7630")));
-    tree.markApproved(transition);
-
-    trip = new TripBuilder()
-        .withLocalDate(LocalDate.parse("2018-7-25"))
-        .withLeg("CLT", "GSP", Period.hours(6))
-        .withLayover("GSP", Period.hours(15))
-        .withLeg("GSP", "GSP", Period.hours(6))
-        .withLayover("GSP", Period.hours(12))
-        .withLeg("GSP", "BTV", Period.hours(6))
-        .withLayover("BTV", Period.hours(13))
-        .withLeg("BTV", "CLT", Period.hours(3))
-        .build();
-    queue.offer(trip);
+    FlicaTask task = new FlicaTask(
+        PairingKey.parse("2019-7-15:L1234"),
+        Period.fromText("1854"),
+        4);
+    collector.offer(ImmutableSet.of(task));
   }
 }
