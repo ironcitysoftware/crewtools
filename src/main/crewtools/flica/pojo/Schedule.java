@@ -36,10 +36,10 @@ import org.joda.time.YearMonth;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
 
 import crewtools.flica.Proto;
 import crewtools.util.Calendar;
+import crewtools.util.Clock;
 import crewtools.util.Period;
 
 // Represents a month and blend.
@@ -59,6 +59,7 @@ public class Schedule {
   private final Map<PairingKey, Trip> tripsByKey;
   private final Map<PairingKey, Integer> numWorkDays;
   private final int totalNumWorkDays;
+  private Set<PairingKey> undroppable;
 
   public Schedule(List<Trip> trips, Period block, Period credit, YearMonth yearMonth, Proto.Schedule proto) {
     this.trips = trips;
@@ -67,6 +68,7 @@ public class Schedule {
     this.yearMonth = yearMonth;
     this.proto = proto;
     this.nonTripIntervals = new HashSet<>();
+    this.undroppable = null;
 
     Calendar calendar = new Calendar(yearMonth);
     Period totalCreditInMonth = Period.ZERO;
@@ -109,7 +111,26 @@ public class Schedule {
       }
     });
     this.tripsByKey = result.build();
+  }
 
+  /** Lazy */
+  public Set<PairingKey> getUndroppable(Clock clock) {
+    if (undroppable == null) {
+      undroppable = new HashSet<>();
+      Calendar calendar = new Calendar(yearMonth);
+      for (Trip trip : trips) {
+        // @formatter:off
+        if (calendar.isWithinPeriod(trip.getEarliestDepartureDate())
+            && !trip.hasScheduleType()
+            && (!trip.isDroppable()
+                // TODO: possibly today + 24-48 hours?
+                || !trip.getEarliestDepartureDate().isAfter(clock.today()))) {
+          undroppable.add(trip.getPairingKey());
+        }
+        // @formatter:on
+      }
+    }
+    return undroppable;
   }
 
   /** Returns days in a given month for all trips */

@@ -22,9 +22,9 @@ package crewtools.flica.bid;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,10 +37,8 @@ import crewtools.flica.FlicaService;
 import crewtools.flica.parser.SwapResponseParser;
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Schedule;
-import crewtools.flica.pojo.Trip;
 import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.Clock;
-import crewtools.util.Period;
 
 public class Worker implements Runnable {
   private final Logger logger = Logger.getLogger(Worker.class.getName());
@@ -53,45 +51,18 @@ public class Worker implements Runnable {
   private final List<String> swaps = new ArrayList<>();
   private final Collector collector;
   private Duration opentimeRefreshInterval = Duration.standardMinutes(6);
+  private final Comparator<Solution> comparator = new MinimizeWorkMaximizeFunComparator();
+  private final boolean isDebug;
 
   public Worker(BidConfig bidConfig, YearMonth yearMonth, Collector collector,
-      FlicaService service, Clock clock, TripDatabase tripDatabase) {
+      FlicaService service, Clock clock, TripDatabase tripDatabase, boolean isDebug) {
     this.bidConfig = bidConfig;
     this.yearMonth = yearMonth;
     this.collector = collector;
     this.service = service;
     this.clock = clock;
     this.tripDatabase = tripDatabase;
-  }
-
-  private class TripAndScore implements Comparable<TripAndScore> {
-    private Trip trip;
-    private TripScore score;
-
-    public TripAndScore(Trip trip) {
-      this.trip = trip;
-      this.score = new TripScore(trip, bidConfig);
-    }
-
-    @Override
-    public int compareTo(TripAndScore that) {
-      return -(new Integer(score.getPoints())
-          .compareTo(new Integer(that.score.getPoints())));
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (o == null || (!(o instanceof TripAndScore))) {
-        return false;
-      }
-      TripAndScore that = (TripAndScore) o;
-      return trip.equals(that.trip);
-    }
-
-    @Override
-    public int hashCode() {
-      return trip.hashCode();
-    }
+    this.isDebug = isDebug;
   }
 
   public Duration getOpentimeRefreshInterval() {
@@ -106,108 +77,18 @@ public class Worker implements Runnable {
     logger.info("------------------ Worker run -----------------------");
     Schedule schedule = collector.getCurrentSchedule();
 
-    int numTrips = schedule.getTripCreditInMonth().size();
-    if (numTrips > bidConfig.getMinimumNumberOfTrips()) {
-      logger.info("| Mode: minimize number of trips (currently " + numTrips + ")");
-      TripMinimizer minimizer = new TripMinimizer(
-          schedule, collector.getCurrentTasks(), yearMonth, bidConfig, tripDatabase);
-      Map<Transition, Integer> solutions =
-          crewtools.util.Collections.sortByValueDescending(
-              minimizer.minimizeNumberOfTrips());
-      logger.info("| Found " + solutions.size() + " solutions");
-      int count = 0;
-      for (Transition transition : solutions.keySet()) {
-        if (count++ > MAX_SWAPS_PER_RUN) {
-          break;
-        }
-        swap(transition);
+    Solver solver = new Solver(schedule, collector.getCurrentTasks(), yearMonth,
+        bidConfig, tripDatabase, clock);
+    List<Solution> solutions = solver.solve();
+    Collections.sort(solutions, comparator);
+    logger.info("| Found " + solutions.size() + " solutions");
+    int count = 0;
+    for (Solution solution : solutions) {
+      if (count++ > MAX_SWAPS_PER_RUN) {
+        break;
       }
-    } else {
-      opentimeRefreshInterval = Duration.standardMinutes(10);
-      logger.info("| Mode: maximize quality of trips");
+      swap(solution.getProposedSchedule().getTransition());
     }
-  }
-
-  /*
-  private void submitBetterSwaps(List<TripAndScore> trips, Period neededCredit,
-      ScheduleWrapper schedule) {
-    logger.info(
-        "** Issuing BETTER swaps to replace single trips.");
-    for (int i = 0; i < trips.size(); ++i) {
-      Trip addTrip = trips.get(i).trip;
-      Period credit = addTrip.getCredit();
-      TripScore addScore = new TripScore(addTrip, bidConfig);
-
-      logger.info("  Considering trip " + addTrip.getPairingName());
-      // Figure out which trips we have to drop.
-      OverlapEvaluation eval = schedule.evaluateOverlap(addTrip);
-      if (eval.droppable.size() == 1) {
-        Trip dropTrip = eval.droppable.iterator().next();
-        TripScore dropScore = new TripScore(dropTrip, bidConfig);
-        if (addScore.getPoints() > dropScore.getPoints()) {
-          Trip retainTrip = getExcept(schedule.getAllDroppable(), dropTrip);
-          Period retainCredit = retainTrip.getCredit();
-          Period newCredit = credit.plus(retainCredit);
-          if (newCredit.isLessThan(neededCredit)) {
-            logger.info("    Better trip, but credit of retained trip " + retainCredit
-                + " plus this trip " + credit + " = " + newCredit + " < " + neededCredit);
-            continue;
-          } else {
-            swap(ImmutableList.of(addTrip.getPairingKey()),
-                ImmutableList.of(dropTrip.getPairingKey()));
-          }
-        }
-      } else {
-        // Doesn't overlap with any existing trips. See if it scores
-        // better than the lowest-scoring trip we have.
-        List<TripAndScore> scores = new ArrayList<>();
-        for (Trip trip : eval.droppable) {
-          scores.add(new TripAndScore(trip));
-        }
-        Collections.sort(scores);
-        if (addScore.getPoints() > scores.get(0).score.getPoints()) {
-          Trip dropTrip = scores.get(0).trip;
-          Map<Trip, Period> droppableSchedule = new HashMap<>();
-          for (Trip trip : schedule.getAllDroppable()) {
-            droppableSchedule.put(trip, trip.getCredit());
-          }
-          droppableSchedule = crewtools.util.Collections
-              .sortByValueAscending(droppableSchedule);
-          Period retainCredit = getCreditExcept(droppableSchedule,
-              ImmutableList.of(dropTrip));
-          Period newCredit = credit.plus(retainCredit);
-          if (newCredit.isLessThan(neededCredit)) {
-            logger.info("    Better trip, but credit of retained trips " + retainCredit
-                + " plus this trip " + credit + " = " + newCredit + " < " + neededCredit);
-            continue;
-          } else {
-            swap(ImmutableList.of(addTrip.getPairingKey()),
-                ImmutableList.of(dropTrip.getPairingKey()));
-          }
-        }
-      }
-    }
-  }
-  */
-
-  private Period getCreditExcept(Map<Trip, Period> credits, Collection<Trip> excepts) {
-    Period period = Period.ZERO;
-    for (Trip trip : credits.keySet()) {
-      if (!excepts.contains(trip)) {
-        period = period.plus(credits.get(trip));
-      }
-    }
-    return period;
-  }
-
-  private Trip getExcept(Collection<Trip> trips, Trip except) {
-    for (Trip trip : trips) {
-      if (trip.equals(except)) {
-        continue;
-      }
-      return trip;
-    }
-    throw new IllegalStateException("Whoa there partner");
   }
 
   private boolean swap(Transition transition) {
@@ -223,6 +104,10 @@ public class Worker implements Runnable {
     }
     swaps.add(key);
     logger.info("SWAP!!!! DROP " + drops + " for " + adds);
+    if (isDebug) {
+      logger.info("Not actually swapping due to debug mode");
+      return true;
+    }
     try {
       String html = service.submitSwap(bidConfig.getRound(), yearMonth, clock.today(), adds,
           drops);

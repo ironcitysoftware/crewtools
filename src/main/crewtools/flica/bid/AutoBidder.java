@@ -84,7 +84,7 @@ public class AutoBidder {
     Duration initialDelay = cmdLine.getInitialDelay(clock, rank);
 
     Worker worker = new Worker(bidConfig, yearMonth, collector, service,
-        clock, tripDatabase);
+        clock, tripDatabase, cmdLine.isDebug());
 
     OpentimeLoaderThread opentimeLoader = new OpentimeLoaderThread(
         yearMonth,

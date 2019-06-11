@@ -22,6 +22,7 @@ package crewtools.flica.bid;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import org.joda.time.Interval;
 
@@ -34,6 +35,8 @@ import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.Period;
 
 public class ReducedSchedule {
+  private final Logger logger = Logger.getLogger(ReducedSchedule.class.getName());
+
   private final Schedule schedule;
   private final Set<PairingKey> retainedTripKeys;
   private final int numWorkingDays;
@@ -50,7 +53,7 @@ public class ReducedSchedule {
     int numWorkingDays = 0;
     Map<PairingKey, Integer> workDays = schedule.getNumWorkDays();
     for (PairingKey key : retainedTripKeys) {
-      numWorkingDays = workDays.get(key);
+      numWorkingDays += workDays.get(key);
     }
     this.numWorkingDays = numWorkingDays;
 
