@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Iron City Software LLC
+ * Copyright 2019 Iron City Software LLC
  *
  * This file is part of CrewTools.
  *
@@ -19,7 +19,6 @@
 
 package crewtools.util;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -32,7 +31,6 @@ public abstract class PeriodicDaemonThread extends Thread {
 
   private final Duration initialDelay;
   protected Duration interval;
-  private final AtomicBoolean initialRunComplete;
 
   public enum WorkResult {
     COMPLETE,
@@ -42,21 +40,6 @@ public abstract class PeriodicDaemonThread extends Thread {
   public PeriodicDaemonThread(Duration initialDelay, Duration interval) {
     this.initialDelay = initialDelay;
     this.interval = interval;
-    this.initialRunComplete = new AtomicBoolean(false);
-  }
-
-  public void blockCurrentThreadUntilInitialRunCompletes() {
-    if (initialRunComplete.get()) {
-      return;
-    }
-    synchronized (initialRunComplete) {
-      try {
-        initialRunComplete.wait();
-      } catch (InterruptedException e) {
-        String prefix = String.format("[%s] ", getName());
-        logger.log(Level.WARNING, prefix + "Unable to wait for initial run", e);
-      }
-    }
   }
 
   @Override
@@ -81,11 +64,6 @@ public abstract class PeriodicDaemonThread extends Thread {
       }
 
       numFailures = 0;
-
-      initialRunComplete.set(true);
-      synchronized (initialRunComplete) {
-        initialRunComplete.notifyAll();
-      }
 
       safeSleep(prefix, interval);
     }

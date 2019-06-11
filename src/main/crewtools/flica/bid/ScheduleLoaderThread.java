@@ -31,10 +31,8 @@ import crewtools.flica.adapters.ScheduleAdapter;
 import crewtools.flica.parser.ParseException;
 import crewtools.flica.parser.ScheduleParser;
 import crewtools.flica.pojo.Schedule;
-import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.FileUtils;
 import crewtools.util.PeriodicDaemonThread;
-import crewtools.util.SystemClock;
 
 public class ScheduleLoaderThread extends PeriodicDaemonThread {
   private final Logger logger = Logger.getLogger(ScheduleLoaderThread.class.getName());
@@ -43,17 +41,14 @@ public class ScheduleLoaderThread extends PeriodicDaemonThread {
   private final Collector collector;
   private final TripDatabase tripDatabase;
   private final FlicaService service;
-  private final BidConfig bidConfig;
 
   public ScheduleLoaderThread(Duration interval, YearMonth yearMonth,
-      Collector collector, TripDatabase tripDatabase, FlicaService service,
-      BidConfig bidConfig) {
+      Collector collector, TripDatabase tripDatabase, FlicaService service) {
     super(Duration.ZERO, interval);
     this.yearMonth = yearMonth;
     this.collector = collector;
     this.tripDatabase = tripDatabase;
     this.service = service;
-    this.bidConfig = bidConfig;
     this.setName("ScheduleLoader");
     this.setDaemon(true);
   }
