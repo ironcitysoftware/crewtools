@@ -170,6 +170,7 @@ enum ScheduleType {
   VACATION_END = 29 [(flica_name)="VAS"];
 
   SICK = 30 [(flica_name)="Sick"];
+  CARRY_IN = 31 [(flica_name)="CI"];
 }
 
 enum LegType {

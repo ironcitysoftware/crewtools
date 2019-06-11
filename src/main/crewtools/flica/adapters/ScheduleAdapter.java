@@ -28,6 +28,7 @@ import org.joda.time.YearMonth;
 import com.google.common.base.Preconditions;
 
 import crewtools.flica.Proto;
+import crewtools.flica.Proto.ScheduleType;
 import crewtools.flica.pojo.Schedule;
 import crewtools.flica.pojo.Trip;
 import crewtools.util.Period;
@@ -42,14 +43,19 @@ public class ScheduleAdapter extends PairingAdapter {
     List<Trip> trips = new ArrayList<>();
     Period tripBlock = Period.ZERO;
     Period tripCredit = Period.ZERO;
-    
+
     for (Proto.Trip protoTrip : protoSchedule.getTripList()) {
+      if (protoTrip.hasScheduleType()
+          && protoTrip.getScheduleType() == ScheduleType.CARRY_IN) {
+        logger.warning("Ignoring CI on " + protoTrip.getStartDate());
+        continue;
+      }
       Trip trip = adaptTrip(protoTrip);
       trips.add(trip);
       tripBlock = tripBlock.plus(trip.block);
       tripCredit = tripCredit.plus(trip.credit);
     }
-    
+
     return new Schedule(
         trips,
         tripBlock,
