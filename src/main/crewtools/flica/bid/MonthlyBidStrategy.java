@@ -19,13 +19,12 @@
 
 package crewtools.flica.bid;
 
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.logging.Logger;
 
 import crewtools.flica.pojo.Trip;
 import crewtools.rpc.Proto.BidConfig;
+import crewtools.util.Period;
 
 public class MonthlyBidStrategy implements Comparator<LineScore> {
   private final Logger logger = Logger.getLogger(MonthlyBidStrategy.class.getName());
@@ -60,12 +59,33 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
       return -isDesirable;
     }
 
-    int minTripEligible = new Boolean(
-        a.hasMinimumTripsThatMeetMinCredit())
-            .compareTo(b.hasMinimumTripsThatMeetMinCredit());
-    if (minTripEligible != 0) {
-      return -minTripEligible;
+    int aHighest = new Integer(
+        a.getNHighestCreditsPlusCarryIn().compareTo(Period.hours(65)));
+    int bHighest = new Integer(
+        b.getNHighestCreditsPlusCarryIn().compareTo(Period.hours(65)));
+    if (aHighest + bHighest == 0) {
+      return (aHighest > 0) ? -1 : 1;
     }
+
+    int num200 = new Integer(a.getNumEquipmentTwoHundredSegments())
+        .compareTo(b.getNumEquipmentTwoHundredSegments());
+    if (num200 != 0) {
+      return num200;
+    }
+
+    // int nHighest = new Integer(
+    // a.getNHighestCreditsPlusCarryIn()
+    // .compareTo(b.getNHighestCreditsPlusCarryIn()));
+    // if (nHighest != 0) {
+    // return -nHighest;
+    // }
+
+    // int minTripEligible = new Boolean(
+    // a.hasMinimumTripsThatMeetMinCredit())
+    // .compareTo(b.hasMinimumTripsThatMeetMinCredit());
+    // if (minTripEligible != 0) {
+    // return -minTripEligible;
+    // }
 
     // both LineScores either are or are not N-trip eligible.
 
@@ -80,37 +100,29 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
 
     int aPoints = 0;
     String aTrips = "";
-    for (Trip trip : getTrips(a)) {
+    for (Trip trip : a.getMinimumTrips()) {
       aPoints += new TripScore(trip, bidConfig).getPoints();
       if (!aTrips.isEmpty()) {
         aTrips += ", ";
       }
       aTrips += trip.getPairingName();
-      aPoints += a.getScoreAdjustmentPoints();
     }
+    aPoints += a.getScoreAdjustmentPoints();
 
     int bPoints = 0;
     String bTrips = "";
-    for (Trip trip : getTrips(b)) {
+    for (Trip trip : b.getMinimumTrips()) {
       bPoints += new TripScore(trip, bidConfig).getPoints();
       if (!bTrips.isEmpty()) {
         bTrips += ", ";
       }
       bTrips += trip.getPairingName();
-      bPoints += b.getScoreAdjustmentPoints();
     }
+    bPoints += b.getScoreAdjustmentPoints();
 
     logger.fine("T" + a.getLineName() + " (" + aTrips + "=" + aPoints + ") vs "
         + "T" + b.getLineName() + " (" + bTrips + "=" + bPoints + ")");
 
     return -((Integer) aPoints).compareTo(bPoints);
-  }
-
-  private List<Trip> getTrips(LineScore lineScore) {
-    if (lineScore.hasMinimumTripsThatMeetMinCredit()) {
-      return new ArrayList<>(lineScore.getMinimumTripsThatMeetMinCredit().keySet());
-    } else {
-      return new ArrayList<>(lineScore.getTrips());
-    }
   }
 }

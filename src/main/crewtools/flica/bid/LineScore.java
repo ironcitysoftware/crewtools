@@ -19,6 +19,7 @@
 
 package crewtools.flica.bid;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -59,7 +60,7 @@ public class LineScore {
   private final int startTimePoints;
   private final int endTimePoints;
   private final int scoreAdjustmentPoints;
-  private final boolean hasEquipmentTwoHundredSegments;
+  private final int numEquipmentTwoHundredSegments;
   private final boolean hasReserve;
   private Map<Trip, Period> creditsInMonthMap = new HashMap<>();
 
@@ -77,8 +78,7 @@ public class LineScore {
 
     Set<Integer> daysObligated = new HashSet<>();  // Carry-ins or trips
     for (Trip trip : trips.values()) {
-      // credit of this trip, handling overlapping CI credit, vacation credit,
-      // and trips extending beyond the month.
+      // credit of this trip, handling overlapping CI credit, vacation credit.
       Period creditInMonth = trip.getCreditInMonth(
           bidConfig.getVacationDateList(),
           YearMonth.parse(bidConfig.getYearMonth()),
@@ -143,7 +143,6 @@ public class LineScore {
     // more points are better.
     int startTimePoints = 0;
     int endTimePoints = 0;
-    boolean hasEquipmentTwoHundredSegments = false;
 
     for (Trip trip : minimumTripsThatMeetMinCredit.keySet()) {
       LocalTime reportTime = trip.getDutyStart().toLocalTime();
@@ -155,18 +154,37 @@ public class LineScore {
       if (endTime.getHourOfDay() <= 18) {
         endTimePoints++;
       }
+    }
 
+    int numEquipmentTwoHundredSegments = 0;
+    for (Trip trip : trips.values()) {
       for (Section section : trip.getSections()) {
         if (section.isEquipmentTwoHundred()) {
-          hasEquipmentTwoHundredSegments = true;
+          numEquipmentTwoHundredSegments++;
         }
       }
     }
     this.startTimePoints = startTimePoints;
     this.endTimePoints = endTimePoints;
-    this.hasEquipmentTwoHundredSegments = hasEquipmentTwoHundredSegments;
+    this.numEquipmentTwoHundredSegments = numEquipmentTwoHundredSegments;
     this.scoreAdjustmentPoints = getScoreAdjustments(daysObligated);
     this.hasReserve = line.hasReserve();
+  }
+
+  public int getScore() {
+    int points = scoreAdjustmentPoints;
+    for (Trip trip : getMinimumTrips()) {
+      points += new TripScore(trip, bidConfig).getPoints();
+    }
+    return points;
+  }
+
+  public List<Trip> getMinimumTrips() {
+    if (hasMinimumTripsThatMeetMinCredit()) {
+      return new ArrayList<>(getMinimumTripsThatMeetMinCredit().keySet());
+    } else {
+      return new ArrayList<>(getAllTrips());
+    }
   }
 
   private int getScoreAdjustments(Set<Integer> daysObligated) {
@@ -207,6 +225,9 @@ public class LineScore {
     Period result = Period.ZERO.plus(nonOverlappingCarryInCredit);
     int num = 0;
     for (Map.Entry<Trip, Period> entry : largestToSmallestCredit.entrySet()) {
+      if (entry.getKey().isTwoHundred()) {
+        continue;
+      }
       result = result.plus(entry.getValue());
       if (num++ == bidConfig.getMinimumNumberOfTrips()) {
         break;
@@ -218,7 +239,7 @@ public class LineScore {
   /** Returns true if we want to consider this line for our bid. */
   public boolean isDesirableLine() {
     boolean hasAnyFavoriteOvernights = false;
-    for (Trip trip : getTrips()) {
+    for (Trip trip : getAllTrips()) {
       if (!bidConfig.getEnableAllTripsRespectRequiredDaysOff()) {
         if (hasMinimumTripsThatMeetMinCredit()) {
           if (!getMinimumTripsThatMeetMinCredit().containsKey(trip)) {
@@ -278,7 +299,7 @@ public class LineScore {
     return numFavoriteOvernights;
   }
 
-  public Collection<Trip> getTrips() {
+  public Collection<Trip> getAllTrips() {
     return trips.values();
   }
 
@@ -326,8 +347,8 @@ public class LineScore {
     return scoreAdjustmentPoints;
   }
 
-  public boolean hasEquipmentTwoHundredSegments() {
-    return hasEquipmentTwoHundredSegments;
+  public int getNumEquipmentTwoHundredSegments() {
+    return numEquipmentTwoHundredSegments;
   }
 
   public boolean hasReserve() {

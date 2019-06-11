@@ -183,20 +183,21 @@ public class MonthlyBidder {
           layover += proto.getLayoverAirportCode();
         }
       }
-      layover += "/" + lineScore.getAdjustedCredit(trip);
+      TripScore tripScore = new TripScore(trip, bidConfig);
+      layover += "/" + String.format("%4d", tripScore.getPoints());
       supplement.add(layover);
     }
     result.append("[");  // TODO fix blend
     result.append(dates);
     result.append("] ");  // fix blend
     result.append(lineScore.isDesirableLine() ? "D " : "U ");
-    result.append(lineScore.getFavoriteOvernightPeriod());
-    result.append("  ");
-    if (lineScore.hasEquipmentTwoHundredSegments()) {
-      result.append("2");
-    } else {
-      result.append(" ");
-    }
+    result.append(String.format("%4d", lineScore.getScore()));
+    result.append("/");
+    result.append(String.format("%2d", lineScore.getScoreAdjustmentPoints()));
+    result.append(" top3:");
+    result.append(lineScore.getNHighestCreditsPlusCarryIn());
+    result.append("  200: ");
+    result.append(lineScore.getNumEquipmentTwoHundredSegments());
     for (String s : supplement) {
       result.append(String.format("%19s ", s));
     }
