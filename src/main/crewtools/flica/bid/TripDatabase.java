@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Iron City Software LLC
+ * Copyright 2019 Iron City Software LLC
  *
  * This file is part of CrewTools.
  *
@@ -42,6 +42,7 @@ import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Schedule;
 import crewtools.flica.pojo.Trip;
 import crewtools.flica.stats.DataReader;
+import crewtools.rpc.Proto.BidConfig;
 
 public class TripDatabase {
   private final Logger logger = Logger.getLogger(TripDatabase.class.getName());
@@ -49,22 +50,42 @@ public class TripDatabase {
   private final FlicaService service;
   private final boolean useProto;
   private final Map<PairingKey, Trip> trips;
+  private final ReplayManager replayManager;
+  private final BidConfig bidConfig;
 
   public TripDatabase(FlicaService service) {
     this.service = service;
     this.trips = new HashMap<>();
     this.useProto = false;
+    this.replayManager = null;
+    this.bidConfig = null;
   }
 
-  public TripDatabase(FlicaService service, boolean useProto, YearMonth yearMonth) throws IOException, URISyntaxException, ParseException {
+  public TripDatabase(FlicaService service, boolean useProto, YearMonth yearMonth,
+      BidConfig bidConfig, ReplayManager replayManager)
+      throws IOException, URISyntaxException, ParseException {
     this.service = service;
     this.useProto = useProto;
-    // The same pairing name in adjacent months refer to totally different trips,
-    // so we use a key class which combines the date of the trip.
-    logger.info("Loading this month's pairings");
-    trips = getAllPairings(yearMonth);
-    logger.info("Loading last month's pairings");
-    Map<PairingKey, Trip> allTripsLastMonth = getAllPairings(yearMonth.minusMonths(1));
+    this.bidConfig = bidConfig;
+    this.replayManager = replayManager;
+
+    Map<PairingKey, Trip> allTripsLastMonth;
+    if (replayManager.isReplaying()) {
+      trips = adapt(replayManager.readPairingList(yearMonth));
+      allTripsLastMonth = adapt(replayManager.readPairingList(yearMonth.minusMonths(1)));
+    } else {
+      // The same pairing name in adjacent months refer to totally different trips,
+      // so we use a key class which combines the date of the trip.
+      logger.info("Loading this month's pairings");
+      Proto.PairingList thisMonthPairings = getAllPairings(yearMonth);
+      replayManager.writePairingList(yearMonth, thisMonthPairings);
+      trips = adapt(thisMonthPairings);
+
+      logger.info("Loading last month's pairings");
+      Proto.PairingList lastMonthPairings = getAllPairings(yearMonth.minusMonths(1));
+      replayManager.writePairingList(yearMonth.minusMonths(1), lastMonthPairings);
+      allTripsLastMonth = adapt(lastMonthPairings);
+    }
     allTripsLastMonth.forEach((key, value) ->
       trips.merge(key, value, (k, v) ->
         { throw new AssertionError("duplicate values for key: " + key); }));
@@ -92,14 +113,19 @@ public class TripDatabase {
     return trips.get(key);
   }
 
-  private Map<PairingKey, Trip> getAllPairings(YearMonth yearMonth) throws IOException, URISyntaxException, ParseException {
+  private Proto.PairingList getAllPairings(YearMonth yearMonth)
+      throws IOException, URISyntaxException, ParseException {
     Proto.PairingList pairingList;
     if (!useProto) {
-      String rawPairings = service.getAllPairings(AwardDomicile.CLT, Rank.FIRST_OFFICER,
-          1, yearMonth);
-      PairingParser pairingParser = new PairingParser(rawPairings, yearMonth, false /*
-                                                                                     * cancelled
-                                                                                     */);
+      String rawPairings = service.getAllPairings(
+          AwardDomicile.valueOf(bidConfig.getAwardDomicile()),
+          Rank.valueOf(bidConfig.getRank()),
+          bidConfig.getRound(),
+          yearMonth);
+      PairingParser pairingParser = new PairingParser(
+          rawPairings,
+          yearMonth,
+          false /* cancelled */);
       pairingList = pairingParser.parse();
     } else {
       String filename = new DataReader().getPairingFilename(yearMonth, AwardDomicile.CLT);
@@ -108,7 +134,10 @@ public class TripDatabase {
       builder.mergeFrom(inputStream);
       pairingList = builder.build();
     }
+    return pairingList;
+  }
 
+  private Map<PairingKey, Trip> adapt(Proto.PairingList pairingList) {
     PairingAdapter pairingAdapter = new PairingAdapter();
     Map<PairingKey, Trip> trips = new HashMap<>();
     for (Proto.Trip protoTrip : pairingList.getTripList()) {
@@ -122,7 +151,14 @@ public class TripDatabase {
 
   private Trip getIndividualPairingDetails(PairingKey key)
       throws URISyntaxException, IOException, ParseException {
-    String rawPairingDetail = service.getPairingDetail(key.getPairingName(), key.getPairingDate());
+    String rawPairingDetail;
+    if (replayManager.isReplaying()) {
+      rawPairingDetail = replayManager.readPairing(key);
+    } else {
+      rawPairingDetail = service.getPairingDetail(key.getPairingName(),
+          key.getPairingDate());
+      replayManager.writePairing(key, rawPairingDetail);
+    }
     IndividualPairingParser parser = new IndividualPairingParser(key, rawPairingDetail);
     PairingAdapter pairingAdapter = new PairingAdapter();
     Proto.Trip trip = parser.parse();

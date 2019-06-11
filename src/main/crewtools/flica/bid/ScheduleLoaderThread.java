@@ -41,14 +41,17 @@ public class ScheduleLoaderThread extends PeriodicDaemonThread {
   private final Collector collector;
   private final TripDatabase tripDatabase;
   private final FlicaService service;
+  private final ReplayManager replayManager;
 
   public ScheduleLoaderThread(Duration interval, YearMonth yearMonth,
-      Collector collector, TripDatabase tripDatabase, FlicaService service) {
+      Collector collector, TripDatabase tripDatabase, FlicaService service,
+      ReplayManager replayManager) {
     super(Duration.ZERO, interval);
     this.yearMonth = yearMonth;
     this.collector = collector;
     this.tripDatabase = tripDatabase;
     this.service = service;
+    this.replayManager = replayManager;
     this.setName("ScheduleLoader");
     this.setDaemon(true);
   }
@@ -83,7 +86,12 @@ public class ScheduleLoaderThread extends PeriodicDaemonThread {
   private Schedule getSchedule(FlicaService service, YearMonth yearMonth) throws Exception {
     String rawSchedule = null;
     try {
-      rawSchedule = service.getSchedule(yearMonth);
+      if (replayManager.isReplaying()) {
+        rawSchedule = replayManager.getNextSchedule();
+      } else {
+        rawSchedule = service.getSchedule(yearMonth);
+        replayManager.saveScheduleForReplay(rawSchedule);
+      }
       if (rawSchedule.contains(NO_SCHEDULE_AVAILABLE)) {
         throw new ParseException("No schedule available for " + yearMonth);
       }

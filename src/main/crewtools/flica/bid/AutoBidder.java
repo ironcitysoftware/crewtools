@@ -50,6 +50,7 @@ public class AutoBidder {
 
   private void run(AutoBidderCommandLineConfig cmdLine) throws Exception {
     BidConfig bidConfig = FileUtils.readBidConfig();
+    Referee referee = new Referee(bidConfig);
     Rank rank = Rank.valueOf(bidConfig.getRank());
     YearMonth yearMonth = YearMonth.parse(bidConfig.getYearMonth());
     logger.info("Welcome to AutoBidder for " + yearMonth
@@ -71,19 +72,21 @@ public class AutoBidder {
 
     RuntimeStats stats = new RuntimeStats(clock);
 
+    ReplayManager replayManager = new ReplayManager(cmdLine.isReplay());
+
     TripDatabase tripDatabase = new TripDatabase(
-        service, cmdLine.getUseProto(), yearMonth);
+        service, cmdLine.getUseProto(), yearMonth, bidConfig, replayManager);
 
     StatusService statusService = new StatusService(
         stats, tripDatabase, bidConfig);
     statusService.start();
 
     ScheduleLoaderThread scheduleLoaderThread = new ScheduleLoaderThread(
-        cmdLine.getScheduleRefreshInterval(), yearMonth,
-        collector, tripDatabase, service);
+        referee.getScheduleRefreshInterval(), yearMonth,
+        collector, tripDatabase, service, replayManager);
     scheduleLoaderThread.start();
 
-    Duration initialDelay = cmdLine.getInitialDelay(clock, rank);
+    Duration initialDelay = referee.getInitialDelay(clock);
 
     Worker worker = new Worker(bidConfig, yearMonth, collector, service,
         clock, tripDatabase, cmdLine.isDebug());
@@ -101,7 +104,8 @@ public class AutoBidder {
         service,
         collector,
         bidConfig,
-        worker);
+        worker,
+        replayManager);
     opentimeLoader.start();
 
     /*

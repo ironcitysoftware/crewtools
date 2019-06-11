@@ -46,15 +46,18 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
   private final Collector collector;
   private final BidConfig config;
   private final Worker worker;
+  private final ReplayManager replayManager;
 
   public OpentimeLoaderThread(YearMonth yearMonth, Duration initialDelay,
-      FlicaService service, Collector collector, BidConfig config, Worker worker) {
+      FlicaService service, Collector collector, BidConfig config, Worker worker,
+      ReplayManager replayManager) {
     super(initialDelay, worker.getOpentimeRefreshInterval());
     this.yearMonth = yearMonth;
     this.service = service;
     this.collector = collector;
     this.config = config;
     this.worker = worker;
+    this.replayManager = replayManager;
     this.setName("OpenTimeLoader");
     this.setDaemon(false);
   }
@@ -100,8 +103,13 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
 
   private List<FlicaTask> getOpentimeTrips(FlicaService service, YearMonth yearMonth,
       AwardDomicile domicile, Rank rank, int round) throws URISyntaxException, IOException, ParseException {
-    String rawOpenTime = service.getOpenTime(domicile, rank,
-        round, yearMonth);
+    String rawOpenTime;
+    if (replayManager.isReplaying()) {
+      rawOpenTime = replayManager.getNextOpentime();
+    } else {
+      rawOpenTime = service.getOpenTime(domicile, rank, round, yearMonth);
+      replayManager.saveOpentimeForReplay(rawOpenTime);
+    }
     OpenTimeParser openTimeParser = new OpenTimeParser(
         yearMonth.getYear(), rawOpenTime);
     List<FlicaTask> tasks = openTimeParser.parse();

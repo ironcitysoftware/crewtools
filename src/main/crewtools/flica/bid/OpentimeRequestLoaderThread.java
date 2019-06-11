@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Iron City Software LLC
+ * Copyright 2019 Iron City Software LLC
  *
  * This file is part of CrewTools.
  *
@@ -29,7 +29,6 @@ import org.joda.time.Duration;
 import org.joda.time.YearMonth;
 
 import crewtools.flica.FlicaService;
-import crewtools.flica.Proto.Rank;
 import crewtools.flica.parser.OpentimeRequestParser;
 import crewtools.flica.parser.ParseException;
 import crewtools.flica.pojo.OpentimeRequest;
@@ -42,20 +41,18 @@ public class OpentimeRequestLoaderThread extends PeriodicDaemonThread {
   private final YearMonth yearMonth;
   private final FlicaService service;
   private final Collector collector;
-  private final AutoBidderCommandLineConfig cmdLine;
   private final BidConfig config;
 
   public OpentimeRequestLoaderThread(YearMonth yearMonth,
       Duration initialDelay,
-      AutoBidderCommandLineConfig cmdLine,
+      Duration interval,
       FlicaService service,
       Collector collector,
       BidConfig config) {
-    super(initialDelay, cmdLine.getOpentimeRequestRefreshInterval());
+    super(initialDelay, interval);
     this.yearMonth = yearMonth;
     this.service = service;
     this.collector = collector;
-    this.cmdLine = cmdLine;
     this.config = config;
     setName("OpentimeRequestLoader");
     setDaemon(true);
@@ -65,8 +62,7 @@ public class OpentimeRequestLoaderThread extends PeriodicDaemonThread {
   public WorkResult doPeriodicWork() {
     logger.info("Refreshing opentime requests");
     try {
-      String raw = service.getOpentimeRequests(cmdLine.getRound(
-          Rank.valueOf(config.getRank())), yearMonth);
+      String raw = service.getOpentimeRequests(config.getRound(), yearMonth);
       List<OpentimeRequest> requests = new OpentimeRequestParser(raw).parse();
       for (OpentimeRequest request : requests) {
         switch (request.getStatus()) {

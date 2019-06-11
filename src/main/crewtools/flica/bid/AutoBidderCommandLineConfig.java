@@ -23,162 +23,43 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import org.joda.time.DateTime;
-import org.joda.time.Duration;
-
 import com.google.common.base.Splitter;
 
-import crewtools.flica.FlicaService;
-import crewtools.flica.Proto.Rank;
-import crewtools.util.Clock;
-
 public class AutoBidderCommandLineConfig {
-  private enum Mode {
-    OPENTIME,
-    SAP,
-    SBB
-  }
-
   private static final Splitter EQUALS = Splitter.on('=').trimResults();
 
-  private final Mode mode;
   private final boolean cache;
   private final boolean useProto;
   private final boolean debug;
+  private final boolean replay;
 
   public AutoBidderCommandLineConfig(String args[]) {
     Iterator<String> argIterator = Arrays.asList(args).iterator();
-    Mode mode = null;
     boolean cache = false;
     boolean useProto = false;
     boolean debug = false;
+    boolean replay = false;
     while (argIterator.hasNext()) {
       List<String> parameter = EQUALS.splitToList(argIterator.next());
       String arg = parameter.get(0);
       String value = parameter.size() == 1 ? "" : parameter.get(1);
-      if (arg.equals("round")) {
-        if (value.equals("SAP")) {
-          mode = Mode.SAP;
-        } else if (value.equals("OPENTIME")) {
-          mode = Mode.OPENTIME;
-        } else if (value.equals("SBB")) {
-          mode = Mode.SBB;
-        } else {
-          System.err.println("Round is SAP or OPENTIME or SBB");
-          System.exit(-1);
-        }
-      } else if (arg.equals("cache")) {
+      if (arg.equals("cache")) {
         cache = true;
       } else if (arg.equals("proto")) {
         useProto = true;
       } else if (arg.equals("debug")) {
         debug = true;
+      } else if (arg.equals("replay")) {
+        replay = true;
       } else {
         System.err.println("Unrecognized argument " + arg);
         System.exit(-1);
       }
     }
-    if (mode == null) {
-      System.err.println("autobidder round=SAP|OPENTIME|SBB cache|proto|debug");
-      System.exit(-1);
-    }
-    this.mode = mode;
     this.cache = cache;
     this.useProto = useProto;
     this.debug = debug;
-  }
-
-  public Duration getScheduleRefreshInterval() {
-    switch (mode) {
-      case SAP:
-        return Duration.standardMinutes(15);
-      case SBB:
-        return Duration.standardHours(12);
-      case OPENTIME:
-        return Duration.standardHours(1);
-    default:
-        throw new IllegalStateException(
-            "Define opentime refresh interval for mode " + mode);
-    }
-  }
-
-  public Duration getOpentimeRequestRefreshInterval() {
-    switch (mode) {
-      case SAP:
-        return Duration.standardMinutes(6);
-      case SBB:
-        return Duration.standardHours(12);
-      case OPENTIME:
-        return Duration.standardHours(1);
-    default:
-        throw new IllegalStateException(
-            "Define opentime request refresh interval for mode " + mode);
-    }
-  }
-
-  public Duration getOpentimeRefreshInterval() {
-    switch (mode) {
-      case SAP:
-        return Duration.standardMinutes(2);
-      case SBB:
-      case OPENTIME:
-        return Duration.standardHours(3);
-    default:
-        throw new IllegalStateException(
-            "Define opentime refresh interval for mode " + mode);
-    }
-  }
-
-  public Duration getInitialDelay(Clock clock, Rank rank) {
-    switch (mode) {
-      case SAP: {
-        DateTime biddingStartTime;
-        if (rank == Rank.CAPTAIN) {
-          biddingStartTime = new DateTime().withTimeAtStartOfDay().withDayOfMonth(14)
-              .withHourOfDay(17);
-        } else if (rank == Rank.FIRST_OFFICER) {
-          biddingStartTime = new DateTime().withTimeAtStartOfDay().withDayOfMonth(16)
-              .withHourOfDay(19);
-        } else {
-          throw new IllegalStateException("Rank " + rank + "?");
-        }
-        return new Duration(clock.now(), biddingStartTime);
-      }
-      case SBB: {
-        DateTime biddingStartTime = new DateTime().withTimeAtStartOfDay()
-            .withDayOfMonth(24).withHourOfDay(17);
-        return new Duration(clock.now(), biddingStartTime);
-      }
-      case OPENTIME:
-        // 28th at 5pm until 1st at 5pm.
-        DateTime otOpens = new DateTime().withTimeAtStartOfDay().withDayOfMonth(28)
-            .withHourOfDay(17);
-        // return new Duration(clock.now(), otOpens);
-        return Duration.ZERO;
-      default:
-        return Duration.ZERO;
-    }
-  }
-
-  public int getRound(Rank rank) {
-    if (rank == Rank.CAPTAIN) {
-      switch (mode) {
-        case SAP:
-          return FlicaService.BID_CA_SAP;
-        // case SBB: return FlicaService.BID_SENIORITY_BASED;
-        // case OPENTIME: return FlicaService.BID_OPENTIME;
-      }
-    } else if (rank == Rank.FIRST_OFFICER) {
-      switch (mode) {
-        case SAP:
-          return FlicaService.BID_FO_SAP;
-        case SBB:
-          return FlicaService.BID_SENIORITY_BASED;
-        case OPENTIME:
-          return FlicaService.BID_OPENTIME;
-      }
-    }
-    throw new IllegalStateException("unprepared for mode " + mode + ", rank " + rank);
+    this.replay = replay;
   }
 
   public boolean useCache() {
@@ -191,5 +72,9 @@ public class AutoBidderCommandLineConfig {
 
   public boolean isDebug() {
     return debug;
+  }
+
+  public boolean isReplay() {
+    return replay;
   }
 }
