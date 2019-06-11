@@ -193,6 +193,7 @@ enum LegType {
   HTL = 15 [(flica_name)="HTL"];  // hotel?
   GND = 16 [(flica_name)="GND"];
   FKE = 17 [(flica_name)="FKE"];
+  K = 18 [(flica_name)="K"];
 }
 
 message Leg {

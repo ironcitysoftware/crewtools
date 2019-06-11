@@ -72,12 +72,12 @@ public class PairingAdapter {
     private Trip toTrip() {
       return new Trip(sections, block, credit, tafb, duty, departureDates, proto);
     }
-    
+
     Pairing toPairing() {
       return new Pairing(sections, block, credit, tafb, duty, departureDates, proto);
     }
   }
-  
+
   public Trip adaptTrip(Proto.Trip protoTrip) {
     return adaptInternal(protoTrip).toTrip();
   }
@@ -123,7 +123,7 @@ public class PairingAdapter {
     // The date of departure. The show time can be the day prior.
     LocalDate departureDate = LocalDate.parse(protoTrip.getStartDate());
     LocalDate currentDate = departureDate;
-    
+
     for (int sectionIndex = 0; sectionIndex < protoTrip.getSectionCount(); ++sectionIndex) {
       Proto.Section protoSection = protoTrip.getSection(sectionIndex);
       Stats sectionStats = new Stats();
@@ -166,7 +166,14 @@ public class PairingAdapter {
       // verify local duty end time
       DateTime startDuty = timeHelper.getLocalDutyStartDateTime(protoSection,
           currentDate);
-      DateTime endDuty = timeHelper.getLocalDutyEndDateTime(protoSection, currentDate);
+      DateTime endDuty;
+      if (protoSection.hasLocalDutyEndTime()) {
+        endDuty = timeHelper.getLocalDutyEndDateTime(protoSection, currentDate);
+      } else {
+        // If a section consists of only a self'd DH, it will not have a duty end
+        // (or a TAFB).
+        endDuty = startDuty;
+      }
       if (!legs.isEmpty()) {
         Leg lastLeg = legs.get(legs.size() - 1);
         LocalTime calculatedLocalDutyEndTime = lastLeg.getArrivalLocalTime();
@@ -178,10 +185,12 @@ public class PairingAdapter {
           calculatedLocalDutyEndTime =
               calculatedLocalDutyEndTime.plusMinutes(MINUTES_OF_DUTY_AFTER_LAST_FLIGHT);
         }
-        LocalTime protoLocalDutyEndTime = timeHelper.getLocalDutyEndTime(protoSection);
-        if (!calculatedLocalDutyEndTime.equals(protoLocalDutyEndTime)) {
-          logger.fine(String.format("Calculated section duty end %s but proto %s",
-              calculatedLocalDutyEndTime, protoLocalDutyEndTime));
+        if (protoSection.hasLocalDutyEndTime()) {
+          LocalTime protoLocalDutyEndTime = timeHelper.getLocalDutyEndTime(protoSection);
+          if (!calculatedLocalDutyEndTime.equals(protoLocalDutyEndTime)) {
+            logger.fine(String.format("Calculated section duty end %s but proto %s",
+                calculatedLocalDutyEndTime, protoLocalDutyEndTime));
+          }
         }
 
         // calculate section duty stats
@@ -197,7 +206,7 @@ public class PairingAdapter {
 
       tripStats.add(sectionStats);
 
-      sections.add( 
+      sections.add(
           new Section(protoSection, currentDate, sectionStats.block,
               sectionStats.credit,
               sectionStats.duty, startDuty, endDuty));
@@ -215,13 +224,13 @@ public class PairingAdapter {
     Period tafb = Period.fromText(protoTrip.getTimeAwayFromBaseDuration());
 
     Set<LocalDate> dates = getDates(protoTrip, sections, departureDate);
-    
+
     Period credit = tripStats.credit;
     if (sections.isEmpty()) {
       // Vacation credit.
       credit = Period.fromText(protoTrip.getCreditDuration());
     }
-    
+
     return new TripOrPairingData(sections, tripStats.block, credit, tafb, tripStats.duty,
         dates, protoTrip);
   }
