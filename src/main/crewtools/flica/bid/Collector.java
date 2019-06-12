@@ -36,6 +36,9 @@ public class Collector {
   private Schedule currentSchedule;
   private Set<FlicaTask> currentTasks;
 
+  private Set<Transition> transitions = new HashSet<>();
+  private boolean initialTransitionPopulated = false;
+
   public synchronized void offer(Schedule schedule) {
     this.schedule = schedule;
     this.notify();
@@ -46,8 +49,18 @@ public class Collector {
     this.notify();
   }
 
-  public synchronized void beginWork() {
-    while (schedule == null || tasks == null || tasks.size() == 0) {
+  public synchronized void offerTransitions(Set<Transition> transition) {
+    this.transitions.addAll(transition);
+    this.initialTransitionPopulated = true;
+    this.notify();
+  }
+
+  public synchronized void beginWork(boolean blockUntilBidPeriodOpens) {
+    // Blocks until schedule and tasks have loaded, and there are tasks to consider.
+    // Also, if this is a catch-up run (eg the program was started after the bid
+    // period opened), blocks until the transitions are read.
+    while (schedule == null || tasks == null || tasks.size() == 0
+        || (!blockUntilBidPeriodOpens && !initialTransitionPopulated)) {
       try {
         this.wait();
       } catch (InterruptedException e) {
@@ -64,5 +77,9 @@ public class Collector {
 
   public Set<FlicaTask> getCurrentTasks() {
     return currentTasks;
+  }
+
+  public synchronized boolean hasTransition(Transition transition) {
+    return transitions.contains(transition);
   }
 }

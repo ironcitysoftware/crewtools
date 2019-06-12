@@ -66,6 +66,6 @@ public class Transition {
 
   @Override
   public String toString() {
-    return String.format("Add %s; Drop %s", addKeys, dropKeys);
+    return String.format("Drop %s; Add %s", dropKeys, addKeys);
   }
 }

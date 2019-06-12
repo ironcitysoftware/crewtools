@@ -84,7 +84,8 @@ public class OpentimeLoaderThread extends PeriodicDaemonThread {
         return WorkResult.INCOMPLETE;
       }
       collector.offer(new HashSet<>(trips));
-      worker.run();
+      boolean blockUntilBidPeriodOpens = initialDelay.isLongerThan(Duration.ZERO);
+      worker.run(blockUntilBidPeriodOpens);
       interval = worker.getOpentimeRefreshInterval();
       return WorkResult.COMPLETE;
     } catch (URISyntaxException | IOException | ParseException e) {

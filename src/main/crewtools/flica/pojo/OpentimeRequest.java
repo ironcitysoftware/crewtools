@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Iron City Software LLC
+ * Copyright 2019 Iron City Software LLC
  *
  * This file is part of CrewTools.
  *
@@ -145,7 +145,12 @@ public class OpentimeRequest {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this).add("requestId", requestId).add("addTrips", addTrips)
-        .add("dropTrips", dropTrips).add("priority", priority).add("status", status).toString();
+    return MoreObjects.toStringHelper(this)
+        .add("requestId", requestId)
+        .add("addTrips", addTrips)
+        .add("dropTrips", dropTrips)
+        .add("priority", priority)
+        .add("status", status)
+        .toString();
   }
 }

@@ -86,17 +86,18 @@ public class AutoBidder {
         collector, tripDatabase, service, replayManager);
     scheduleLoaderThread.start();
 
-    Duration initialDelay = referee.getInitialDelay(clock);
-
     Worker worker = new Worker(bidConfig, yearMonth, collector, service,
         clock, tripDatabase, cmdLine.isDebug());
 
     if (cmdLine.isDebug()) {
+      logger.info("*** DEBUG MODE ***");
       DebugInjector debugInjector = new DebugInjector(collector, tripDatabase);
       debugInjector.offer();
-      worker.run();
+      worker.run(false /* Pretend we are waiting */);
       scheduleLoaderThread.join();
     }
+
+    Duration initialDelay = referee.getInitialDelay(clock);
 
     OpentimeLoaderThread opentimeLoader = new OpentimeLoaderThread(
         yearMonth,
@@ -107,6 +108,15 @@ public class AutoBidder {
         worker,
         replayManager);
     opentimeLoader.start();
+
+    OpentimeRequestLoaderThread opentimeRequestLoaderThread = new OpentimeRequestLoaderThread(
+        yearMonth,
+        initialDelay,
+        referee.getOpentimeRequestRefreshInterval(),
+        service,
+        collector,
+        bidConfig);
+    opentimeRequestLoaderThread.start();
 
     /*
      * SMTPServer smtpServer = new SMTPServer(

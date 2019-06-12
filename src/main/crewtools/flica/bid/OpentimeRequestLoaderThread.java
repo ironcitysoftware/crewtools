@@ -21,7 +21,9 @@ package crewtools.flica.bid;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -42,17 +44,20 @@ public class OpentimeRequestLoaderThread extends PeriodicDaemonThread {
   private final FlicaService service;
   private final Collector collector;
   private final BidConfig config;
+  private final ReplayManager replayManager;
 
   public OpentimeRequestLoaderThread(YearMonth yearMonth,
       Duration initialDelay,
       Duration interval,
       FlicaService service,
       Collector collector,
-      BidConfig config) {
+      BidConfig config,
+      ReplayManager replayManager) {
     super(initialDelay, interval);
     this.yearMonth = yearMonth;
     this.service = service;
     this.collector = collector;
+    this.replayManager = replayManager;
     this.config = config;
     setName("OpentimeRequestLoader");
     setDaemon(true);
@@ -62,8 +67,18 @@ public class OpentimeRequestLoaderThread extends PeriodicDaemonThread {
   public WorkResult doPeriodicWork() {
     logger.info("Refreshing opentime requests");
     try {
-      String raw = service.getOpentimeRequests(config.getRound(), yearMonth);
+      String raw;
+      if (replayManager.isReplaying()) {
+        raw = replayManager.getNextOpentimeRequests();
+      } else {
+        raw = service.getOpentimeRequests(config.getRound(), yearMonth);
+        replayManager.saveOpentimeRequestsForReplay(raw);
+      }
       List<OpentimeRequest> requests = new OpentimeRequestParser(raw).parse();
+      Set<Transition> transitions = new HashSet<>();
+      requests.forEach(or -> transitions.add(or.getTransition()));
+      collector.offerTransitions(transitions);
+
       for (OpentimeRequest request : requests) {
         switch (request.getStatus()) {
           case OpentimeRequest.APPROVED:
@@ -76,7 +91,7 @@ public class OpentimeRequestLoaderThread extends PeriodicDaemonThread {
           case OpentimeRequest.PROCESSING:
             break;
           default:
-            logger.info("FIXME: handle request status " + request.getStatus());
+            logger.warning("FIXME: handle request status " + request.getStatus());
         }
       }
       return WorkResult.COMPLETE;

@@ -44,9 +44,11 @@ public class ReplayManager {
   private Path OPENTIME_DIR;
   private Path SCHEDULE_DIR;
   private Path PAIRING_DIR;
+  private Path OPENTIME_REQUESTS_DIR;
 
   private long lastOpentimeTimestamp = -1;
   private long lastScheduleTimestamp = -1;
+  private long lastOpentimeRequestsTimestamp = -1;
 
   private final boolean isReplaying;
 
@@ -65,11 +67,13 @@ public class ReplayManager {
     OPENTIME_DIR = REPLAY_DIR.resolve("opentime");
     SCHEDULE_DIR = REPLAY_DIR.resolve("schedule");
     PAIRING_DIR = REPLAY_DIR.resolve("pairings");
+    OPENTIME_REQUESTS_DIR = REPLAY_DIR.resolve("opentime-requests");
     if (!isReplaying) {
       try {
         Files.createDirectories(OPENTIME_DIR);
         Files.createDirectories(SCHEDULE_DIR);
         Files.createDirectories(PAIRING_DIR);
+        Files.createDirectories(OPENTIME_REQUESTS_DIR);
       } catch (IOException ioe) {
         logger.log(Level.WARNING, "Error creating directories", ioe);
       }
@@ -113,6 +117,23 @@ public class ReplayManager {
 
   public void saveScheduleForReplay(String schedule) {
     saveForReplay(SCHEDULE_DIR, schedule);
+  }
+
+  public String getNextOpentimeRequests() {
+    Path next = getNextPath(OPENTIME_REQUESTS_DIR, lastOpentimeRequestsTimestamp);
+    lastOpentimeRequestsTimestamp = getTimestamp(next);
+    try {
+      logger.info("Replaying opentime requests from " + next);
+      return com.google.common.io.Files.toString(
+          next.toFile(),
+          StandardCharsets.UTF_8);
+    } catch (IOException ioe) {
+      throw new IllegalStateException(ioe);
+    }
+  }
+
+  public void saveOpentimeRequestsForReplay(String requests) {
+    saveForReplay(OPENTIME_REQUESTS_DIR, requests);
   }
 
   public Proto.PairingList readPairingList(YearMonth yearMonth) {

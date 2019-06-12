@@ -23,13 +23,15 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.joda.time.Duration;
+import org.joda.time.format.PeriodFormat;
+import org.joda.time.format.PeriodFormatter;
 
 public abstract class PeriodicDaemonThread extends Thread {
   private final Logger logger = Logger.getLogger(PeriodicDaemonThread.class.getName());
 
   private static final Duration FAILURE_DURATION = Duration.standardSeconds(10);
 
-  private final Duration initialDelay;
+  protected final Duration initialDelay;
   protected Duration interval;
 
   public enum WorkResult {
@@ -44,9 +46,14 @@ public abstract class PeriodicDaemonThread extends Thread {
 
   @Override
   public void run() {
-    String prefix = String.format("[%s] ", getName());
+    String prefix = String.format("[%s]", getName());
+    logger.info(String.format("%s initial:%s  interval:%s  failure:%s",
+        prefix,
+        prettyPrint(initialDelay),
+        prettyPrint(interval),
+        prettyPrint(FAILURE_DURATION)));
+
     if (initialDelay.getMillis() > 0) {
-      logger.info(prefix + "Waiting " + initialDelay.toString() + " initially");
       safeSleep(prefix, initialDelay);
     }
 
@@ -67,6 +74,12 @@ public abstract class PeriodicDaemonThread extends Thread {
 
       safeSleep(prefix, interval);
     }
+  }
+
+  private static final PeriodFormatter PERIOD_FORMAT = PeriodFormat.getDefault();
+
+  private String prettyPrint(Duration duration) {
+    return PERIOD_FORMAT.print(new org.joda.time.Period(duration.getMillis()));
   }
 
   private void safeSleep(String prefix, Duration sleepDuration) {

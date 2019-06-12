@@ -21,17 +21,16 @@ package crewtools.flica.bid;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.joda.time.Duration;
 import org.joda.time.YearMonth;
-
-import com.google.common.base.Joiner;
 
 import crewtools.flica.FlicaService;
 import crewtools.flica.parser.SwapResponseParser;
@@ -40,7 +39,7 @@ import crewtools.flica.pojo.Schedule;
 import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.Clock;
 
-public class Worker implements Runnable {
+public class Worker {
   private final Logger logger = Logger.getLogger(Worker.class.getName());
 
   private final BidConfig bidConfig;
@@ -48,7 +47,7 @@ public class Worker implements Runnable {
   private final FlicaService service;
   private final Clock clock;
   private final TripDatabase tripDatabase;
-  private final List<String> swaps = new ArrayList<>();
+  private final Set<Transition> swaps = new HashSet<>();
   private final Collector collector;
   private Duration opentimeRefreshInterval = Duration.standardMinutes(6);
   private final Comparator<Solution> comparator = new MinimizeWorkMaximizeFunComparator();
@@ -71,9 +70,10 @@ public class Worker implements Runnable {
 
   private static final int MAX_SWAPS_PER_RUN = 10;
 
-  @Override
-  public void run() {
-    collector.beginWork();
+  // If true, this parameter means the program was started before the
+  // bid period opened.
+  public void run(boolean blockUntilBidPeriodOpens) {
+    collector.beginWork(blockUntilBidPeriodOpens);
     logger.info("------------------ Worker run -----------------------");
     Schedule schedule = collector.getCurrentSchedule();
 
@@ -88,23 +88,26 @@ public class Worker implements Runnable {
         break;
       }
       Transition transition = solution.getProposedSchedule().getTransition();
+      swap(transition);
+    }
+  }
+
+  private void swap(Transition transition) {
+    if (collector.hasTransition(transition)) {
+      logger.info("Ignoring previous run's solution " + transition);
+    } else if (swaps.contains(transition)) {
+      logger.info("Ignoring previous solution " + transition);
+    }
+    swaps.add(transition);
+    if (isDebug) {
+      logger.info("[debug] ignoring solution " + transition);
+    } else {
       swap(transition.getAddKeys(), transition.getDropKeys());
     }
   }
 
   private boolean swap(List<PairingKey> adds, List<PairingKey> drops) {
-    String addStr = Joiner.on(",").join(adds);
-    String dropStr = Joiner.on(",").join(drops);
-    String key = dropStr + "->" + addStr;
-    if (swaps.contains(key)) {
-      return false;
-    }
-    swaps.add(key);
     logger.info("SWAP!!!! DROP " + drops + " for " + adds);
-    if (isDebug) {
-      logger.info("Not actually swapping due to debug mode");
-      return true;
-    }
     try {
       String html = service.submitSwap(bidConfig.getRound(), yearMonth, clock.today(), adds,
           drops);
