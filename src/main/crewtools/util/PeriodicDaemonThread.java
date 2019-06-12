@@ -79,7 +79,8 @@ public abstract class PeriodicDaemonThread extends Thread {
   private static final PeriodFormatter PERIOD_FORMAT = PeriodFormat.getDefault();
 
   private String prettyPrint(Duration duration) {
-    return PERIOD_FORMAT.print(new org.joda.time.Period(duration.getMillis()));
+    return PERIOD_FORMAT.print(new org.joda.time.Period(duration.getMillis()))
+        .replace(' ', '_');
   }
 
   private void safeSleep(String prefix, Duration sleepDuration) {
