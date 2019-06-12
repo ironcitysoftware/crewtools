@@ -111,11 +111,12 @@ public class AutoBidder {
 
     OpentimeRequestLoaderThread opentimeRequestLoaderThread = new OpentimeRequestLoaderThread(
         yearMonth,
-        initialDelay,
+        initialDelay.plus(10000),
         referee.getOpentimeRequestRefreshInterval(),
         service,
         collector,
-        bidConfig);
+        bidConfig,
+        replayManager);
     opentimeRequestLoaderThread.start();
 
     /*
