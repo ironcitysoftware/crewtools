@@ -76,15 +76,15 @@ public class TripDatabase {
     } else {
       // The same pairing name in adjacent months refer to totally different trips,
       // so we use a key class which combines the date of the trip.
-      logger.info("Loading this month's pairings");
       Proto.PairingList thisMonthPairings = getAllPairings(yearMonth);
       replayManager.writePairingList(yearMonth, thisMonthPairings);
       trips = adapt(thisMonthPairings);
+      logger.info("Loaded " + trips.size() + " trips this month");
 
-      logger.info("Loading last month's pairings");
       Proto.PairingList lastMonthPairings = getAllPairings(yearMonth.minusMonths(1));
       replayManager.writePairingList(yearMonth.minusMonths(1), lastMonthPairings);
       allTripsLastMonth = adapt(lastMonthPairings);
+      logger.info("Loaded " + allTripsLastMonth.size() + " trips last month");
     }
     allTripsLastMonth.forEach((key, value) ->
       trips.merge(key, value, (k, v) ->
