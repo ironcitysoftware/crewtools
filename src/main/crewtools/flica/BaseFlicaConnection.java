@@ -24,11 +24,8 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
 import com.google.common.collect.Multimap;
 
 import crewtools.util.FlicaConfig;
@@ -119,7 +116,7 @@ public class BaseFlicaConnection implements Closeable {
         .header(USER_AGENT_KEY, CHROME_USER_AGENT)
         .build();
     Response response = httpclient.newCall(request).execute();
-    logger.info("First Request Status: " + response.message());
+    logger.fine("First Request Status: " + response.message());
     if (response.code() == HttpURLConnection.HTTP_MOVED_TEMP) {
       response.body().close();
       logger.info("(Re)Logging in");
