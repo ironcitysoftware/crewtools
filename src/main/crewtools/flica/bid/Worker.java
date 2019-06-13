@@ -106,7 +106,11 @@ public class Worker {
       logger.info("[debug] ignoring solution " + transition);
     } else {
       replayManager.recordSwap(transition);
-      swap(transition.getAddKeys(), transition.getDropKeys());
+      if (replayManager.isReplaying()) {
+        logger.info("[replay] ignoring solution " + transition);
+      } else {
+        swap(transition.getAddKeys(), transition.getDropKeys());
+      }
     }
   }
 
