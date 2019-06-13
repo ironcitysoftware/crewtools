@@ -49,8 +49,8 @@ public class Collector {
     this.notify();
   }
 
-  public synchronized void offerTransitions(Set<Transition> transition) {
-    this.transitions.addAll(transition);
+  public synchronized void offerTransitions(Set<Transition> transitions) {
+    this.transitions.addAll(transitions);
     this.initialTransitionPopulated = true;
     this.notify();
   }
