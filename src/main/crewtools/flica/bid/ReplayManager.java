@@ -48,7 +48,7 @@ public class ReplayManager {
 
   private long lastOpentimeTimestamp = -1;
   private long lastScheduleTimestamp = -1;
-  private long lastOpentimeRequestsTimestamp = -1;
+  private long lastRequestStatusTimestamp = -1;
 
   private final boolean isReplaying;
 
@@ -67,7 +67,7 @@ public class ReplayManager {
     OPENTIME_DIR = REPLAY_DIR.resolve("opentime");
     SCHEDULE_DIR = REPLAY_DIR.resolve("schedule");
     PAIRING_DIR = REPLAY_DIR.resolve("pairings");
-    REQUEST_STATUS_DIR = REPLAY_DIR.resolve("opentime-requests");
+    REQUEST_STATUS_DIR = REPLAY_DIR.resolve("request-status");
     if (!isReplaying) {
       try {
         Files.createDirectories(OPENTIME_DIR);
@@ -119,11 +119,11 @@ public class ReplayManager {
     saveForReplay(SCHEDULE_DIR, schedule);
   }
 
-  public String getNextOpentimeRequests() {
-    Path next = getNextPath(REQUEST_STATUS_DIR, lastOpentimeRequestsTimestamp);
-    lastOpentimeRequestsTimestamp = getTimestamp(next);
+  public String getNextRequestStatus() {
+    Path next = getNextPath(REQUEST_STATUS_DIR, lastRequestStatusTimestamp);
+    lastRequestStatusTimestamp = getTimestamp(next);
     try {
-      logger.info("Replaying opentime requests from " + next);
+      logger.info("Replaying request status from " + next);
       return com.google.common.io.Files.toString(
           next.toFile(),
           StandardCharsets.UTF_8);
@@ -132,8 +132,8 @@ public class ReplayManager {
     }
   }
 
-  public void saveOpentimeRequestsForReplay(String requests) {
-    saveForReplay(REQUEST_STATUS_DIR, requests);
+  public void saveRequestStatusForReplay(String status) {
+    saveForReplay(REQUEST_STATUS_DIR, status);
   }
 
   public Proto.PairingList readPairingList(YearMonth yearMonth) {
