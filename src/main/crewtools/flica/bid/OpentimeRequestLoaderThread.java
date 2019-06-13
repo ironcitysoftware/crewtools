@@ -69,10 +69,10 @@ public class OpentimeRequestLoaderThread extends PeriodicDaemonThread {
     try {
       String raw;
       if (replayManager.isReplaying()) {
-        raw = replayManager.getNextOpentimeRequests();
+        raw = replayManager.getNextRequestStatus();
       } else {
         raw = service.getOpentimeRequests(config.getRound(), yearMonth);
-        replayManager.saveOpentimeRequestsForReplay(raw);
+        replayManager.saveRequestStatusForReplay(raw);
       }
       List<OpentimeRequest> requests = new OpentimeRequestParser(raw).parse();
       Set<Transition> transitions = new HashSet<>();
