@@ -102,15 +102,13 @@ public class Worker {
       logger.info("Ignoring previous solution " + transition);
     }
     swaps.add(transition);
+    replayManager.recordSwap(transition);
     if (isDebug) {
       logger.info("[debug] ignoring solution " + transition);
+    } else if (replayManager.isReplaying()) {
+      logger.info("[replay] ignoring solution " + transition);
     } else {
-      replayManager.recordSwap(transition);
-      if (replayManager.isReplaying()) {
-        logger.info("[replay] ignoring solution " + transition);
-      } else {
-        swap(transition.getAddKeys(), transition.getDropKeys());
-      }
+      swap(transition.getAddKeys(), transition.getDropKeys());
     }
   }
 
