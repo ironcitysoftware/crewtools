@@ -102,7 +102,7 @@ public class FlicaService {
   private static final YearMonth AUG_2017 = YearMonth.parse("2017-08");
   private static final int JAN_2017_CODE = 38;
   private static final String BID_CLOSE_ID_FORMAT_SPEC = "01%d.%03d";
-  private static final int JUN_2019_CODE_CA_SAP = 38;
+  private static final int JUN_2019_CODE_CA_SAP = 34;
   private static final YearMonth JUN_2019 = YearMonth.parse("2019-06");
 
   public static final int BID_ROUND_ONE = 1;
@@ -493,6 +493,8 @@ public class FlicaService {
         .addPathSegment(OPENTIME_REQUEST_BASE_URL)
         .addQueryParameter("BCID", bidCloseId)
         .addQueryParameter("isInFrame", "false")
+        // trumps the BCID; shows the most recently closed bid.
+        // .addQueryParameter("VC", "yes")
         .build();
     return connection.retrieveUrl(url);
     //BO=20180121&GO=1
