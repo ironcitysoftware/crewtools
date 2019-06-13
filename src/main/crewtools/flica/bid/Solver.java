@@ -86,7 +86,8 @@ public class Solver {
       ReducedSchedule reducedSchedule = new ReducedSchedule(schedule, retainedTrips, bidConfig);
       enumerateSolutions(solutions, reducedSchedule);
     }
-    logger.info("Considered " + count + " schedule combinations.");
+    logger.info("Considered " + count + " schedule combinations x "
+        + tasks.size() + " tasks");
     return solutions;
   }
 
