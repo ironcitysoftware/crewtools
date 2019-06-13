@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -45,6 +46,7 @@ public class ReplayManager {
   private Path SCHEDULE_DIR;
   private Path PAIRING_DIR;
   private Path REQUEST_STATUS_DIR;
+  private Path SWAP_RECORD;
 
   private long lastOpentimeTimestamp = -1;
   private long lastScheduleTimestamp = -1;
@@ -61,8 +63,10 @@ public class ReplayManager {
           .findFirst()
           .get();
       logger.info("Replaying from " + REPLAY_DIR);
+      SWAP_RECORD = BASE_DIR.resolve("swaps.txt");
     } else {
       REPLAY_DIR = BASE_DIR.resolve("replay-" + System.currentTimeMillis());
+      SWAP_RECORD = REPLAY_DIR.resolve("swaps.txt");
     }
     OPENTIME_DIR = REPLAY_DIR.resolve("opentime");
     SCHEDULE_DIR = REPLAY_DIR.resolve("schedule");
@@ -170,6 +174,17 @@ public class ReplayManager {
       Files.newOutputStream(output).write(pairing.getBytes(StandardCharsets.UTF_8));
     } catch (IOException ioe) {
       logger.log(Level.WARNING, "Error saving for replay", ioe);
+    }
+  }
+
+  public void recordSwap(Transition transition) {
+    try {
+      Files.write(
+          SWAP_RECORD,
+          transition.toString().getBytes(StandardCharsets.UTF_8),
+          StandardOpenOption.APPEND);
+    } catch (IOException ioe) {
+      logger.log(Level.WARNING, "Error recording swap", ioe);
     }
   }
 

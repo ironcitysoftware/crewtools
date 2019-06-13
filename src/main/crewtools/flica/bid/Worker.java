@@ -49,18 +49,21 @@ public class Worker {
   private final TripDatabase tripDatabase;
   private final Set<Transition> swaps = new HashSet<>();
   private final Collector collector;
+  private final ReplayManager replayManager;
   private Duration opentimeRefreshInterval = Duration.standardMinutes(6);
   private final Comparator<Solution> comparator = new MinimizeWorkMaximizeFunComparator();
   private final boolean isDebug;
 
   public Worker(BidConfig bidConfig, YearMonth yearMonth, Collector collector,
-      FlicaService service, Clock clock, TripDatabase tripDatabase, boolean isDebug) {
+      FlicaService service, Clock clock, TripDatabase tripDatabase,
+      ReplayManager replayManager, boolean isDebug) {
     this.bidConfig = bidConfig;
     this.yearMonth = yearMonth;
     this.collector = collector;
     this.service = service;
     this.clock = clock;
     this.tripDatabase = tripDatabase;
+    this.replayManager = replayManager;
     this.isDebug = isDebug;
   }
 
@@ -102,6 +105,7 @@ public class Worker {
     if (isDebug) {
       logger.info("[debug] ignoring solution " + transition);
     } else {
+      replayManager.recordSwap(transition);
       swap(transition.getAddKeys(), transition.getDropKeys());
     }
   }
