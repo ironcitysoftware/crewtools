@@ -80,7 +80,9 @@ public class Worker {
     logger.info("------------------ Worker run -----------------------");
     Schedule schedule = collector.getCurrentSchedule();
 
-    Solver solver = new Solver(schedule, collector.getCurrentTasks(), yearMonth,
+    Set<FlicaTaskWrapper> tasks = new HashSet<>();
+    collector.getCurrentTasks().forEach(t -> tasks.add(new FlicaTaskWrapper(t)));
+    Solver solver = new Solver(schedule, tasks, yearMonth,
         bidConfig, tripDatabase, clock);
     List<Solution> solutions = solver.solve();
     Collections.sort(solutions, comparator);

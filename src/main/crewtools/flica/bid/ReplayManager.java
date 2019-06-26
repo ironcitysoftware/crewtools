@@ -54,14 +54,18 @@ public class ReplayManager {
 
   private final boolean isReplaying;
 
-  public ReplayManager(boolean isReplaying) throws IOException {
+  public ReplayManager(boolean isReplaying, String replayDir) throws IOException {
     if (isReplaying) {
-      REPLAY_DIR = Files
-          .list(BASE_DIR)
-          .filter(p -> p.getFileName().toString().startsWith("replay-"))
-          .sorted(Collections.reverseOrder())
-          .findFirst()
-          .get();
+      if (replayDir != null) {
+        REPLAY_DIR = Paths.get(replayDir);
+      } else {
+        REPLAY_DIR = Files
+            .list(BASE_DIR)
+            .filter(p -> p.getFileName().toString().startsWith("replay-"))
+            .sorted(Collections.reverseOrder())
+            .findFirst()
+            .get();
+      }
       logger.info("Replaying from " + REPLAY_DIR);
       SWAP_RECORD = BASE_DIR.resolve("swaps.txt");
     } else {
@@ -72,6 +76,9 @@ public class ReplayManager {
     SCHEDULE_DIR = REPLAY_DIR.resolve("schedule");
     PAIRING_DIR = REPLAY_DIR.resolve("pairings");
     REQUEST_STATUS_DIR = REPLAY_DIR.resolve("request-status");
+    if (!Files.exists(SWAP_RECORD)) {
+      Files.createFile(SWAP_RECORD);
+    }
     if (!isReplaying) {
       try {
         Files.createDirectories(OPENTIME_DIR);

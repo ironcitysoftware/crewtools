@@ -140,7 +140,8 @@ public class Section implements Comparable<Section> {
       }
       return leg.getEquipment().equals(Equipment.RJ2);
     }
-    logger.warning("Ambiguius equipment");
+    // TODO
+    logger.fine("Ambiguius equipment");
     return false;
   }
 

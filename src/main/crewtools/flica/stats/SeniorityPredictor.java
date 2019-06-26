@@ -146,6 +146,7 @@ public class SeniorityPredictor {
   public void run() throws Exception {
     DataReader reader = new DataReader();
     SeniorityList seniorityListProto = reader.readSeniorityList(startingYearMonth);
+    // Specified seniority list.
     Map<Integer, CrewMember> pilotsByEmployee = new HashMap<>();
     Map<Integer, CrewMember> pilotsBySeniority = new TreeMap<>();
     for (CrewMember crewMember : seniorityListProto.getCrewMemberList()) {

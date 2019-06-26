@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.joda.time.LocalDate;
@@ -33,7 +34,6 @@ import org.joda.time.YearMonth;
 import com.google.common.collect.Sets;
 
 import crewtools.flica.bid.OverlapEvaluator.OverlapEvaluation.Overlap;
-import crewtools.flica.pojo.FlicaTask;
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Schedule;
 import crewtools.flica.pojo.Trip;
@@ -45,7 +45,7 @@ public class Solver {
   private final Logger logger = Logger.getLogger(Solver.class.getName());
 
   private final Schedule schedule;
-  private final Collection<FlicaTask> tasks;
+  private final Collection<FlicaTaskWrapper> tasks;
   private final YearMonth yearMonth;
   private final BidConfig bidConfig;
   private final Calendar calendar;
@@ -53,7 +53,7 @@ public class Solver {
   private final int originalScore;
   private final ScheduleFilter scheduleFilter;
 
-  public Solver(Schedule schedule, Collection<FlicaTask> tasks,
+  public Solver(Schedule schedule, Collection<FlicaTaskWrapper> tasks,
       YearMonth yearMonth, BidConfig bidConfig, TripDatabase tripDatabase, Clock clock) {
     this.schedule = schedule;
     this.tasks = tasks;
@@ -81,8 +81,10 @@ public class Solver {
     int count = 1;
     while (retainedTripsSet.hasNext()) {
       Set<PairingKey> retainedTrips = retainedTripsSet.next();
-      logger.fine(
-          "Considering schedule combination " + count++ + ": " + retainedTrips);
+      if (logger.isLoggable(Level.FINE)) {
+        logger.fine(
+            "Considering schedule combination " + count++ + ": " + retainedTrips);
+      }
       ReducedSchedule reducedSchedule = new ReducedSchedule(schedule, retainedTrips, bidConfig);
       enumerateSolutions(solutions, reducedSchedule);
     }
@@ -96,25 +98,26 @@ public class Solver {
     OverlapEvaluator evaluator = new OverlapEvaluator(
         reducedSchedule, yearMonth, bidConfig);
     // Find all opentime trips which could possibly be added.
-    Set<FlicaTask> candidateTasks = new HashSet<>();
-    for (FlicaTask task : tasks) {
-      Set<LocalDate> taskDates = getTaskDates(task);
-      if (evaluator.evaluate(taskDates).overlap != Overlap.NO_OVERLAP) {
-        logger.fine(".. ignoring " + task.pairingName + " due to overlap");
+    Set<FlicaTaskWrapper> candidateTasks = new HashSet<>();
+    Set<LocalDate> dates = new HashSet<>();
+    for (FlicaTaskWrapper task : tasks) {
+      if (task.isTwoHundred()) {
+        logger.fine(".. ignoring 200 trip " + task.getPairingName());
         continue;
       }
-      for (LocalDate date : taskDates) {
-        if (!calendar.isWithinPeriod(date)) {
-          logger.fine(".. ignoring " + task.pairingName + " due to blend");
-          continue;
-        }
+      if (!checkTaskDates(task.getPairingName(), dates, task.getTaskDates())) {
+        continue;
+      }
+      if (evaluator.evaluate(task.getTaskDates()).overlap != Overlap.NO_OVERLAP) {
+        logger.fine(".. ignoring " + task.getPairingName() + " due to overlap");
+        continue;
       }
       candidateTasks.add(task);
       // now, these may overlap with each other but not with
       // trips retained on the schedule.
     }
 
-    for (Set<FlicaTask> taskCombination : Sets.powerSet(candidateTasks)) {
+    for (Set<FlicaTaskWrapper> taskCombination : Sets.powerSet(candidateTasks)) {
       if (taskCombination.isEmpty()) {
         continue;
       }
@@ -136,13 +139,18 @@ public class Solver {
     }
   }
 
-  Set<LocalDate> getTaskDates(FlicaTask task) {
-     Set<LocalDate> dates = new HashSet<>();
-     LocalDate startDate = task.pairingDate;
-     dates.add(startDate);
-     for (int i = 1; i < task.numDays; ++i) {
-       dates.add(startDate.plusDays(i));
-     }
-     return dates;
-   }
+  private boolean checkTaskDates(String pairingName, Set<LocalDate> existingDates,
+      Set<LocalDate> proposedDates) {
+    for (LocalDate date : proposedDates) {
+      if (!existingDates.add(date)) {
+        logger.fine(".. ignoring " + pairingName + " due to taks overlap");
+        return false;
+      }
+      if (!calendar.isWithinPeriod(date)) {
+        logger.fine(".. ignoring " + pairingName + " due to blend");
+        continue;
+      }
+    }
+    return true;
+  }
 }

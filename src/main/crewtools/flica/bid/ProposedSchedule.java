@@ -26,11 +26,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.joda.time.LocalDate;
 
-import crewtools.flica.pojo.FlicaTask;
 import crewtools.flica.pojo.PairingKey;
 import crewtools.util.Period;
 
@@ -38,23 +38,23 @@ public class ProposedSchedule {
   private final Logger logger = Logger.getLogger(ProposedSchedule.class.getName());
 
   private final ReducedSchedule reducedSchedule;
-  private final Set<FlicaTask> tasks;
+  private final Set<FlicaTaskWrapper> tasks;
   private final int numWorkingDays;
 
-  public ProposedSchedule(ReducedSchedule reducedSchedule, Set<FlicaTask> tasks) {
+  public ProposedSchedule(ReducedSchedule reducedSchedule, Set<FlicaTaskWrapper> tasks) {
     this.reducedSchedule = reducedSchedule;
     this.tasks = tasks;
     int numWorkingDays = 0;
-    for (FlicaTask task : tasks) {
-      numWorkingDays += task.numDays;
+    for (FlicaTaskWrapper task : tasks) {
+      numWorkingDays += task.getNumDays();
     }
     this.numWorkingDays = numWorkingDays;
   }
 
   public Set<PairingKey> getAddedKeys() {
     Set<PairingKey> keys = new HashSet<>();
-    for (FlicaTask task : tasks) {
-      keys.add(new PairingKey(task.pairingDate, task.pairingName));
+    for (FlicaTaskWrapper task : tasks) {
+      keys.add(task.getPairingKey());
     }
     return keys;
   }
@@ -78,8 +78,8 @@ public class ProposedSchedule {
   public boolean isValid(OverlapEvaluator evaluator) {
     // CHECK: check that we have 65.
     Period credit = reducedSchedule.getCredit();
-    for (FlicaTask task : tasks) {
-      credit = credit.plus(task.creditTime);
+    for (FlicaTaskWrapper task : tasks) {
+      credit = credit.plus(task.getCredit());
     }
     if (credit.isLessThan(SIXTY_FIVE)) {
       logger.fine("Invalid: credit is " + credit);
@@ -89,15 +89,16 @@ public class ProposedSchedule {
     // CHECK: check that the task combination doesn't overlap.
     int numTaskWorkingDays = 0;
     Set<LocalDate> allDates = new HashSet<>();
-    for (FlicaTask task : tasks) {
-      Set<LocalDate> taskDates = getTaskDates(task);
-      numTaskWorkingDays += taskDates.size();
-      allDates.addAll(taskDates);
+    for (FlicaTaskWrapper task : tasks) {
+      numTaskWorkingDays += task.getNumDays();
+      allDates.addAll(task.getTaskDates());
     }
     if (allDates.size() != numTaskWorkingDays) {
       // Tasks overlap with each other. Forget this combination.
-      logger.fine("Invalid: task overlap (allDates=" + allDates + "; "
-          + "numTaskWorkingDays=" + numTaskWorkingDays);
+      if (logger.isLoggable(Level.FINE)) {
+        logger.fine("Invalid: task overlap (allDates=" + allDates + "; "
+            + "numTaskWorkingDays=" + numTaskWorkingDays);
+      }
       return false;
     }
     if (exceedsConsecutive(MAX_CONSECUTIVE, allDates)) {
@@ -108,20 +109,10 @@ public class ProposedSchedule {
     // CHECK: check that we are not working more in this combination.
     if ((numTaskWorkingDays + reducedSchedule.getNumWorkingDays()) > reducedSchedule.getOriginalNumWorkingDays()) {
       // Working more than the original schedule. Forget this combination.
-      logger.info("Invalid: work more");
+      logger.fine("Invalid: work more");
       return false;
     }
     return true;
-  }
-
-  Set<LocalDate> getTaskDates(FlicaTask task) {
-    Set<LocalDate> dates = new HashSet<>();
-    LocalDate startDate = task.pairingDate;
-    dates.add(startDate);
-    for (int i = 1; i < task.numDays; ++i) {
-      dates.add(startDate.plusDays(i));
-    }
-    return dates;
   }
 
   boolean exceedsConsecutive(int limit, Set<LocalDate> dates) {

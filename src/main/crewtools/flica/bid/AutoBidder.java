@@ -72,7 +72,8 @@ public class AutoBidder {
 
     RuntimeStats stats = new RuntimeStats(clock);
 
-    ReplayManager replayManager = new ReplayManager(cmdLine.isReplay());
+    ReplayManager replayManager = new ReplayManager(
+        cmdLine.isReplay(), cmdLine.getReplayDir());
 
     TripDatabase tripDatabase = new TripDatabase(
         service, cmdLine.getUseProto(), yearMonth, bidConfig, replayManager);

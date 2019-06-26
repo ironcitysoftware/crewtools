@@ -32,6 +32,7 @@ public class AutoBidderCommandLineConfig {
   private final boolean useProto;
   private final boolean debug;
   private final boolean replay;
+  private final String replayDir;
 
   public AutoBidderCommandLineConfig(String args[]) {
     Iterator<String> argIterator = Arrays.asList(args).iterator();
@@ -39,6 +40,7 @@ public class AutoBidderCommandLineConfig {
     boolean useProto = false;
     boolean debug = false;
     boolean replay = false;
+    String replayDir = null;
     while (argIterator.hasNext()) {
       List<String> parameter = EQUALS.splitToList(argIterator.next());
       String arg = parameter.get(0);
@@ -51,6 +53,7 @@ public class AutoBidderCommandLineConfig {
         debug = true;
       } else if (arg.equals("replay")) {
         replay = true;
+        replayDir = value;
       } else {
         System.err.println("Unrecognized argument " + arg);
         System.exit(-1);
@@ -60,6 +63,7 @@ public class AutoBidderCommandLineConfig {
     this.useProto = useProto;
     this.debug = debug;
     this.replay = replay;
+    this.replayDir = replayDir;
   }
 
   public boolean useCache() {
@@ -76,5 +80,9 @@ public class AutoBidderCommandLineConfig {
 
   public boolean isReplay() {
     return replay;
+  }
+
+  public String getReplayDir() {
+    return replayDir;
   }
 }
