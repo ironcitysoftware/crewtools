@@ -47,6 +47,7 @@ import crewtools.flica.Proto.PeriodicAwards;
 import crewtools.flica.Proto.Rank;
 import crewtools.flica.Proto.SeniorityList;
 import crewtools.flica.Proto.Status;
+import crewtools.flica.stats.BaseList.Member;
 
 public class SeniorityPredictor {
   private final Logger logger = Logger.getLogger(SeniorityPredictor.class.getName());
@@ -165,6 +166,7 @@ public class SeniorityPredictor {
 
     BaseList awardList = createBaseListFromAward(
         startingYearMonth, pilotsByEmployee, pilotsBySeniority);
+    addUnawardedPilots(awardList, seniorityList);
     lists.add(awardList);
 
     CrewMember interestingPilot = pilotsByEmployee.get(interestingEmployeeId);
@@ -191,6 +193,7 @@ public class SeniorityPredictor {
       if (dataReader.doesAwardExist(currentYearMonth, awardDomicile, rank, 1)) {
         BaseList anotherAwardList = createBaseListFromAward(
             currentYearMonth, pilotsByEmployee, pilotsBySeniority);
+        addUnawardedPilots(anotherAwardList, seniorityList);
         anotherAwardList.add(interestingEmployeeId, interestingPilot.getSeniorityId(),
             interestingPilot.getName());
         anotherAwardList.setCssClass(interestingEmployeeId, "interesting");
@@ -204,6 +207,15 @@ public class SeniorityPredictor {
     }
 
     new SeniorityRenderer(lists, numRoundOneLines, startingYearMonth, domicile).render();
+  }
+
+  private void addUnawardedPilots(BaseList awardList, BaseList seniorityList) {
+    int juniorAwardedSeniorityId = awardList.getJuniorSeniorityId();
+    for (Member member : seniorityList.getMembers()) {
+      if (member.seniorityId > juniorAwardedSeniorityId) {
+        awardList.add(member);
+      }
+    }
   }
 
   /**

@@ -31,12 +31,14 @@ import org.joda.time.YearMonth;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterators;
 
 import crewtools.flica.Proto.CrewMember;
 
 public class BaseList {
   private final YearMonth yearMonth;
   private final String header;
+  // seniority id to member
   private Map<Integer, Member> list = new TreeMap<>();
   private Set<Integer> employeeIds = new HashSet<>();
   private Map<Integer, String> cssClasses = new HashMap<>();
@@ -97,11 +99,18 @@ public class BaseList {
     throw new IllegalStateException("No member with employee id " + employeeId);
   }
 
+  public void add(Member pilot) {
+    add(pilot.employeeId, pilot.seniorityId, pilot.name);
+  }
+
   public void add(CrewMember pilot) {
     add(pilot.getEmployeeId(), pilot.getSeniorityId(), pilot.getName());
   }
 
   public void add(int employeeId, int seniorityId, String name) {
+    if (list.containsKey(seniorityId)) {
+      return;
+    }
     list.put(seniorityId, new Member(employeeId, seniorityId, name));
     Preconditions.checkState(employeeIds.add(employeeId),
         String.format("Attempt to add %d (%s) to list %s",
@@ -114,6 +123,10 @@ public class BaseList {
 
   public String getHeader() {
     return header;
+  }
+
+  public int getJuniorSeniorityId() {
+    return Iterators.getLast(list.keySet().iterator());
   }
 
   public List<Member> getMembers() {
