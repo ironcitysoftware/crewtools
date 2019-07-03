@@ -22,32 +22,35 @@ package crewtools.flica.grid;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.mail.internet.AddressException;
+
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.FlicaService;
 import crewtools.flica.Proto;
 import crewtools.flica.Proto.Rank;
 import crewtools.flica.adapters.ScheduleAdapter;
-import crewtools.flica.bid.ScheduleWrapper;
-import crewtools.flica.bid.ScheduleWrapper.OverlapEvaluation;
+import crewtools.flica.bid.FlicaTaskWrapper;
+import crewtools.flica.bid.OverlapEvaluator;
+import crewtools.flica.bid.OverlapEvaluator.OverlapEvaluation;
+import crewtools.flica.bid.ReducedSchedule;
 import crewtools.flica.bid.TripDatabase;
 import crewtools.flica.bid.TripScore;
+import crewtools.flica.grid.GridEvaluator.GridEvaluation;
 import crewtools.flica.parser.OpenTimeParser;
 import crewtools.flica.parser.ParseException;
 import crewtools.flica.pojo.FlicaTask;
@@ -58,50 +61,77 @@ import crewtools.rpc.Proto.BidConfig;
 import crewtools.rpc.Proto.GridObservation;
 import crewtools.util.Clock;
 import crewtools.util.Collections;
+import crewtools.util.Notifier;
 import crewtools.util.Period;
 
 public class Processor extends Thread implements Observer {
   private final Logger logger = Logger.getLogger(Processor.class.getName());
 
+  private static final Period MIN_CREDIT = Period.hours(65);
+
   private final Clock clock;
   private final FlicaService flicaService;
   private final BidConfig bidConfig;
-  private final GridAdapter gridAdapter;
+  private final AwardDomicile fromDomicile;
   private final AwardDomicile toDomicile;
   private final YearMonth yearMonth;
   private final TripDatabase tripDatabase;
+  private final Notifier notifier;
+  private final CountDownLatch initLatch;
+  private final AtomicBoolean newInfo;
 
   private AtomicBoolean shouldExit = new AtomicBoolean(false);
   private Proto.Schedule protoSchedule = null;
-  private Set<LocalDate> greenDays = null;
-  private final BlockingQueue<Set<LocalDate>> observedGreenDayQueue =
-      new LinkedBlockingQueue<>();
+  private GridObservation toGrid = null;
+  private GridObservation fromGrid = null;
   private ScheduleAdapter scheduleAdapter = new ScheduleAdapter();
   private Map<PairingKey, PairingKey> submittedSwaps = new HashMap<>();
 
   public Processor(Clock clock, YearMonth yearMonth, FlicaService flicaService,
-      AwardDomicile toDomicile, BidConfig bidConfig, TripDatabase tripDatabase) throws IOException, URISyntaxException, ParseException {
-    this.gridAdapter = new GridAdapter(clock, yearMonth);
+      AwardDomicile fromDomicile, AwardDomicile toDomicile, BidConfig bidConfig,
+      TripDatabase tripDatabase)
+      throws IOException, URISyntaxException, ParseException, AddressException {
     this.clock = clock;
     this.yearMonth = yearMonth;
     this.flicaService = flicaService;
+    this.fromDomicile = fromDomicile;
     this.toDomicile = toDomicile;
     this.bidConfig = bidConfig;
     this.tripDatabase = tripDatabase;
+    this.notifier = new Notifier(
+        bidConfig.getNotificationFromAddress(),
+        bidConfig.getNotificationToAddress());
+    this.initLatch = new CountDownLatch(3);
+    this.newInfo = new AtomicBoolean(false);
     this.setName("Processor");
     this.setDaemon(false);
   }
 
   @Override
   public void observe(GridObservation observation) {
-    Set<LocalDate> observedGreenDays = gridAdapter.getGreenDays(observation);
-    observedGreenDayQueue.add(observedGreenDays);
+    AwardDomicile domicile = AwardDomicile.valueOf(observation.getDomicile());
+    synchronized (this) {
+      if (domicile.equals(toDomicile)) {
+        toGrid = observation;
+        initLatch.countDown();
+        newInfo.set(true);
+      } else if (domicile.equals(fromDomicile)) {
+        fromGrid = observation;
+        initLatch.countDown();
+        newInfo.set(true);
+      } else {
+        throw new IllegalStateException("Unexpected grid from domicile "
+            + domicile + " which was not " + toDomicile + " or " + fromDomicile);
+      }
+    }
   }
 
   @Override
   public void observe(Proto.Schedule schedule) {
     synchronized(this) {
       this.protoSchedule = schedule;
+      initLatch.countDown();
+      newInfo.set(true);
     }
     shouldExit.set(areAllDroppableTripsInDomicile(schedule));
   }
@@ -120,41 +150,57 @@ public class Processor extends Thread implements Observer {
   public void run() {
     while (!shouldExit.get()) {
       try {
-        Set<LocalDate> observedGreenDays = observedGreenDayQueue.take();
-        if (shouldExit.get()) {
-          break;
+        initLatch.await();
+      } catch (InterruptedException e) {
+        logger.log(Level.WARNING, "Error awaiting init latch", e);
+      }
+
+      // TODO: use a blocking mechanism.
+      if (!newInfo.get()) {
+        try {
+          Thread.sleep(5000);
+        } catch (InterruptedException e) {
+          logger.log(Level.WARNING, "Error sleeping", e);
         }
-        if (greenDays != null && greenDays.equals(observedGreenDays)) {
-          // no changes
+        continue;
+      }
+      newInfo.set(false);
+
+      GridObservation fromGridCopy;
+      GridObservation toGridCopy;
+      Proto.Schedule protoScheduleCopy;
+      synchronized (this) {
+        if (protoSchedule == null) {
+          logger.info("Waiting for schedule retrieval");
           continue;
         }
-        greenDays = observedGreenDays;
-        Proto.Schedule protoScheduleCopy;
-        synchronized (this) {
-          if (protoSchedule == null) {
-            // no schedule yet
-            continue;
-          }
-          protoScheduleCopy = protoSchedule.toBuilder().build();
+        if (fromGrid == null) {
+          logger.info("Waiting for from grid retrieval");
+          continue;
         }
-        process(greenDays, scheduleAdapter.adapt(protoScheduleCopy));
-      } catch (InterruptedException e) {
-        logger.log(Level.WARNING, "Error", e);
+        if (toGrid == null) {
+          logger.info("Waiting for to grid retrieval");
+          continue;
+        }
+        protoScheduleCopy = protoSchedule.toBuilder().build();
+        fromGridCopy = fromGrid.toBuilder().build();
+        toGridCopy = toGrid.toBuilder().build();
       }
+      process(fromGridCopy, toGridCopy, scheduleAdapter.adapt(protoScheduleCopy));
     }
     logger.info("Shutting down as our work is done.");
   }
 
-  private void process(final Set<LocalDate> greenDays, Schedule schedule) {
-    logger.info("Processing reserve grid change");
-    ScheduleWrapper scheduleWrapper = new ScheduleWrapper(
-        schedule, yearMonth, clock, bidConfig);
+  private void process(GridObservation fromGrid, GridObservation toGrid,
+      Schedule schedule) {
+    logger.info("Processing...");
+    LocalDate changeHorizon = clock.today().plusDays(1);
     schedule.getTrips().forEach((key, trip) -> {
       if (key.getPairingName().charAt(0) != toDomicile.getAwardId()
-          && greenDays.containsAll(trip.getDepartureDates())
-          && scheduleWrapper.getAllDroppable().contains(trip)) {
+          && trip.isDroppable() // it is an actual trip.
+          && trip.getEarliestDepartureDate().isAfter(changeHorizon)) {
         try {
-          attemptTripDrop(scheduleWrapper, trip);
+          attemptTripDrop(schedule, fromGrid, toGrid, trip);
         } catch (URISyntaxException | IOException | ParseException e) {
           logger.log(Level.WARNING, "Error", e);
         }
@@ -162,9 +208,15 @@ public class Processor extends Thread implements Observer {
     });
   }
 
-  private void attemptTripDrop(ScheduleWrapper scheduleWrapper, Trip dropTrip) throws URISyntaxException, IOException, ParseException {
+  private void attemptTripDrop(
+      Schedule schedule,
+      GridObservation fromGrid,
+      GridObservation toGrid,
+      Trip dropTrip) throws URISyntaxException, IOException, ParseException {
     logger.info("Attempting to drop trip " + dropTrip.getPairingName());
-    Map<Trip, TripScore> eligibleAdds = getEligibleAdds(scheduleWrapper, dropTrip);
+    Set<Trip> callScheduling = new HashSet<>();
+    Map<Trip, TripScore> eligibleAdds = getEligibleAdds(schedule, dropTrip,
+        callScheduling);
     if (eligibleAdds.isEmpty()) {
       return;
     }
@@ -184,11 +236,17 @@ public class Processor extends Thread implements Observer {
             dropTrip.getPairingName(),
             dropScore.getPoints()));
       }
-      if (false) {
-        flicaService.submitSwap(FlicaService.BID_FIRST_COME, yearMonth,
-            clock.today(), ImmutableList.of(addKey), ImmutableList.of(dropKey));
+      if (callScheduling.contains(addTrip)) {
+        logger.info("CALL SCHEDULING: drop " + dropKey + ", add " + addKey);
+        notifier.notify("CALL SCHEDULING",
+            "Drop " + dropKey + ", add " + addKey + "\n");
       } else {
-        logger.info("SWAP: drop " + dropKey + ", add " + addKey);
+        if (false) {
+          flicaService.submitSwap(FlicaService.BID_FIRST_COME, yearMonth,
+              clock.today(), ImmutableList.of(addKey), ImmutableList.of(dropKey));
+        } else {
+          logger.info("SWAP: drop " + dropKey + ", add " + addKey);
+        }
       }
       submittedSwaps.put(addKey, dropKey);
     }
@@ -202,28 +260,80 @@ public class Processor extends Thread implements Observer {
     return openTimeParser.parse();
   }
 
-  private Map<Trip, TripScore> getEligibleAdds(ScheduleWrapper scheduleWrapper, Trip dropTrip) throws URISyntaxException, IOException, ParseException {
-    Period creditWithoutDropTrip = scheduleWrapper.getSchedule()
-        .getCreditInMonth().minus(dropTrip.getCredit(yearMonth));
+  private Map<Trip, TripScore> getEligibleAdds(
+      Schedule schedule, Trip dropTrip, Set<Trip> callScheduling)
+      throws URISyntaxException, IOException, ParseException {
+    Period creditWithoutDropTrip = schedule
+        .getCreditInMonth().minus(dropTrip.getCredit());
+
+    // Constructs a reduced schedule.
+    Set<PairingKey> retainedKeys = new HashSet<>(schedule.getTrips().keySet());
+    retainedKeys.remove(dropTrip.getPairingKey());
+    ReducedSchedule reducedSchedule = new ReducedSchedule(
+        schedule, retainedKeys, bidConfig);
+
+    GridEvaluator gridEvaluator = new GridEvaluator(yearMonth, fromGrid, toGrid);
+
     Map<Trip, TripScore> result = new HashMap<>();
-    for (FlicaTask task : getOpentimeTrips()) {
-      PairingKey key = new PairingKey(task.pairingDate, task.pairingName);
-      Trip addTrip = tripDatabase.getTrip(key);
-      OverlapEvaluation eval = scheduleWrapper.evaluateOverlap(addTrip);
-      if (eval.overlapsUndroppable) {
-        logger.info("Considered " + key + " but it overlaps something undroppable");
+    for (FlicaTask bareTask : getOpentimeTrips()) {
+      FlicaTaskWrapper task = new FlicaTaskWrapper(bareTask);
+      Trip addTrip = tripDatabase.getTrip(task.getPairingKey());
+
+      if (task.isTwoHundred()) {
         continue;
       }
-      if (!eval.noOverlap && !eval.droppable.equals(ImmutableList.of(dropTrip))) {
-        logger.info("Considered " + key + " but it overlaps something other than drop trip");
+
+      OverlapEvaluator evaluator = new OverlapEvaluator(
+          reducedSchedule, yearMonth, bidConfig);
+      OverlapEvaluation eval = evaluator.evaluate(addTrip);
+      switch (eval.overlap) {
+        case UNDROPPABLE:
+          logger.info("Considered " + addTrip.getPairingName()
+              + " but it overlaps something undroppable");
+          continue;
+        case DAY_OFF:
+          logger.info("Considered " + addTrip.getPairingName()
+              + " but it overlaps a day off");
+          continue;
+        case RETAINED_TRIP:
+          if (eval.overlappedTrips.size() == 1 &&
+              eval.overlappedTrips.iterator().next().equals(dropTrip)) {
+            // overlaps dropped trip. OK to consider.
+            break;
+          } else {
+            Preconditions.checkState(!eval.overlappedTrips.isEmpty());
+            if (!eval.overlappedTrips.contains(dropTrip)) {
+              // overlaps another trip. Wait until that trip is considered.
+              continue;
+            }
+            Set<String> overlappedTrips = new HashSet<>();
+            eval.overlappedTrips.forEach(t -> overlappedTrips.add(t.getPairingName()));
+            logger.warning("TODO: implement overlap of non-drop trips "
+                + overlappedTrips + " by " + addTrip.getPairingName());
+            continue;
+          }
+        case NO_OVERLAP:
+          break;
+      }
+
+      // Checks credit.
+      Period newCredit = creditWithoutDropTrip.plus(addTrip.getCredit());
+      if (newCredit.isLessThan(MIN_CREDIT)) {
+        logger.info("Considered " + addTrip.getPairingName()
+            + " but the new credit would be less than min credit at " + newCredit);
         continue;
       }
-      Period newCredit = creditWithoutDropTrip.plus(addTrip.getCredit(yearMonth));
-      if (newCredit.isLessThan(Period.hours(65))) {
-        logger.info("Considered " + key + " but the new credit would be " + newCredit);
-        continue;
+
+      // Checks reserve grid.
+      GridEvaluation gridEval = gridEvaluator.evaluate(
+          dropTrip.getDepartureDates(),
+          addTrip.getDepartureDates());
+      if (gridEval.swappable) {
+        result.put(addTrip, new TripScore(addTrip, bidConfig));
       }
-      result.put(addTrip, new TripScore(addTrip, bidConfig));
+      if (gridEval.requiresCrewScheduling) {
+        callScheduling.add(addTrip);
+      }
     }
     return Collections.sortByValueDescending(result);
   }

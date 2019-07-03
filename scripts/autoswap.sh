@@ -10,6 +10,7 @@ CLASSPATH=$CLASSPATH:lib/protobuf-2.6.1.jar
 CLASSPATH=$CLASSPATH:lib/joda-time-2.2.jar
 CLASSPATH=$CLASSPATH:lib/slf4j-api-1.7.25.jar
 CLASSPATH=$CLASSPATH:lib/slf4j-jdk14-1.7.25.jar
+CLASSPATH=$CLASSPATH:lib/javax.mail.jar
 
 java \
   -Djava.util.logging.config.file=scripts/logging.properties \

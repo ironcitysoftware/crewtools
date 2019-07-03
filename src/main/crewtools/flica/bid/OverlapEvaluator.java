@@ -34,8 +34,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
 
 import crewtools.flica.bid.OverlapEvaluator.OverlapEvaluation.Overlap;
-import crewtools.flica.pojo.PairingKey;
-import crewtools.flica.pojo.Schedule;
 import crewtools.flica.pojo.Trip;
 import crewtools.rpc.Proto.BidConfig;
 
@@ -49,11 +47,16 @@ public class OverlapEvaluator {
     }
     public OverlapEvaluation(Overlap overlap) {
       this.overlap = overlap;
+      this.overlappedTrips = ImmutableSet.of();
+    }
+
+    public OverlapEvaluation(Overlap overlap, Set<Trip> overlappedTrips) {
+      this.overlap = overlap;
+      this.overlappedTrips = overlappedTrips;
     }
 
     public final Overlap overlap;
-    //public final boolean noOverlap;
-    //public Collection<Trip> droppable;
+    public final Set<Trip> overlappedTrips;
   }
 
   private final Set<LocalDate> requiredDaysOff;
@@ -88,10 +91,14 @@ public class OverlapEvaluator {
       return new OverlapEvaluation(Overlap.DAY_OFF);
     }
 
+    Set<Trip> overlappedTrips = new HashSet<>();
     for (Trip trip : alteredSchedule.getRetainedTrips()) {
       if (overlapsDates(trip, dates)) {
-        return new OverlapEvaluation(Overlap.RETAINED_TRIP);
+        overlappedTrips.add(trip);
       }
+    }
+    if (!overlappedTrips.isEmpty()) {
+      return new OverlapEvaluation(Overlap.RETAINED_TRIP, overlappedTrips);
     }
 
     return new OverlapEvaluation(Overlap.NO_OVERLAP);
@@ -108,10 +115,14 @@ public class OverlapEvaluator {
       return new OverlapEvaluation(Overlap.DAY_OFF);
     }
 
+    Set<Trip> overlappedTrips = new HashSet<>();
     for (Trip trip : alteredSchedule.getRetainedTrips()) {
       if (overlapsDates(trip, proposedTrip.getDepartureDates())) {
-        return new OverlapEvaluation(Overlap.RETAINED_TRIP);
+        overlappedTrips.add(trip);
       }
+    }
+    if (!overlappedTrips.isEmpty()) {
+      return new OverlapEvaluation(Overlap.RETAINED_TRIP, overlappedTrips);
     }
 
     return new OverlapEvaluation(Overlap.NO_OVERLAP);

@@ -19,29 +19,27 @@
 
 package crewtools.flica.grid;
 
-import java.io.File;
-import java.text.MessageFormat;
-import java.util.Date;
-import java.util.logging.Formatter;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import org.joda.time.Duration;
 import org.joda.time.YearMonth;
 
 import crewtools.flica.AwardDomicile;
+import crewtools.flica.CachingFlicaService;
 import crewtools.flica.FlicaConnection;
 import crewtools.flica.FlicaService;
 import crewtools.flica.Proto.Rank;
 import crewtools.flica.bid.TripDatabase;
 import crewtools.rpc.Proto.BidConfig;
-import crewtools.util.Clock;
 import crewtools.util.FileUtils;
 import crewtools.util.FlicaConfig;
 import crewtools.util.SystemClock;
 
 public class AutoSwap {
   private final Logger logger = Logger.getLogger(AutoSwap.class.getName());
+
+  private static final Duration SCHEDULE_LOAD_INTERVAL = Duration.standardMinutes(60);
+  private static final Duration GRID_LOAD_INTERVAL = Duration.standardMinutes(15);
 
   private AwardDomicile fromDomicile;
   private AwardDomicile toDomicile;
@@ -63,7 +61,7 @@ public class AutoSwap {
     rank = Rank.valueOf(args[2]);
     yearMonth = YearMonth.parse(args[3]);
     FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
-    service = new FlicaService(connection);
+    service = new CachingFlicaService(connection);
   }
 
   public void run() throws Exception {
@@ -73,9 +71,13 @@ public class AutoSwap {
     BidConfig bidConfig = FileUtils.readBidConfig();
     TripDatabase tripDatabase = new TripDatabase(service);
     Processor processor = new Processor(new SystemClock(), yearMonth,
-        service, toDomicile, bidConfig, tripDatabase);
+        service, fromDomicile, toDomicile, bidConfig, tripDatabase);
     processor.start();
-    new ScheduleLoaderThread(Duration.standardMinutes(60), yearMonth, service, processor).start();
-    new GridObserverationThread(Duration.standardMinutes(30), yearMonth, service, fromDomicile, rank, processor).start();
+    new ScheduleLoaderThread(SCHEDULE_LOAD_INTERVAL, yearMonth, service, processor)
+        .start();
+    new GridObserverationThread(GRID_LOAD_INTERVAL, yearMonth, service,
+        fromDomicile, rank, processor).start();
+    new GridObserverationThread(GRID_LOAD_INTERVAL, yearMonth, service,
+        toDomicile, rank, processor).start();
   }
 }

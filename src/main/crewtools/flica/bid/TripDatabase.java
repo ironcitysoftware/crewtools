@@ -53,11 +53,11 @@ public class TripDatabase {
   private final ReplayManager replayManager;
   private final BidConfig bidConfig;
 
-  public TripDatabase(FlicaService service) {
+  public TripDatabase(FlicaService service) throws IOException {
     this.service = service;
     this.trips = new HashMap<>();
     this.useProto = false;
-    this.replayManager = null;
+    this.replayManager = new ReplayManager(false /* not replaying */, null);
     this.bidConfig = null;
   }
 

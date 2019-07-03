@@ -121,6 +121,9 @@ message BidConfig {
   optional bool enable_monthly_preferred_overnights_are_desirable = 22;
 
   optional string preferred_origin_airport_code = 23;
+
+  optional string notification_from_address = 24;
+  optional string notification_to_address = 25;
 }
 
 message ScoreAdjustment {

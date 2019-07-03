@@ -76,9 +76,6 @@ public class ReplayManager {
     SCHEDULE_DIR = REPLAY_DIR.resolve("schedule");
     PAIRING_DIR = REPLAY_DIR.resolve("pairings");
     REQUEST_STATUS_DIR = REPLAY_DIR.resolve("request-status");
-    if (!Files.exists(SWAP_RECORD)) {
-      Files.createFile(SWAP_RECORD);
-    }
     if (!isReplaying) {
       try {
         Files.createDirectories(OPENTIME_DIR);
@@ -88,6 +85,9 @@ public class ReplayManager {
       } catch (IOException ioe) {
         logger.log(Level.WARNING, "Error creating directories", ioe);
       }
+    }
+    if (!Files.exists(SWAP_RECORD)) {
+      Files.createFile(SWAP_RECORD);
     }
     this.isReplaying = isReplaying;
   }
