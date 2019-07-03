@@ -241,6 +241,7 @@ public class Processor extends Thread implements Observer {
         notifier.notify("CALL SCHEDULING",
             "Drop " + dropKey + ", add " + addKey + "\n");
       } else {
+        notifier.notify("TRY FLICA", "SWAP: drop " + dropKey + ", add " + addKey + "\n");
         if (false) {
           flicaService.submitSwap(FlicaService.BID_FIRST_COME, yearMonth,
               clock.today(), ImmutableList.of(addKey), ImmutableList.of(dropKey));

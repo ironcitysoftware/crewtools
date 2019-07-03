@@ -25,7 +25,6 @@ import org.joda.time.Duration;
 import org.joda.time.YearMonth;
 
 import crewtools.flica.AwardDomicile;
-import crewtools.flica.CachingFlicaService;
 import crewtools.flica.FlicaConnection;
 import crewtools.flica.FlicaService;
 import crewtools.flica.Proto.Rank;
@@ -61,7 +60,8 @@ public class AutoSwap {
     rank = Rank.valueOf(args[2]);
     yearMonth = YearMonth.parse(args[3]);
     FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
-    service = new CachingFlicaService(connection);
+    // service = new CachingFlicaService(connection);
+    service = new FlicaService(connection);
   }
 
   public void run() throws Exception {
