@@ -78,7 +78,6 @@ public class Processor extends Thread implements Observer {
   private final TripDatabase tripDatabase;
   private final Notifier notifier;
   private final CountDownLatch initLatch;
-  private final AtomicBoolean newInfo;
 
   private AtomicBoolean shouldExit = new AtomicBoolean(false);
   private Proto.Schedule protoSchedule = null;
@@ -86,6 +85,9 @@ public class Processor extends Thread implements Observer {
   private GridObservation fromGrid = null;
   private ScheduleAdapter scheduleAdapter = new ScheduleAdapter();
   private Map<PairingKey, PairingKey> submittedSwaps = new HashMap<>();
+  private long lastInfoProcessedMillis = 0;
+  private long informationTimeMillis = 0;
+  private Object blockUntilNewInformation = new Object();
 
   public Processor(Clock clock, YearMonth yearMonth, FlicaService flicaService,
       AwardDomicile fromDomicile, AwardDomicile toDomicile, BidConfig bidConfig,
@@ -102,7 +104,6 @@ public class Processor extends Thread implements Observer {
         bidConfig.getNotificationFromAddress(),
         bidConfig.getNotificationToAddress());
     this.initLatch = new CountDownLatch(3);
-    this.newInfo = new AtomicBoolean(false);
     this.setName("Processor");
     this.setDaemon(false);
   }
@@ -113,12 +114,14 @@ public class Processor extends Thread implements Observer {
     synchronized (this) {
       if (domicile.equals(toDomicile)) {
         toGrid = observation;
+        informationTimeMillis = System.currentTimeMillis();
+        blockUntilNewInformation.notify();
         initLatch.countDown();
-        newInfo.set(true);
       } else if (domicile.equals(fromDomicile)) {
         fromGrid = observation;
+        informationTimeMillis = System.currentTimeMillis();
+        blockUntilNewInformation.notify();
         initLatch.countDown();
-        newInfo.set(true);
       } else {
         throw new IllegalStateException("Unexpected grid from domicile "
             + domicile + " which was not " + toDomicile + " or " + fromDomicile);
@@ -130,8 +133,9 @@ public class Processor extends Thread implements Observer {
   public void observe(Proto.Schedule schedule) {
     synchronized(this) {
       this.protoSchedule = schedule;
+      informationTimeMillis = System.currentTimeMillis();
+      blockUntilNewInformation.notify();
       initLatch.countDown();
-      newInfo.set(true);
     }
     shouldExit.set(areAllDroppableTripsInDomicile(schedule));
   }
@@ -149,22 +153,28 @@ public class Processor extends Thread implements Observer {
 
   public void run() {
     while (!shouldExit.get()) {
+      // if we received a notify() while processing, don't wait.
+      boolean needsProcessing;
+      synchronized (this) {
+        needsProcessing = informationTimeMillis > lastInfoProcessedMillis;
+      }
+      if (!needsProcessing) {
+        try {
+          blockUntilNewInformation.wait();
+          // This isn't quite right either.
+        } catch (InterruptedException e) {
+          logger.log(Level.WARNING, "Error awaiting new info", e);
+        }
+      }
+      synchronized (this) {
+        lastInfoProcessedMillis = informationTimeMillis;
+      }
+
       try {
         initLatch.await();
       } catch (InterruptedException e) {
         logger.log(Level.WARNING, "Error awaiting init latch", e);
       }
-
-      // TODO: use a blocking mechanism.
-      if (!newInfo.get()) {
-        try {
-          Thread.sleep(5000);
-        } catch (InterruptedException e) {
-          logger.log(Level.WARNING, "Error sleeping", e);
-        }
-        continue;
-      }
-      newInfo.set(false);
 
       GridObservation fromGridCopy;
       GridObservation toGridCopy;
