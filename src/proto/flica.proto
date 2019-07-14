@@ -188,6 +188,7 @@ enum LegType {
   HOT_RESERVE = 10 [(flica_name)="HRV"];  // Hot reserve as part of a pairing?
   STANDBY = 11 [(flica_name)="STBY"];
   STANDBY_2 = 12 [(flica_name)="STB"];
+  STANDBY_3 = 19 [(flica_name)="STB`"];
   PCR = 13 [(flica_name)="PCR"];
   THS = 14 [(flica_name)="THS"];  // training of some sort
   HTL = 15 [(flica_name)="HTL"];  // hotel?

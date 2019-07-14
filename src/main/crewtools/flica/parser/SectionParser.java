@@ -287,12 +287,12 @@ public class SectionParser {
 
     if (components.hasNext()) {
       // either DHD or TRIP RIG
-      String next = components.next(); 
+      String next = components.next();
       if (next.equals("DHD:")) {
         trip.setDeadheadDuration(components.next());
       } else {
         checkState(next.equals("TRIP"), "Expected DHD or 'TRIP' RIG: " + row + "[" + next + "]");
-        next = components.next(); 
+        next = components.next();
         checkState(next.equals("RIG:"), "Expected DHD or TRIP 'RIG:' " + row + "[" + next + "]");
         trip.setTripRigDuration(components.next());
       }
