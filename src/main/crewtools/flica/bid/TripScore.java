@@ -76,6 +76,18 @@ public class TripScore implements Comparable<TripScore> {
     this.numFavoriteOvernights = numFavoriteOvernights;
     this.numLegs = numLegs;
 
+    switch (trip.getSections().size()) {
+      case 4:
+      case 3:
+        break;
+      case 2:
+        badPoints += 500;
+        break;
+      case 1:
+        badPoints += 750;
+        break;
+    }
+
     goodPoints += numFavoriteOvernights * 3;
     if (numFavoriteOvernights > 0) {
       scoreExplanation.add("+" + numFavoriteOvernights * 3 + " for favorite overnights");

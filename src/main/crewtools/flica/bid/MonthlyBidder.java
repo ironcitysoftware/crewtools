@@ -191,7 +191,7 @@ public class MonthlyBidder {
     result.append(dates);
     result.append("] ");  // fix blend
     result.append(lineScore.isDesirableLine() ? "D " : "U ");
-    result.append(String.format("%4d", lineScore.getScore()));
+    result.append(String.format("%5d", lineScore.getScore()));
     result.append("/");
     result.append(String.format("%2d", lineScore.getScoreAdjustmentPoints()));
     result.append(" top3:");

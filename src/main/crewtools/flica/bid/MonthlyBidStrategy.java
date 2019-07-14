@@ -29,6 +29,8 @@ import crewtools.util.Period;
 public class MonthlyBidStrategy implements Comparator<LineScore> {
   private final Logger logger = Logger.getLogger(MonthlyBidStrategy.class.getName());
 
+  private static final Period MIN_CREDIT = Period.hours(65);
+
   private final BidConfig bidConfig;
 
   public MonthlyBidStrategy(BidConfig bidConfig) {
@@ -53,41 +55,22 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
       return -isReserve;
     }
 
-    int isDesirable = new Boolean(a.isDesirableLine())
-        .compareTo(b.isDesirableLine());
-    if (isDesirable != 0) {
-      return -isDesirable;
+
+    if (bidConfig.getEnableMontlySortByDesirable()) {
+      int isDesirable = new Boolean(a.isDesirableLine())
+          .compareTo(b.isDesirableLine());
+      if (isDesirable != 0) {
+        return -isDesirable;
+      }
     }
 
     int aHighest = new Integer(
-        a.getNHighestCreditsPlusCarryIn().compareTo(Period.hours(65)));
+        a.getNHighestCreditsPlusCarryIn().compareTo(MIN_CREDIT));
     int bHighest = new Integer(
-        b.getNHighestCreditsPlusCarryIn().compareTo(Period.hours(65)));
-    if (aHighest + bHighest == 0) {
-      return (aHighest > 0) ? -1 : 1;
+        b.getNHighestCreditsPlusCarryIn().compareTo(MIN_CREDIT));
+    if (aHighest >= 0 ^ bHighest >= 0) {
+      return (aHighest >= 0) ? -1 : 1;
     }
-
-    int num200 = new Integer(a.getNumEquipmentTwoHundredSegments())
-        .compareTo(b.getNumEquipmentTwoHundredSegments());
-    if (num200 != 0) {
-      return num200;
-    }
-
-    // int nHighest = new Integer(
-    // a.getNHighestCreditsPlusCarryIn()
-    // .compareTo(b.getNHighestCreditsPlusCarryIn()));
-    // if (nHighest != 0) {
-    // return -nHighest;
-    // }
-
-    // int minTripEligible = new Boolean(
-    // a.hasMinimumTripsThatMeetMinCredit())
-    // .compareTo(b.hasMinimumTripsThatMeetMinCredit());
-    // if (minTripEligible != 0) {
-    // return -minTripEligible;
-    // }
-
-    // both LineScores either are or are not N-trip eligible.
 
     if (bidConfig.getEnableMonthlySortByCredit()) {
       int creditCmp = new Integer(
