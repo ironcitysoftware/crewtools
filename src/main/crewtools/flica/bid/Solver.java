@@ -149,7 +149,7 @@ public class Solver {
       }
       if (!calendar.isWithinPeriod(date)) {
         logger.fine(".. ignoring " + pairingName + " due to blend");
-        continue;
+        return false;
       }
     }
     return true;
