@@ -83,8 +83,9 @@ public class Solver {
       Set<PairingKey> retainedTrips = retainedTripsSet.next();
       if (logger.isLoggable(Level.FINE)) {
         logger.fine(
-            "Considering schedule combination " + count++ + ": " + retainedTrips);
+            "Considering schedule combination " + count + ": " + retainedTrips);
       }
+      count++;
       ReducedSchedule reducedSchedule = new ReducedSchedule(schedule, retainedTrips, bidConfig);
       enumerateSolutions(solutions, reducedSchedule);
     }
