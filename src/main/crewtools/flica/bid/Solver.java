@@ -102,7 +102,7 @@ public class Solver {
     Set<FlicaTaskWrapper> candidateTasks = new HashSet<>();
     Set<LocalDate> dates = new HashSet<>();
     for (FlicaTaskWrapper task : tasks) {
-      if (task.isTwoHundred()) {
+      if (!bidConfig.getEnableAllowTwoHundredTrips() && task.isTwoHundred()) {
         logger.fine(".. ignoring 200 trip " + task.getPairingName());
         continue;
       }

@@ -126,6 +126,8 @@ message BidConfig {
   optional string notification_to_address = 25;
 
   optional bool enable_montly_sort_by_desirable = 26;
+
+  optional bool enable_allow_two_hundred_trips = 27;
 }
 
 message ScoreAdjustment {
