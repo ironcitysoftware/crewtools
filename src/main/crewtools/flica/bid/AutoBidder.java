@@ -88,7 +88,7 @@ public class AutoBidder {
     scheduleLoaderThread.start();
 
     Worker worker = new Worker(bidConfig, yearMonth, collector, service,
-        clock, tripDatabase, replayManager, cmdLine.isDebug());
+        clock, tripDatabase, replayManager, cmdLine.isDebug(), cmdLine.isNoSwap());
 
     if (cmdLine.isDebug()) {
       logger.info("*** DEBUG MODE ***");

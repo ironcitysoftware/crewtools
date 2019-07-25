@@ -53,10 +53,11 @@ public class Worker {
   private Duration opentimeRefreshInterval = Duration.standardMinutes(6);
   private final Comparator<Solution> comparator = new MinimizeWorkMaximizeFunComparator();
   private final boolean isDebug;
+  private final boolean isNoSwap;
 
   public Worker(BidConfig bidConfig, YearMonth yearMonth, Collector collector,
       FlicaService service, Clock clock, TripDatabase tripDatabase,
-      ReplayManager replayManager, boolean isDebug) {
+      ReplayManager replayManager, boolean isDebug, boolean isNoSwap) {
     this.bidConfig = bidConfig;
     this.yearMonth = yearMonth;
     this.collector = collector;
@@ -65,6 +66,7 @@ public class Worker {
     this.tripDatabase = tripDatabase;
     this.replayManager = replayManager;
     this.isDebug = isDebug;
+    this.isNoSwap = isNoSwap;
   }
 
   public Duration getOpentimeRefreshInterval() {
@@ -109,6 +111,8 @@ public class Worker {
       logger.info("[debug] ignoring solution " + transition);
     } else if (replayManager.isReplaying()) {
       logger.info("[replay] ignoring solution " + transition);
+    } else if (isNoSwap) {
+      logger.info("[noswap] ignoring solution " + transition);
     } else {
       swap(transition.getAddKeys(), transition.getDropKeys());
     }
