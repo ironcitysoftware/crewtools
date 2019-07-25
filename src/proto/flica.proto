@@ -173,6 +173,7 @@ enum ScheduleType {
   CARRY_IN = 31 [(flica_name)="CI"];
 }
 
+// Next ID 21
 enum LegType {
   FAKE = 1;
   SELF_COMMUTE = 2 [(flica_name)="SELF"];
@@ -194,6 +195,7 @@ enum LegType {
   HTL = 15 [(flica_name)="HTL"];  // hotel?
   GND = 16 [(flica_name)="GND"];
   FKE = 17 [(flica_name)="FKE"];
+  FAK = 20 [(flica_name)="FAK"];
   K = 18 [(flica_name)="K"];
 }
 
