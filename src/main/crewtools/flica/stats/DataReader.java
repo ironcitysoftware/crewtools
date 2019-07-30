@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,6 +43,7 @@ import crewtools.flica.Proto.PeriodicAwards;
 import crewtools.flica.Proto.Rank;
 import crewtools.flica.Proto.SeniorityList;
 import crewtools.flica.Proto.ThinLineList;
+import crewtools.rpc.Proto.FlightListFile;
 import crewtools.util.FlicaConfig;
 
 public class DataReader {
@@ -58,6 +60,10 @@ public class DataReader {
 
   public String getPeriodicAwardFilename() {
     return dataDir + "periodic-awards.txt";
+  }
+
+  public String getTimetableFilename(YearMonth yearMonth) {
+    return dataDir + "timetable-" + yearMonth + ".io";
   }
 
   public String getLineFilename(YearMonth yearMonth, AwardDomicile awardDomicile,
@@ -240,5 +246,16 @@ public class DataReader {
     TextFormat.getParser().merge(
         Files.toString(periodicAward, StandardCharsets.UTF_8), builder);
     return builder.build();
+  }
+
+  public FlightListFile readTimetable(YearMonth yearMonth)
+      throws FileNotFoundException, IOException {
+    File flightList = new File(getTimetableFilename(yearMonth));
+    Preconditions.checkState(flightList.exists(),
+        "File doesn't exist: " + flightList.getAbsolutePath());
+    logger.info("Reading " + flightList.getAbsolutePath());
+    try (InputStream input = java.nio.file.Files.newInputStream(flightList.toPath())) {
+      return FlightListFile.parseFrom(input);
+    }
   }
 }

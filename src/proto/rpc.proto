@@ -179,3 +179,22 @@ message ReportResponse {
   optional string error = 1;
   optional string html = 2;
 }
+
+// Flight timetables
+
+message FlightListFile {
+  repeated FlightList flight_list = 1;
+}
+
+message FlightList {
+  optional string origin = 1;
+  optional string destination = 2;
+  optional string date = 3;
+  repeated Flight flight = 4;
+}
+
+message Flight {
+  optional string flight_number = 1;
+  optional string departure_timestamp = 2;
+  optional string arrival_timestamp = 3;
+}
