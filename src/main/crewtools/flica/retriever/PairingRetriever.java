@@ -25,11 +25,14 @@ import java.util.logging.Logger;
 
 import org.joda.time.YearMonth;
 
+import com.google.common.base.Preconditions;
+
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.FlicaConnection;
 import crewtools.flica.FlicaService;
 import crewtools.flica.Proto.PairingList;
 import crewtools.flica.Proto.Rank;
+import crewtools.flica.Proto.Trip;
 import crewtools.flica.parser.PairingParser;
 import crewtools.flica.stats.DataReader;
 import crewtools.util.FlicaConfig;
@@ -38,7 +41,7 @@ public class PairingRetriever {
   private final Logger logger = Logger.getLogger(PairingRetriever.class.getName());
 
   public static void main(String args[]) throws Exception {
-    YearMonth yearMonth = YearMonth.parse("2018-03");
+    YearMonth yearMonth = YearMonth.parse("2019-09");
     int round = 1;
     new PairingRetriever().writeOneBinary(yearMonth, round);
   }
@@ -58,11 +61,27 @@ public class PairingRetriever {
       }
       String pairings = service.getAllPairings(
           awardDomicile,
-          Rank.FIRST_OFFICER,
+          Rank.CAPTAIN,
           round,
           yearMonth);
       PairingParser pairingParser = new PairingParser(pairings, yearMonth, true);
       PairingList pairingList = pairingParser.parse();
+
+      PairingList.Builder builder = PairingList.newBuilder();
+      // Fix bad data
+      for (Trip trip : pairingList.getTripList()) {
+        if (trip.getPairingName().equals("A2006")) {
+          Preconditions.checkState(
+              trip.getOperatesExcept().equals("Sep 11. Sep 18. Sep 23"),
+              trip.getOperatesExcept());
+          Trip.Builder tb = trip.toBuilder();
+          tb.setOperatesExcept("Sep 11. Sep 18.");
+          trip = tb.build();
+        }
+        builder.addTrip(trip);
+      }
+      pairingList = builder.build();
+
       FileOutputStream output = new FileOutputStream(outputFile);
       pairingList.writeTo(output);
       output.close();
