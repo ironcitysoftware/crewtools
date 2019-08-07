@@ -128,6 +128,8 @@ message BidConfig {
   optional bool enable_montly_sort_by_desirable = 26;
 
   optional bool enable_allow_two_hundred_trips = 27;
+
+  optional bool enable_ding_partial_trips = 28;
 }
 
 message ScoreAdjustment {
