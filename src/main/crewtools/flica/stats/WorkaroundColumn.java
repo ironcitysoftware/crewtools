@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Iron City Software LLC
+ * Copyright 2019 Iron City Software LLC
  *
  * This file is part of CrewTools.
  *
@@ -19,36 +19,15 @@
 
 package crewtools.flica.stats;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class Column<T> {
-  private String label;
-  private List<T> data;
-
-  public Column(String label) {
-    this.label = label;
-    this.data = new ArrayList<T>();
+/** "Fix" last data column being empty by appending a delimiter. */
+public class WorkaroundColumn<T> extends Column<T> {
+  public WorkaroundColumn(String label) {
+    super(label);
   }
 
-  public void add(T datum) {
-    data.add(datum);
-  }
-
+  @Override
   public String getDatum(int index) {
-    T datum = data.get(index);
-    if (datum == null) {
-      return "";
-    } else {
-      return datum.toString();
-    }
-  }
-
-  public int size() {
-    return data.size();
-  }
-
-  public String getLabel() {
-    return label;
+    String datum = super.getDatum(index);
+    return datum.isEmpty() ? "," : datum;
   }
 }
