@@ -104,6 +104,9 @@ public class MonthlyBidder {
 
     List<LineScore> lineScores = new ArrayList<>();
     for (ThinLine line : lines) {
+      if (line.hasReserve()) {
+        continue;
+      }
       linesByName.put(line.getLineName(), line);
       Map<PairingKey, Trip> trips = new HashMap<>();
       for (PairingKey key : line.getPairingKeys()) {
@@ -134,7 +137,7 @@ public class MonthlyBidder {
 
     if (cmdLine.submitBids()) {
       logger.info("Submitting bids!");
-      Response response = service.submitLineBid(/* round */ 1, yearMonth, bids);
+      Response response = service.submitLineBid(bidConfig.getRound(), yearMonth, bids);
       Preconditions.checkState(response.code() == 200, response.toString());
       response.close();
     } else {

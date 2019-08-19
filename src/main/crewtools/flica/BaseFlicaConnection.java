@@ -72,7 +72,7 @@ public class BaseFlicaConnection implements Closeable {
     this.username = username;
     this.password = password;
     this.httpclient = new OkHttpClient().newBuilder()
-        //.addNetworkInterceptor(new LoggingInterceptor())
+        // .addNetworkInterceptor(new LoggingInterceptor())
         .followRedirects(false)
         .followSslRedirects(false)
         .cookieJar(cookieJar)
