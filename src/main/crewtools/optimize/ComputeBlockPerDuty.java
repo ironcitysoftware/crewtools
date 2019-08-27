@@ -28,6 +28,8 @@ import java.util.Map;
 
 import org.joda.time.YearMonth;
 
+import com.google.common.base.Preconditions;
+
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.Proto;
 import crewtools.flica.Proto.Rank;
@@ -39,7 +41,6 @@ import crewtools.flica.pojo.ThinLine;
 import crewtools.flica.pojo.Trip;
 import crewtools.flica.stats.DataReader;
 import crewtools.util.Period;
-import jline.internal.Preconditions;
 
 public class ComputeBlockPerDuty {
   public static void main(String args[]) throws Exception {
