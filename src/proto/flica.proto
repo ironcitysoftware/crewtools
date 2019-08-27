@@ -171,6 +171,7 @@ enum ScheduleType {
 
   SICK = 30 [(flica_name)="Sick"];
   CARRY_IN = 31 [(flica_name)="CI"];
+  COMPANY_BUSINESS_TRIP = 32 [(flica_name)="COB"];
 }
 
 // Next ID 21
@@ -197,6 +198,7 @@ enum LegType {
   FKE = 17 [(flica_name)="FKE"];
   FAK = 20 [(flica_name)="FAK"];
   K = 18 [(flica_name)="K"];
+  UPGRADE = 21 [(flica_name)="UPG"];
 }
 
 message Leg {
