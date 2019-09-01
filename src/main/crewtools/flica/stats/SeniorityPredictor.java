@@ -31,10 +31,12 @@ import java.util.logging.Logger;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
 import crewtools.flica.AwardDomicile;
+import crewtools.flica.FlicaService;
 import crewtools.flica.Proto.Award;
 import crewtools.flica.Proto.BaseMove;
 import crewtools.flica.Proto.CrewMember;
@@ -45,8 +47,11 @@ import crewtools.flica.Proto.KnownTermination;
 import crewtools.flica.Proto.PeriodicAward;
 import crewtools.flica.Proto.PeriodicAwards;
 import crewtools.flica.Proto.Rank;
+import crewtools.flica.Proto.ScheduleType;
 import crewtools.flica.Proto.SeniorityList;
 import crewtools.flica.Proto.Status;
+import crewtools.flica.Proto.ThinLine;
+import crewtools.flica.Proto.ThinLineList;
 import crewtools.flica.stats.BaseList.Member;
 
 public class SeniorityPredictor {
@@ -62,7 +67,7 @@ public class SeniorityPredictor {
   private final Multimap<YearMonth, DatedBaseMove> moves;
   private final List<BaseList> lists;
   private final int monthlyLineIncrease = DEFAULT_MONTHLY_LINE_INCREASE;
-  private final Map<YearMonth, Integer> numRoundOneLines;
+  private final Map<YearMonth, LineCount> lineCounts;
   private final DataReader dataReader;
   private final Multimap<YearMonth, Integer> terminations;
 
@@ -86,7 +91,7 @@ public class SeniorityPredictor {
     this.moves = readCrewMoves(periodicAwards);
     this.terminations = readTerminations(periodicAwards);
     this.lists = new ArrayList<>();
-    this.numRoundOneLines = new HashMap<>();
+    this.lineCounts = new HashMap<>();
   }
 
   private class DatedBaseMove {
@@ -155,9 +160,14 @@ public class SeniorityPredictor {
       pilotsBySeniority.put(crewMember.getSeniorityId(), crewMember);
     }
 
-    DomicileAward roundOneAwards = dataReader.readAwards(
-        startingYearMonth, awardDomicile, rank, 1);
-    numRoundOneLines.put(startingYearMonth, roundOneAwards.getAwardList().size());
+    DomicileAward roundOneAward = dataReader.readAwards(
+        startingYearMonth, awardDomicile, rank, FlicaService.BID_ROUND_ONE);
+    DomicileAward roundTwoAward = dataReader.readAwards(
+        startingYearMonth, awardDomicile, rank, FlicaService.BID_ROUND_TWO);
+    ThinLineList roundTwoLines = dataReader.readLines(
+        startingYearMonth, awardDomicile, rank, FlicaService.BID_ROUND_TWO);
+    lineCounts.put(startingYearMonth,
+        getLineCount(roundOneAward, roundTwoAward, roundTwoLines));
 
     BaseList seniorityList = createBaseListFromSeniority(
         startingYearMonth, pilotsBySeniority);
@@ -179,8 +189,8 @@ public class SeniorityPredictor {
     colorize.add(seniorityList);
     colorize.add(awardList);
     while (moves.containsKey(currentYearMonth)) {
-      numRoundOneLines.put(currentYearMonth,
-          numRoundOneLines.get(currentYearMonth.minusMonths(1)) + monthlyLineIncrease);
+      lineCounts.put(currentYearMonth,
+          lineCounts.get(currentYearMonth.minusMonths(1)).increment(monthlyLineIncrease));
       BaseList previousList = colorize.get(colorize.size() - 1);
       BaseList currentList = previousList
           .copyWithoutStyles(currentYearMonth, "prediction");
@@ -206,7 +216,8 @@ public class SeniorityPredictor {
       colorizeDiff(colorize.get(i), colorize.get(i + 1));
     }
 
-    new SeniorityRenderer(lists, numRoundOneLines, startingYearMonth, domicile).render();
+    new SeniorityRenderer(lists, lineCounts,
+        startingYearMonth, domicile).render();
   }
 
   private void addUnawardedPilots(BaseList awardList, BaseList seniorityList) {
@@ -330,5 +341,35 @@ public class SeniorityPredictor {
         }
       }
     }
+  }
+
+  private LineCount getLineCount(
+      DomicileAward roundOneAward,
+      DomicileAward roundTwoAward,
+      ThinLineList roundTwoLineList) {
+    int numRoundOne = roundOneAward.getAwardCount();
+    int numRoundTwo = 0;
+    int numLongCall = 0;
+    for (Award award : roundTwoAward.getAwardList()) {
+      if (!award.getLine().startsWith("RES")) {
+        numRoundTwo++;
+      } else {
+        boolean lineFound = false;
+        for (ThinLine line : roundTwoLineList.getThinLineList()) {
+          if (line.getLineName().equals(award.getLine())) {
+            lineFound = true;
+            if (line.getThinPairing(0)
+                .getScheduleType(0) == ScheduleType.LONG_CALL_RESERVE) {
+              numLongCall++;
+            } else {
+              // it is a SCR line
+            }
+            break;
+          }
+        }
+        Preconditions.checkState(lineFound, "Line not found: " + award.getLine());
+      }
+    }
+    return new LineCount(numRoundOne, numRoundTwo, numLongCall);
   }
 }

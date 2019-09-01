@@ -28,13 +28,15 @@ import java.util.Map;
 
 import org.joda.time.YearMonth;
 
+import com.google.common.base.Preconditions;
+
 import crewtools.flica.Proto.Domicile;
 import crewtools.flica.stats.BaseList.Member;
 
 public class SeniorityRenderer {
   private static final String OUTPUT_PATH = "/tmp/bl.html";
   private final List<BaseList> lists;
-  private final Map<YearMonth, Integer> numRoundOneLines;
+  private final Map<YearMonth, LineCount> lineCounts;
   private final YearMonth startingYearMonth;
   private final Domicile domicile;
 
@@ -74,11 +76,11 @@ public class SeniorityRenderer {
 
   public SeniorityRenderer(
       List<BaseList> lists,
-      Map<YearMonth, Integer> numRoundOneLines,
+      Map<YearMonth, LineCount> lineCounts,
       YearMonth startingYearMonth,
       Domicile domicile) {
     this.lists = lists;
-    this.numRoundOneLines = numRoundOneLines;
+    this.lineCounts = lineCounts;
     this.startingYearMonth = startingYearMonth;
     this.domicile = domicile;
   }
@@ -112,9 +114,19 @@ public class SeniorityRenderer {
             i + 1,
             cssClass,
             members.get(i).format());
-        if (i + 1 == numRoundOneLines.get(list.getYearMonth())) {
+        LineCount lineCount = Preconditions.checkNotNull(
+            lineCounts.get(list.getYearMonth()),
+            "Missing line counts for " + list.getYearMonth());
+        if (i + 1 == lineCount.getNumRoundOne()) {
           writer.printf("<tr><td colspan=2 class=\"heading\" "
-              + ">Round One</td></tr>\n");
+              + ">Round Two</td></tr>\n");
+        } else if (i + 1 == lineCount.getNumRoundOne() + lineCount.getNumRoundTwo()) {
+          writer.printf("<tr><td colspan=2 class=\"heading\" "
+              + ">LCR</td></tr>\n");
+        } else if (i + 1 == lineCount.getNumRoundOne() + lineCount.getNumRoundTwo()
+            + lineCount.getNumLongCall()) {
+          writer.printf("<tr><td colspan=2 class=\"heading\" "
+              + ">SCR</td></tr>\n");
         }
       }
       writer.println("</table></td>");
