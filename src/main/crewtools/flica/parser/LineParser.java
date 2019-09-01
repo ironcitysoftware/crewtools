@@ -145,7 +145,8 @@ public class LineParser {
       } else {
         if (components.size() == 2
             && components.get(0).equals(DASH)
-            && components.get(1).equals("LCR")) {
+            && (components.get(1).equals("LCR")
+                || components.get(1).equals("LCRR"))) {
           // Long call reserve has -, LCR for every day.
           if (currentPairing == null) {
             currentPairing = builder.addThinPairingBuilder();
