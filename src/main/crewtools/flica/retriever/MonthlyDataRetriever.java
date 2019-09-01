@@ -23,13 +23,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.Set;
 import java.util.logging.Logger;
 
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
-
-import com.google.common.collect.ImmutableSet;
 
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.FlicaConnection;
@@ -54,22 +51,21 @@ public class MonthlyDataRetriever {
   private final int seniorityDocumentId;
   private final DataReader dataReader;
 
-  private static final int ROUND_ONE = 1;
-  private static final int ROUND_TWO = 2;
-  private static final Set<Rank> RANKS = ImmutableSet.of(Rank.FIRST_OFFICER,
-      Rank.CAPTAIN);
-
   public static void main(String args[]) throws Exception {
     new MonthlyDataRetriever(args).run();
   }
 
   public MonthlyDataRetriever(String args[]) throws IOException {
-    if (args.length != 2) {
+    if (args.length == 0) {
       System.err.println("MonthlyDataRetriever 2018-01 seniority-document-id");
       System.exit(1);
     }
     this.yearMonth = YearMonth.parse(args[0]);
-    this.seniorityDocumentId = Integer.parseInt(args[1]);
+    if (args.length > 1) {
+      this.seniorityDocumentId = Integer.parseInt(args[1]);
+    } else {
+      this.seniorityDocumentId = 0;
+    }
     this.dataReader = new DataReader();
   }
 
@@ -88,7 +84,7 @@ public class MonthlyDataRetriever {
   private void getLinesForAllDomiciles(FlicaService service)
       throws ParseException, URISyntaxException, IOException {
     for (AwardDomicile awardDomicile : AwardDomicile.values()) {
-      for (Rank rank : RANKS) {
+      for (Rank rank : Rank.values()) {
         for (int round = 1; round < 3; ++round) {
           if (round == 1 && !rank.equals(Rank.CAPTAIN)) {
             // round 1 lines are the same for captains and first officers.
@@ -100,7 +96,8 @@ public class MonthlyDataRetriever {
             logger.info("SKIP " + outputFile + " as it exists");
             continue;
           }
-          if (new LocalDate().getDayOfMonth() < 15
+          LocalDate today = new LocalDate();
+          if (yearMonth.minusMonths(1).toLocalDate(15).isAfter(today)
               && round == 2) {
             logger.info("SKIP as round 2 has not been published");
             continue;
@@ -130,12 +127,13 @@ public class MonthlyDataRetriever {
       }
       logger.info("Retrieve pairings for " + awardDomicile + " (arbitrarily as "
           + "FO round 1)");
-      String pairings = service.getAllPairings(awardDomicile, Rank.FIRST_OFFICER, ROUND_ONE, yearMonth);
+      String pairings = service.getAllPairings(awardDomicile, Rank.FIRST_OFFICER,
+          FlicaService.BID_ROUND_ONE, yearMonth);
       PairingParser pairingParser = new PairingParser(pairings, yearMonth, true);
       PairingList pairingList = pairingParser.parse();
 
       String pairings2 = service.getAllPairings(awardDomicile, Rank.CAPTAIN,
-          ROUND_TWO, yearMonth);
+          FlicaService.BID_ROUND_TWO, yearMonth);
       PairingParser pairingParser2 = new PairingParser(pairings2, yearMonth, true);
       PairingList pairingList2 = pairingParser2.parse();
 
@@ -157,7 +155,12 @@ public class MonthlyDataRetriever {
       logger.info("SKIP " + outputFile + " as it exists");
       return;
     }
-    byte pdf[] = service.getDocument(AwardDomicile.CLT, Rank.FIRST_OFFICER, ROUND_ONE, yearMonth, seniorityDocumentId,
+    if (seniorityDocumentId == 0) {
+      logger.warning("No seniority document id specified, unable to retrieve seniority.");
+      return;
+    }
+    byte pdf[] = service.getDocument(AwardDomicile.CLT, Rank.FIRST_OFFICER,
+        FlicaService.BID_ROUND_ONE, yearMonth, seniorityDocumentId,
         "SYSSEN");
     SeniorityParser parser = new SeniorityParser(pdf, config.getDomiciles());
     SeniorityList list = parser.parse();
@@ -167,7 +170,7 @@ public class MonthlyDataRetriever {
 
   public void getAwards(FlicaService service) throws Exception {
     for (AwardDomicile awardDomicile : AwardDomicile.values()) {
-      for (Rank rank : RANKS) {
+      for (Rank rank : Rank.values()) {
         for (int round = 1; round < 3; round++) {
           File outputFile = new File(dataReader.getAwardFilename(
               yearMonth, awardDomicile, rank, round));
