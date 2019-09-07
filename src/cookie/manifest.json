@@ -1,0 +1,18 @@
+{
+  "manifest_version": 2,
+
+  "name": "Cookie additions to Flica",
+  "version": "0.2.0",
+  "description": "Cookie improvements",
+
+  "background": {
+    "scripts": ["background.js"]
+  },
+
+  "permissions": [
+    "cookies",
+    "tabs",
+    "http://*.flica.net/*",
+    "https://*.flica.net/*"
+  ]
+}
