@@ -304,7 +304,7 @@ public class FlicaService {
   }
 
   public static HttpUrl getReserveGridUrl(AwardDomicile awardDomicile, Rank rank,
-      int round, YearMonth yearMonth) {
+      int round, YearMonth yearMonth, String airlineId) {
     String bidCloseId = FlicaService.getBidCloseId(round, yearMonth);
     String crewClassId = FlicaService.getCrewClassId(awardDomicile, rank);
     return new HttpUrl.Builder()
@@ -316,11 +316,12 @@ public class FlicaService {
         .addPathSegment("index.html")
         .addQueryParameter("BCID", bidCloseId)
         .addQueryParameter("CC", crewClassId)
+        .addQueryParameter("alid", airlineId)
         .build();
   }
 
   public static HttpUrl getReserveAvailabilityUrl(AwardDomicile awardDomicile, Rank rank,
-      int round, YearMonth yearMonth) {
+      int round, YearMonth yearMonth, String airlineId) {
     String bidCloseId = FlicaService.getBidCloseId(round, yearMonth);
     String crewClassId = FlicaService.getCrewClassId(awardDomicile, rank);
     return new HttpUrl.Builder()
@@ -332,6 +333,7 @@ public class FlicaService {
         .addPathSegment("index.html")
         .addQueryParameter("BCID", bidCloseId)
         .addQueryParameter("CC", crewClassId)
+        .addQueryParameter("alid", airlineId)
         .build();
   }
 
@@ -351,15 +353,18 @@ public class FlicaService {
   }
 
   public synchronized String getReserveGrid(AwardDomicile awardDomicile, Rank rank,
-      int round, YearMonth yearMonth) throws URISyntaxException, IOException {
-    HttpUrl url = getReserveGridUrl(awardDomicile, rank, round, yearMonth);
+      int round, YearMonth yearMonth, String airlineId)
+      throws URISyntaxException, IOException {
+    HttpUrl url = getReserveGridUrl(awardDomicile, rank, round, yearMonth, airlineId);
     return connection.retrieveUrl(url);
   }
 
   public synchronized String getReserveAvailability(AwardDomicile awardDomicile,
       Rank rank,
-      int round, YearMonth yearMonth) throws URISyntaxException, IOException {
-    HttpUrl url = getReserveAvailabilityUrl(awardDomicile, rank, round, yearMonth);
+      int round, YearMonth yearMonth, String airlineId)
+      throws URISyntaxException, IOException {
+    HttpUrl url = getReserveAvailabilityUrl(awardDomicile, rank, round, yearMonth,
+        airlineId);
     return connection.retrieveUrl(url);
   }
 

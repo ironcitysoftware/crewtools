@@ -38,6 +38,7 @@ public class FlicaConfig {
   public static final String INTERESTING_EMPLOYEE_ID = "interestingEmployeeId";
   public static final String SESSION_CACHE_FILE = "sessionCacheFile";
   public static final String DOMICILES = "domiciles";
+  public static final String AIRLINE_ID = "airlineId";
 
   private final Properties props;
 
@@ -76,5 +77,9 @@ public class FlicaConfig {
     return ImmutableSet.copyOf(
         Splitter.on(',').omitEmptyStrings().trimResults().split(
             Preconditions.checkNotNull(props.getProperty(DOMICILES))));
+  }
+
+  public String getAirlineId() {
+    return Preconditions.checkNotNull(props.getProperty(AIRLINE_ID));
   }
 }

@@ -33,10 +33,12 @@ import com.google.common.collect.ImmutableMap;
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.FlicaService;
 import crewtools.flica.Proto.Rank;
+import crewtools.util.FlicaConfig;
 
 public class WriteGridLinks {
   private static final String OUTPUT_PATH = "/tmp/links.html";
   private final YearMonth yearMonth;
+  private final FlicaConfig config;
 
   public static void main(String args[]) throws Exception {
     if (args.length == 0) {
@@ -46,8 +48,9 @@ public class WriteGridLinks {
     new WriteGridLinks(YearMonth.parse(args[0])).run();
   }
 
-  public WriteGridLinks(YearMonth yearMonth) {
+  public WriteGridLinks(YearMonth yearMonth) throws IOException {
     this.yearMonth = yearMonth;
+    this.config = FlicaConfig.readConfig();
   }
 
   private static final String CSS = "html, body {\n"
@@ -71,8 +74,10 @@ public class WriteGridLinks {
     writer.println("</style>");
     writer.println("<meta http-equiv=\"Cache-control\" content=\"no-cache\">");
     writer.println("</head><body>");
-    writer.println("<h1>The links do not work right now.</h1>");
-    writer.println("<h1>We're looking into it; the union is aware.</h1>");
+    writer.println(
+        "<b>The links only work in Chrome, and only if you install <a href=cookie.crx>this extension.</a></b>");
+    writer
+        .println("<p>After you install the extension, sign out and log back info Flica.");
     writer.println(
         "<br/><font size=2>Notes: Log into FLICA first.  Opentime pot and tradeboard are restricted to your seat.</font>");
     writeLinks(writer, yearMonth);
@@ -105,10 +110,10 @@ public class WriteGridLinks {
             + "<a target=_blank href=\"%s\">pairings</a>,<br />\n"
             + "<a target=_blank href=\"%s\">tradeboard</a></td>",
             FlicaService.getReserveGridUrl(domicile, rank, FlicaService.BID_FIRST_COME,
-                yearMonth),
+                yearMonth, config.getAirlineId()),
             FlicaService.getReserveAvailabilityUrl(domicile, rank,
                 FlicaService.BID_FIRST_COME,
-                yearMonth),
+                yearMonth, config.getAirlineId()),
             FlicaService.getOpenTimeUrl(domicile, rank, FlicaService.BID_FIRST_COME,
                 yearMonth),
             FlicaService.getAllLinesUrl(domicile, rank, FlicaService.BID_ROUND_ONE,
