@@ -352,7 +352,14 @@ public class FlicaService {
 
   public synchronized String getReserveGrid(AwardDomicile awardDomicile, Rank rank,
       int round, YearMonth yearMonth) throws URISyntaxException, IOException {
-    HttpUrl url = getReserveGridJsonUrl(awardDomicile, rank, round, yearMonth);
+    HttpUrl url = getReserveGridUrl(awardDomicile, rank, round, yearMonth);
+    return connection.retrieveUrl(url);
+  }
+
+  public synchronized String getReserveAvailability(AwardDomicile awardDomicile,
+      Rank rank,
+      int round, YearMonth yearMonth) throws URISyntaxException, IOException {
+    HttpUrl url = getReserveAvailabilityUrl(awardDomicile, rank, round, yearMonth);
     return connection.retrieveUrl(url);
   }
 

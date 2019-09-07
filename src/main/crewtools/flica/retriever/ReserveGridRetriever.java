@@ -49,7 +49,7 @@ public class ReserveGridRetriever {
   private DateTimeFormatter DATE_MONTH_FORMAT = DateTimeFormat.forPattern("ddMMM");
 
   public void run(String args[]) throws Exception {
-    YearMonth yearMonth = YearMonth.parse("2019-2");
+    YearMonth yearMonth = YearMonth.parse("2019-9");
     LocalDate today = new DateTime().toLocalDate();
 
     FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
@@ -62,6 +62,16 @@ public class ReserveGridRetriever {
 
     if (false) {
       System.out.println(service.getBidAward(awardDomicile, rank, round, yearMonth));
+      return;
+    }
+
+    if (false) {
+      System.out.println(service.getReserveAvailability(
+        awardDomicile,
+        rank,
+        round,
+        yearMonth //.plusMonths(1),  // need + 1 on the BCID.. why?
+      ));
       return;
     }
 

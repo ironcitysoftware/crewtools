@@ -68,7 +68,11 @@ public class WriteGridLinks {
     PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(OUTPUT_PATH)));
     writer.println("<html><head><style>");
     writer.println(CSS);
-    writer.println("</style></head><body>");
+    writer.println("</style>");
+    writer.println("<meta http-equiv=\"Cache-control\" content=\"no-cache\">");
+    writer.println("</head><body>");
+    writer.println("<h1>The links do not work right now.</h1>");
+    writer.println("<h1>We're looking into it; the union is aware.</h1>");
     writer.println(
         "<br/><font size=2>Notes: Log into FLICA first.  Opentime pot and tradeboard are restricted to your seat.</font>");
     writeLinks(writer, yearMonth);
