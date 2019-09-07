@@ -39,6 +39,7 @@ public class FlicaConfig {
   public static final String SESSION_CACHE_FILE = "sessionCacheFile";
   public static final String DOMICILES = "domiciles";
   public static final String AIRLINE_ID = "airlineId";
+  public static final String COOKIE_EXTENSION_URL = "cookieExtensionUrl";
 
   private final Properties props;
 
@@ -81,5 +82,9 @@ public class FlicaConfig {
 
   public String getAirlineId() {
     return Preconditions.checkNotNull(props.getProperty(AIRLINE_ID));
+  }
+
+  public String getCookieExtensionUrl() {
+    return Preconditions.checkNotNull(props.getProperty(COOKIE_EXTENSION_URL));
   }
 }

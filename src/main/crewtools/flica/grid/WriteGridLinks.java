@@ -74,12 +74,13 @@ public class WriteGridLinks {
     writer.println("</style>");
     writer.println("<meta http-equiv=\"Cache-control\" content=\"no-cache\">");
     writer.println("</head><body>");
-    writer.println(
-        "<b>The links only work in Chrome, and only if you install <a href=cookie.crx>this extension.</a></b>");
+    writer.printf(
+        "<b>The links only work in Chrome, and only if you install <a href=%s>this extension.</a></b>",
+        config.getCookieExtensionUrl());
     writer
         .println("<p>After you install the extension, sign out and log back info Flica.");
     writer.println(
-        "<br/><font size=2>Notes: Log into FLICA first.  Opentime pot and tradeboard are restricted to your seat.</font>");
+        "<p><br/><font size=2>Notes: Log into FLICA first.  Opentime pot and tradeboard are restricted to your seat.</font>");
     writeLinks(writer, yearMonth);
     writer.println("<hr/>");
     writeLinks(writer, yearMonth.plusMonths(1));
