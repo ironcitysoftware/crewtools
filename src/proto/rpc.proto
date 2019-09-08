@@ -125,7 +125,7 @@ message BidConfig {
   optional string notification_from_address = 24;
   optional string notification_to_address = 25;
 
-  optional bool enable_montly_sort_by_desirable = 26;
+  optional bool enable_monthly_sort_by_desirable = 26;
 
   optional bool enable_allow_two_hundred_trips = 27;
 

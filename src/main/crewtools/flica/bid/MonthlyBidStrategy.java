@@ -56,7 +56,7 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
     }
 
 
-    if (bidConfig.getEnableMontlySortByDesirable()) {
+    if (bidConfig.getEnableMonthlySortByDesirable()) {
       int isDesirable = new Boolean(a.isDesirableLine())
           .compareTo(b.isDesirableLine());
       if (isDesirable != 0) {
