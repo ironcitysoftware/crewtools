@@ -321,7 +321,7 @@ public class FlicaService {
   }
 
   public static HttpUrl getReserveAvailabilityUrl(AwardDomicile awardDomicile, Rank rank,
-      int round, YearMonth yearMonth, String airlineId) {
+      int round, YearMonth yearMonth) {
     String bidCloseId = FlicaService.getBidCloseId(round, yearMonth);
     String crewClassId = FlicaService.getCrewClassId(awardDomicile, rank);
     return new HttpUrl.Builder()
@@ -333,7 +333,6 @@ public class FlicaService {
         .addPathSegment("index.html")
         .addQueryParameter("BCID", bidCloseId)
         .addQueryParameter("CC", crewClassId)
-        .addQueryParameter("alid", airlineId)
         .build();
   }
 

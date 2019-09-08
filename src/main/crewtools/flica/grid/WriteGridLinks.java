@@ -54,8 +54,8 @@ public class WriteGridLinks {
   }
 
   private static final String CSS = "html, body {\n"
-      + "  margin: 0;\n"
-      + "  padding: 0;\n"
+      + "  margin: 5px;\n"
+      + "  padding: 5px;\n"
       + "  font-family: \"Trebuchet MS, Helvetica, sans-serif\";\n"
       + "}\n"
       + "table {\n"
@@ -74,13 +74,14 @@ public class WriteGridLinks {
     writer.println("</style>");
     writer.println("<meta http-equiv=\"Cache-control\" content=\"no-cache\">");
     writer.println("</head><body>");
-    writer.printf(
-        "<b>The links only work in Chrome, and only if you install <a href=%s>this extension.</a></b>",
-        config.getCookieExtensionUrl());
-    writer
-        .println("<p>After you install the extension, sign out and log back info Flica.");
     writer.println(
-        "<p><br/><font size=2>Notes: Log into FLICA first.  Opentime pot and tradeboard are restricted to your seat.</font>");
+        "<p>Note: The links no longer work if you click on them directly.");
+    writer.println(
+        "<p>However, open another tab and log into Flica.  Then right-click "
+            + "and &quot;copy link address&quot; on the link you want, then paste "
+            + "the link into the Flica tab.");
+    writer.println(
+        "<p><br/><font size=2>Notes: Opentime pot and tradeboard are restricted to your seat.</font>");
     writeLinks(writer, yearMonth);
     writer.println("<hr/>");
     writeLinks(writer, yearMonth.plusMonths(1));
@@ -114,7 +115,7 @@ public class WriteGridLinks {
                 yearMonth, config.getAirlineId()),
             FlicaService.getReserveAvailabilityUrl(domicile, rank,
                 FlicaService.BID_FIRST_COME,
-                yearMonth, config.getAirlineId()),
+                yearMonth),
             FlicaService.getOpenTimeUrl(domicile, rank, FlicaService.BID_FIRST_COME,
                 yearMonth),
             FlicaService.getAllLinesUrl(domicile, rank, FlicaService.BID_ROUND_ONE,
