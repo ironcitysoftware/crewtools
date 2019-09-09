@@ -360,10 +360,9 @@ public class FlicaService {
 
   public synchronized String getReserveAvailability(AwardDomicile awardDomicile,
       Rank rank,
-      int round, YearMonth yearMonth, String airlineId)
+      int round, YearMonth yearMonth)
       throws URISyntaxException, IOException {
-    HttpUrl url = getReserveAvailabilityUrl(awardDomicile, rank, round, yearMonth,
-        airlineId);
+    HttpUrl url = getReserveAvailabilityUrl(awardDomicile, rank, round, yearMonth);
     return connection.retrieveUrl(url);
   }
 
