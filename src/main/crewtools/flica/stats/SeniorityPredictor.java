@@ -26,11 +26,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
@@ -162,10 +164,16 @@ public class SeniorityPredictor {
 
     DomicileAward roundOneAward = dataReader.readAwards(
         startingYearMonth, awardDomicile, rank, FlicaService.BID_ROUND_ONE);
-    DomicileAward roundTwoAward = dataReader.readAwards(
-        startingYearMonth, awardDomicile, rank, FlicaService.BID_ROUND_TWO);
-    ThinLineList roundTwoLines = dataReader.readLines(
-        startingYearMonth, awardDomicile, rank, FlicaService.BID_ROUND_TWO);
+    Optional<DomicileAward> roundTwoAward = Optional.absent();
+    Optional<ThinLineList> roundTwoLines = Optional.absent();
+    try {
+      roundTwoAward = Optional.of(dataReader.readAwards(
+          startingYearMonth, awardDomicile, rank, FlicaService.BID_ROUND_TWO));
+      roundTwoLines = Optional.of(dataReader.readLines(
+          startingYearMonth, awardDomicile, rank, FlicaService.BID_ROUND_TWO));
+    } catch (Exception e) {
+      logger.log(Level.INFO, "Unable to read round 2", e.getMessage());
+    }
     lineCounts.put(startingYearMonth,
         getLineCount(roundOneAward, roundTwoAward, roundTwoLines));
 
@@ -345,29 +353,31 @@ public class SeniorityPredictor {
 
   private LineCount getLineCount(
       DomicileAward roundOneAward,
-      DomicileAward roundTwoAward,
-      ThinLineList roundTwoLineList) {
+      Optional<DomicileAward> roundTwoAward,
+      Optional<ThinLineList> roundTwoLineList) {
     int numRoundOne = roundOneAward.getAwardCount();
     int numRoundTwo = 0;
     int numLongCall = 0;
-    for (Award award : roundTwoAward.getAwardList()) {
-      if (!award.getLine().startsWith("RES")) {
-        numRoundTwo++;
-      } else {
-        boolean lineFound = false;
-        for (ThinLine line : roundTwoLineList.getThinLineList()) {
-          if (line.getLineName().equals(award.getLine())) {
-            lineFound = true;
-            if (line.getThinPairing(0)
-                .getScheduleType(0) == ScheduleType.LONG_CALL_RESERVE) {
-              numLongCall++;
-            } else {
-              // it is a SCR line
+    if (roundTwoAward.isPresent()) {
+      for (Award award : roundTwoAward.get().getAwardList()) {
+        if (!award.getLine().startsWith("RES")) {
+          numRoundTwo++;
+        } else {
+          boolean lineFound = false;
+          for (ThinLine line : roundTwoLineList.get().getThinLineList()) {
+            if (line.getLineName().equals(award.getLine())) {
+              lineFound = true;
+              if (line.getThinPairing(0)
+                  .getScheduleType(0) == ScheduleType.LONG_CALL_RESERVE) {
+                numLongCall++;
+              } else {
+                // it is a SCR line
+              }
+              break;
             }
-            break;
           }
+          Preconditions.checkState(lineFound, "Line not found: " + award.getLine());
         }
-        Preconditions.checkState(lineFound, "Line not found: " + award.getLine());
       }
     }
     return new LineCount(numRoundOne, numRoundTwo, numLongCall);
