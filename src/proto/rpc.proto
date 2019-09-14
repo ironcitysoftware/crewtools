@@ -130,6 +130,8 @@ message BidConfig {
   optional bool enable_allow_two_hundred_trips = 27;
 
   optional bool enable_ding_partial_trips = 28;
+
+  optional bool enable_multiple_adds = 29;
 }
 
 message ScoreAdjustment {

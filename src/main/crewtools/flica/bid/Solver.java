@@ -35,6 +35,7 @@ import java.util.logging.Logger;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 
@@ -124,9 +125,18 @@ public class Solver {
         logger.fine(".. ignoring " + task.getPairingName() + " due to overlap");
         continue;
       }
-      candidateTasks.add(task);
-      // now, these may overlap with each other but not with
-      // trips retained on the schedule.
+
+      if (bidConfig.getEnableMultipleAdds()) {
+        candidateTasks.add(task);
+        // now, these may overlap with each other but not with
+        // trips retained on the schedule.
+      } else {
+        evaluateTasks(solutions, reducedSchedule, ImmutableSet.of(task), evaluator);
+      }
+    }
+
+    if (!bidConfig.getEnableMultipleAdds()) {
+      return;
     }
 
     // PowerSet requires <= 30 elements.
@@ -138,20 +148,29 @@ public class Solver {
       if (taskCombination.isEmpty()) {
         continue;
       }
-      ProposedSchedule schedule = new ProposedSchedule(reducedSchedule, taskCombination);
-      if (schedule.isValid(evaluator)) {
-        Solution solution = new Solution(schedule, tripDatabase, bidConfig);
-        boolean workLess = schedule.getNumWorkingDays() < reducedSchedule.getOriginalNumWorkingDays();
-        boolean workSame = schedule.getNumWorkingDays() == reducedSchedule.getOriginalNumWorkingDays();
-        boolean betterSchedule = solution.getScore() > originalScore;
-        logger.fine(schedule.getTransition()
-            + " workLess: " + workLess
-            + " workSame: " + workSame
-            + " betterSchedule: " + betterSchedule
-            + " (" + solution.getScore() + " vs " + originalScore + ")");
-        if (workLess || (workSame && betterSchedule)) {
-          solutions.add(solution);
-        }
+      evaluateTasks(solutions, reducedSchedule, taskCombination, evaluator);
+    }
+  }
+
+  private void evaluateTasks(List<Solution> solutions,
+      ReducedSchedule reducedSchedule,
+      Set<FlicaTaskWrapper> taskCombinations,
+      OverlapEvaluator evaluator) {
+    ProposedSchedule schedule = new ProposedSchedule(reducedSchedule, taskCombinations);
+    if (schedule.isValid(evaluator)) {
+      Solution solution = new Solution(schedule, tripDatabase, bidConfig);
+      boolean workLess = schedule.getNumWorkingDays() < reducedSchedule
+          .getOriginalNumWorkingDays();
+      boolean workSame = schedule.getNumWorkingDays() == reducedSchedule
+          .getOriginalNumWorkingDays();
+      boolean betterSchedule = solution.getScore() > originalScore;
+      logger.fine(schedule.getTransition()
+          + " workLess: " + workLess
+          + " workSame: " + workSame
+          + " betterSchedule: " + betterSchedule
+          + " (" + solution.getScore() + " vs " + originalScore + ")");
+      if (workLess || (workSame && betterSchedule)) {
+        solutions.add(solution);
       }
     }
   }
