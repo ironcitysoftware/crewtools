@@ -144,13 +144,15 @@ public class CachingFlicaService extends FlicaService {
 
   @Override
   public String getReserveGrid(AwardDomicile awardDomicile, Rank rank,
-      int round, YearMonth yearMonth) throws URISyntaxException, IOException {
+      int round, YearMonth yearMonth, String airlineId)
+      throws URISyntaxException, IOException {
     File file = new File(DIR, "reserve-grid-" + awardDomicile + rank + round + yearMonth + ".txt");
     if (file.exists()) {
       return Files.toString(file, StandardCharsets.UTF_8);
     } else {
       connectIfNecessary();
-      String result = super.getReserveGrid(awardDomicile, rank, round, yearMonth);
+      String result = super.getReserveGrid(awardDomicile, rank, round, yearMonth,
+          airlineId);
       Files.write(result, file, StandardCharsets.UTF_8);
       return result;
     }
