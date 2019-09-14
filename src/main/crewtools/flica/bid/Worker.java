@@ -33,6 +33,7 @@ import org.joda.time.Duration;
 import org.joda.time.YearMonth;
 
 import crewtools.flica.FlicaService;
+import crewtools.flica.parser.ParseException;
 import crewtools.flica.parser.SwapResponseParser;
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Schedule;
@@ -77,7 +78,8 @@ public class Worker {
 
   // If true, this parameter means the program was started before the
   // bid period opened.
-  public void run(boolean blockUntilBidPeriodOpens) {
+  public void run(boolean blockUntilBidPeriodOpens)
+      throws ParseException, IOException, URISyntaxException {
     collector.beginWork(blockUntilBidPeriodOpens);
     logger.info("------------------ Worker run -----------------------");
     Schedule schedule = collector.getCurrentSchedule();

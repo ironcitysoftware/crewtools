@@ -19,11 +19,15 @@
 
 package crewtools.flica.bid;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -31,18 +35,23 @@ import java.util.logging.Logger;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 
 import crewtools.flica.bid.OverlapEvaluator.OverlapEvaluation.Overlap;
+import crewtools.flica.parser.ParseException;
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Schedule;
 import crewtools.flica.pojo.Trip;
 import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.Calendar;
 import crewtools.util.Clock;
+import crewtools.util.Collections;
 
 public class Solver {
   private final Logger logger = Logger.getLogger(Solver.class.getName());
+
+  public static final int MAX_POWERSET_INPUT_SIZE = 30;
 
   private final Schedule schedule;
   private final Collection<FlicaTaskWrapper> tasks;
@@ -54,7 +63,8 @@ public class Solver {
   private final ScheduleFilter scheduleFilter;
 
   public Solver(Schedule schedule, Collection<FlicaTaskWrapper> tasks,
-      YearMonth yearMonth, BidConfig bidConfig, TripDatabase tripDatabase, Clock clock) {
+      YearMonth yearMonth, BidConfig bidConfig, TripDatabase tripDatabase,
+      Clock clock) {
     this.schedule = schedule;
     this.tasks = tasks;
     this.yearMonth = yearMonth;
@@ -69,7 +79,7 @@ public class Solver {
     this.scheduleFilter = new ScheduleFilter(schedule, clock);
   }
 
-  public List<Solution> solve() {
+  public List<Solution> solve() throws ParseException, IOException, URISyntaxException {
     List<Solution> solutions = new ArrayList<>();
 
     Iterator<Set<PairingKey>> retainedTripsSet = Sets
@@ -95,7 +105,8 @@ public class Solver {
   }
 
   private void enumerateSolutions(List<Solution> solutions,
-      ReducedSchedule reducedSchedule) {
+      ReducedSchedule reducedSchedule)
+      throws ParseException, IOException, URISyntaxException {
     OverlapEvaluator evaluator = new OverlapEvaluator(
         reducedSchedule, yearMonth, bidConfig);
     // Find all opentime trips which could possibly be added.
@@ -116,6 +127,11 @@ public class Solver {
       candidateTasks.add(task);
       // now, these may overlap with each other but not with
       // trips retained on the schedule.
+    }
+
+    // PowerSet requires <= 30 elements.
+    if (candidateTasks.size() > MAX_POWERSET_INPUT_SIZE) {
+      candidateTasks = selectBestCandidates(candidateTasks);
     }
 
     for (Set<FlicaTaskWrapper> taskCombination : Sets.powerSet(candidateTasks)) {
@@ -153,5 +169,25 @@ public class Solver {
       }
     }
     return true;
+  }
+
+  Set<FlicaTaskWrapper> selectBestCandidates(Set<FlicaTaskWrapper> candidates)
+      throws URISyntaxException, IOException, ParseException {
+    logger.info("Whittling down " + candidates.size() + " candidates based on score.");
+    Map<Trip, FlicaTaskWrapper> trips = new HashMap<>();
+    Map<Trip, TripScore> scores = new HashMap<>();
+    for (FlicaTaskWrapper task : candidates) {
+      Trip trip = tripDatabase.getTrip(task.getPairingKey());
+      trips.put(trip, task);
+      scores.put(trip, new TripScore(trip, bidConfig));
+    }
+    scores = Collections.sortByValueDescending(scores);
+    Iterator<Trip> it = Iterators.limit(scores.keySet().iterator(),
+        MAX_POWERSET_INPUT_SIZE);
+    Set<FlicaTaskWrapper> result = new HashSet<>();
+    while (it.hasNext()) {
+      result.add(trips.get(it.next()));
+    }
+    return result;
   }
 }

@@ -21,6 +21,7 @@ package crewtools.flica.bid;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -52,6 +53,7 @@ public class TripScore implements Comparable<TripScore> {
   private final int numLegs;
   private final int points;
   private final List<String> scoreExplanation = new ArrayList<>();
+  private final Trip trip;
 
   public TripScore(Trip trip, BidConfig config) {
     int goodPoints = 0;
@@ -224,6 +226,7 @@ public class TripScore implements Comparable<TripScore> {
     }
 
     this.points = goodPoints - badPoints;
+    this.trip = trip;
     scoreExplanation.add("Final score: " + points);
   }
 
@@ -291,5 +294,24 @@ public class TripScore implements Comparable<TripScore> {
   @Override
   public int compareTo(TripScore that) {
     return new Integer(getPoints()).compareTo(that.getPoints());
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || !(o instanceof TripScore)) {
+      return false;
+    }
+    TripScore that = (TripScore) o;
+    return ((Integer) this.getPoints()).equals(that.getPoints());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getPoints());
+  }
+
+  @Override
+  public String toString() {
+    return trip.getPairingName() + ":" + getPoints();
   }
 }
