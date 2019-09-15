@@ -141,6 +141,7 @@ public class Solver {
 
     // PowerSet requires <= 30 elements.
     if (candidateTasks.size() > MAX_POWERSET_INPUT_SIZE) {
+      logger.info("WARNING: Paring down candidate set due to too many inputs");
       candidateTasks = selectBestCandidates(candidateTasks);
     }
 
