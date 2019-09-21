@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Iron City Software LLC
+ * Copyright 2019 Iron City Software LLC
  *
  * This file is part of CrewTools.
  *
@@ -17,7 +17,7 @@
  * along with CrewTools.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package crewtools.util;
+package crewtools.crewmobile;
 
 import java.util.ArrayList;
 import java.util.HashMap;

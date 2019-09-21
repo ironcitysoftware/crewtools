@@ -40,6 +40,7 @@ public class FlicaConfig {
   public static final String DOMICILES = "domiciles";
   public static final String AIRLINE_ID = "airlineId";
   public static final String COOKIE_EXTENSION_URL = "cookieExtensionUrl";
+  public static final String CREWMOBILE_APP_CONFIG_URL = "crewmobileAppConfigUrl";
 
   private final Properties props;
 
@@ -86,5 +87,9 @@ public class FlicaConfig {
 
   public String getCookieExtensionUrl() {
     return Preconditions.checkNotNull(props.getProperty(COOKIE_EXTENSION_URL));
+  }
+
+  public String getCrewmobileAppConfigUrl() {
+    return Preconditions.checkNotNull(props.getProperty(CREWMOBILE_APP_CONFIG_URL));
   }
 }
