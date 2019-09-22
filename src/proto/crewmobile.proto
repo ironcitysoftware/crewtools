@@ -1,0 +1,71 @@
+// Copyright 2019 Iron City Software LLC
+//
+// This file is part of CrewTools.
+//
+// CrewTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// CrewTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with CrewTools.  If not, see <http://www.gnu.org/licenses/>.
+
+syntax = "proto2";
+
+package crewtools_crewmobile;
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.FieldOptions {
+  optional string json_name = 50000;
+}
+
+option java_package = "crewtools.crewmobile";
+option java_outer_classname = "Proto";
+
+message ConfigurationSettings {
+  optional int32 crew_check_in_hours_before = 1 [(json_name)="CrewCheckInHoursBefore"];
+  optional string global_key_vault_url = 2 [(json_name)="Global.KeyVaultUrl"];
+}
+
+message Url {
+  optional string base_url = 1;
+}
+
+message ServiceInfo {
+  optional Url call_external_services_service = 1 [(json_name)="CallExternalServicesService"];
+  optional Url check_in_service = 2 [(json_name)="CheckInService"];
+  optional Url crewtrac_check_in_service = 3 [(json_name)="CrewTrac.CheckInService"];
+  optional Url delay_notification_timer = 4 [(json_name)="DelayNotificationTimer"];
+  optional Url device_registration_service = 5 [(json_name)="DeviceRegistrationService"];
+  optional Url fire_base_msg_push = 6 [(json_name)="FireBaseMsgPush"];
+  optional Url hotel_amenities_timed_update = 7 [(json_name)="HotelAmenitiesTimedUpdate"];
+  optional Url hotel_info_update_service = 8 [(json_name)="HotelInfoUpdateService"];
+  optional Url hotel_information_service = 9 [(json_name)="HotelInformationService"];
+  optional Url mobile_app_task_log_service = 10 [(json_name)="MobileAppTaksLogService"]; // sic
+  optional Url mobile_app_task_log = 11 [(json_name)="MobileAppTaskLog"];
+  optional Url msg_converter_crew_notify_fire_base_service = 12 [(json_name)="MsgConverterCrewNotifyFireBaseService"];
+  optional Url news_feed_service = 13 [(json_name)="NewsFeedService"];
+  optional Url notification_response_service = 14 [(json_name)="NotificationResponseService"];
+  optional Url pairing_service = 15 [(json_name)="PairingsService"];
+  optional Url rtc_lookup_service = 16 [(json_name)="RTCLookUpService"];
+  optional Url trip_match_notification_queue_timer = 17 [(json_name)="TripMatchNotificationQueueTimer"];
+}
+
+message Claim {
+  optional string type = 1;
+  optional string value = 2;
+}
+
+message AppConfig {
+  optional ConfigurationSettings configuration_settings = 1;
+  optional ServiceInfo service_info = 2;
+  optional string token = 3;
+  optional string token_valid_until = 4;
+  repeated Claim user_claim = 5 [(json_name)="userClaims"];
+}

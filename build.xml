@@ -29,6 +29,9 @@
   <property name="rpc-proto" location="src/proto/rpc.proto" relative="yes" />
   <property name="rpc-proto.java" location="src/main/crewtools/rpc/Proto.java" />
 
+  <property name="crewmobile-proto" location="src/proto/crewmobile.proto" relative="yes" />
+  <property name="crewmobile-proto.java" location="src/main/crewtools/crewmobile/Proto.java" />
+
   <path id="main-classpath">
     <path location="lib/gson-2.8.0.jar" />
     <path location="lib/guava-21.0.jar" />
@@ -60,6 +63,7 @@
     <uptodate property="build-flica-proto.notrequired" srcfile="${flica-proto}" targetfile="${flica-proto.java}" />
     <uptodate property="build-aa-proto.notrequired" srcfile="${aa-proto}" targetfile="${aa-proto.java}" />
     <uptodate property="build-rpc-proto.notrequired" srcfile="${rpc-proto}" targetfile="${rpc-proto.java}" />
+    <uptodate property="build-crewmobile-proto.notrequired" srcfile="${crewmobile-proto}" targetfile="${crewmobile-proto.java}" />
   </target>
 
 <!--
@@ -96,7 +100,18 @@
     </exec>
   </target>
 
-  <target name="build" depends="build-flica-proto,build-aa-proto,build-rpc-proto">
+  <target name="build-crewmobile-proto" depends="checkprotoforchanges"
+          unless="build-crewmobile-proto.notrequired" >
+    <mkdir dir="${bin}" />
+    <exec executable="protoc" failonerror="true">
+      <arg value="-I/opt/protobuf-2.6.1/src" />
+      <arg value="-Isrc/proto" />
+      <arg value="${crewmobile-proto}" />
+      <arg value="--java_out=src/main" />
+    </exec>
+  </target>
+
+  <target name="build" depends="build-flica-proto,build-aa-proto,build-rpc-proto,build-crewmobile-proto">
     <mkdir dir="${bin}" />
     <javac srcdir="src/main" includes="**" destdir="${bin}" includeantruntime="false" debug="true" >
       <classpath>
@@ -130,6 +145,7 @@
     <delete file="${flica-proto.java}" />
     <delete file="${aa-proto.java}" />
     <delete file="${rpc-proto.java}" />
+    <delete file="${crewmobile-proto.java}" />
   </target>
 
   <target name="jar">

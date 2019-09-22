@@ -26,7 +26,9 @@ import java.util.logging.Logger;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.protobuf.util.JsonFormat;
 
+import crewtools.crewmobile.Proto.AppConfig;
 import crewtools.util.FlicaConfig;
 import okhttp3.HttpUrl;
 
@@ -48,9 +50,11 @@ public class CrewmobileService {
     Map<String, String> data = ImmutableMap.of(
         "applicationName", "CrewMobile",
         "refreshToken", bearerToken);
-    String raw = connection.postUrlString(
+    String json = connection.postUrlString(
         HttpUrl.parse(flicaConfig.getCrewmobileAppConfigUrl()),
         gson.toJson(data));
-    this.appConfig = new AppConfig(raw);
+    AppConfig.Builder builder = AppConfig.newBuilder();
+    JsonFormat.parser().merge(json, builder);
+    this.appConfig = builder.build();
   }
 }
