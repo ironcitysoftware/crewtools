@@ -28,6 +28,32 @@ extend google.protobuf.FieldOptions {
 option java_package = "crewtools.crewmobile";
 option java_outer_classname = "Proto";
 
+// Local configuration hard-coded into app.
+
+message CrewmobileConfig {
+  optional string username = 1;
+  optional string password = 2;
+  optional string app_config_url = 3;
+  optional string calendar_data_feed_url = 4;
+  optional string oidc_client_class_name = 5;
+}
+
+// Session persistence.
+
+message AccessToken {
+  optional string access_token = 1;
+  optional int32 expires_in = 2;
+  optional string id_token = 3;
+  optional string token_type = 4;
+}
+
+message RefreshToken {
+  optional string refresh_token = 5;
+  optional string refresh_token_valid_until = 6;
+}
+
+// API.
+
 message ConfigurationSettings {
   optional int32 crew_check_in_hours_before = 1 [(json_name)="CrewCheckInHoursBefore"];
   optional string global_key_vault_url = 2 [(json_name)="Global.KeyVaultUrl"];
@@ -69,3 +95,137 @@ message AppConfig {
   optional string token_valid_until = 4;
   repeated Claim user_claim = 5 [(json_name)="userClaims"];
 }
+
+
+// -- CalendarDataFeed
+
+message CalendarDataFeed {
+  repeated Month month = 1;
+}
+
+message Month {
+  repeated Day day = 1 [(json_name)="days"];
+  optional string first_of_month = 2;
+  optional int32 month = 3;
+}
+
+message Day {
+  repeated CalendarEntry calendar_entry = 1 [(json_name)="calendarEntries"];
+  optional DailySummary daily_summary = 2;
+  optional PairingSummary pairing_summary = 3;
+  optional string date = 4;
+  optional string day = 5;
+  optional bool reserve_bool = 6;
+}
+
+message DailySummary {
+  optional string block = 1;
+  optional string credit = 2;
+  optional string duty = 3;
+  optional string eod = 4;
+  optional string eod_string = 5;
+  optional string fdp = 6;
+  optional Hotel hotel = 7;
+}
+
+message Hotel {
+  optional string hotel_name = 1;
+  optional string hotel_phone = 2;
+}
+
+message PairingSummary {
+  optional string block = 1;
+  optional string credit = 2;
+  optional string pairing_number = 3;
+  optional string tafb = 4;
+}
+
+message CalendarEntry {
+  optional string body = 1;
+  optional Flight flight = 2;
+  optional string pairing_no = 3;
+  optional string report_date_time_string = 4;
+  optional string reporting_date_time = 5;
+  optional string title = 6;
+}
+
+message Flight {
+  optional string act_arr_display = 1;
+  optional string act_arr_time = 2;
+  optional string act_arr_time_utc = 3;
+  optional int32 act_block_minutes = 4 [(json_name)="actBlock"];
+  optional string act_block_time = 5;
+  optional int32 act_credit_minutes = 6 [(json_name)="actCredit"];
+  optional string act_credit_time = 7;
+  optional string act_dep_display = 8;
+  optional string act_dep_time = 9;
+  optional string act_dep_time_utc = 10;
+  optional string arr = 11;
+  optional bool arr_display_is_actual = 12;
+  optional bool arr_time_is_actual = 13;
+  optional bool d_h = 14;
+  optional string dead_head = 15;
+  optional bool delay_bool = 16;
+  optional bool delayed = 17;
+  optional string dep = 18;
+  optional string dep_display_is_actual = 19;
+  optional string dep_time_is_actual = 20;
+  optional string dhd = 21;
+  optional string equipment_type = 22;
+  optional int32 fdp_hours = 23 [(json_name)="fDPHours"];
+  optional bool firstflight = 24;
+  optional bool flight_active = 25;
+  repeated string flight_codes = 26;
+  optional int32 flight_date_id = 27;
+  optional string flight_key = 28;
+  optional string flight_number = 29;
+  repeated FlightTeam flight_team = 30;
+  optional string flight_type = 31;
+  optional string gate = 32;
+  repeated MinimumEquipmentList mel = 33 [(json_name)="mEL"];
+  optional bool minimum_objective_ground_time = 34 [(json_name)="mOGT"];
+  optional bool mel_bool = 35;
+  optional bool new_crew = 36;
+  optional bool new_tail = 37;
+  optional int32 pairing_leg_number = 38;
+  optional bool reserve_bool = 39;
+  optional string sched_arr_display = 40;
+  optional string sched_arr_time = 41;
+  optional string sched_arr_time_string = 42;
+  optional string sched_arr_time_utc = 43;
+  optional int32 sched_block = 44;
+  optional int32 sched_credit = 45;
+  optional string sched_dep_display = 46;
+  optional string sched_dep_time = 47;
+  optional string sched_dep_time_string = 48;
+  optional string sched_dep_time_utc = 49;
+  optional string tail_number = 50;
+  optional string time_between_flights = 51;
+}
+
+message MinimumEquipmentList {
+  optional string aircraft_type = 1;
+  optional string category = 2;
+  optional string description = 3;
+  optional string item_number = 4;
+  optional string last_updated = 5;
+  optional string load_date = 6;
+  optional string tail_number = 7;
+}
+
+message FlightTeam {
+  optional string bid_base = 1;
+  optional bool checked_in = 2;
+  optional int32 crew_id = 3 [(json_name)="crewID"];
+  optional string dead_header = 4;
+  optional string flight_date_id = 5 [(json_name)="fLFlightDateID"];
+  optional string first_name = 6;
+  optional string last_name = 7;
+  optional bool new_to_crew = 8;
+  optional string pay_code = 9;
+  optional string position = 10;
+  optional bool self = 11;
+  optional int32 sort_order = 12;
+}
+
+// -- CalendarDataFeed

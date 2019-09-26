@@ -44,15 +44,16 @@ public class CrewmobileConnection {
         .build();
   }
 
-  public Response retrieveUrl(HttpUrl url) throws IOException {
+  public Response retrieveUrl(HttpUrl url, String bearerToken) throws IOException {
     Request.Builder requestBuilder = new Request.Builder()
-        .url(url);
+        .url(url)
+        .header("Authorization", "Bearer " + bearerToken);
     return httpclient.newCall(requestBuilder.build()).execute();
   }
 
-  public String retrieveUrlString(HttpUrl url)
+  public String retrieveUrlString(HttpUrl url, String bearerToken)
       throws IOException {
-    Response response = retrieveUrl(url);
+    Response response = retrieveUrl(url, bearerToken);
     try {
       return response.body().string();
     } finally {
@@ -65,7 +66,7 @@ public class CrewmobileConnection {
         .url(url)
         .post(RequestBody.create(APPLICATION_JSON, content))
         .build();
-    logger.info("Post data = " + content);
+    logger.fine("Post data = " + content);
     return httpclient.newCall(request).execute();
   }
 
@@ -95,6 +96,7 @@ public class CrewmobileConnection {
     }
   }
 
+  // Alters okhttp default headers.
   class MungeHeaders implements Interceptor {
     @Override
     public Response intercept(Chain chain) throws IOException {
