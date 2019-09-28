@@ -53,7 +53,7 @@ public class ComposeLogbook {
 
   public static void main(String args[]) throws Exception {
     if (args.length != 2) {
-      System.err.println("CalendarRetriever calendar.txt schedule.txt");
+      System.err.println("ComposeLogbook calendar.txt schedule.txt");
       System.exit(-1);
     }
     new ComposeLogbook().run(args[0], args[1]);
