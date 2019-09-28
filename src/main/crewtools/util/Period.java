@@ -41,6 +41,13 @@ public class Period implements Comparable<Period> {
     return new Period(minutes);
   }
 
+  public static Period fromTextWithColon(String hhMmText) {
+    int len = hhMmText.length();
+    int hours = Integer.parseInt(hhMmText.substring(0, len - 3));
+    int minutes = Integer.parseInt(hhMmText.substring(len - 2));
+    return Period.hours(hours).plus(Period.minutes(minutes));
+  }
+
   public static Period fromText(String hhMmText) {
     if (hhMmText.length() == 5) {
       int hours = Integer.parseInt(hhMmText.substring(0, 3));

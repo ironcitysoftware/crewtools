@@ -13,4 +13,4 @@ CLASSPATH=$CLASSPATH:../crewtools-private/bin/crewtools-private.jar
 java \
   -Djava.util.logging.config.file=scripts/logging.properties \
   -cp $CLASSPATH \
-  crewtools.logbook.GetLastMonth $@
+  crewtools.logbook.ComposeLogbook $@

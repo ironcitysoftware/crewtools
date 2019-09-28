@@ -17,26 +17,36 @@
  * along with CrewTools.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package crewtools.logbook;
+package crewtools.crewmobile.retriever;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
+
+import com.google.common.io.Files;
+import com.google.protobuf.TextFormat;
 
 import crewtools.crewmobile.ConfigReader;
 import crewtools.crewmobile.CrewmobileService;
 import crewtools.crewmobile.Proto.CalendarDataFeed;
 import crewtools.crewmobile.Proto.CrewmobileConfig;
 
-public class GetLastMonth {
-  private final Logger logger = Logger.getLogger(GetLastMonth.class.getName());
+public class CalendarRetriever {
+  private final Logger logger = Logger.getLogger(CalendarRetriever.class.getName());
 
   public static void main(String args[]) throws Exception {
-    new GetLastMonth().run();
+    if (args.length != 1) {
+      System.err.println("CalendarRetriever destination-file.txt");
+      System.exit(-1);
+    }
+    new CalendarRetriever().run(new File(args[0]));
   }
 
-  public void run() throws Exception {
+  public void run(File output) throws Exception {
     CrewmobileConfig config = ConfigReader.readConfig();
     CrewmobileService service = new CrewmobileService(config);
     service.connect();
     CalendarDataFeed feed = service.getCalendarDataFeed();
+    Files.write(TextFormat.printToString(feed), output, StandardCharsets.UTF_8);
   }
 }
