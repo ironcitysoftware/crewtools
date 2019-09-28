@@ -19,6 +19,7 @@
 
 package crewtools.logbook;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -63,7 +64,15 @@ public class ComposeLogbook {
 
   private final DateTimeFormatter hhmm = DateTimeFormat.forPattern("HH:mm");
 
+  // If the block time in the feed is zero, the flight number will be one
+  // of these possibilities.
   private static final Set<String> GOOD_EXCUSES = ImmutableSet.of("RLD");
+
+  private final AircraftDatabase aircraftDatabase;
+
+  public ComposeLogbook() throws IOException {
+    this.aircraftDatabase = new AircraftDatabase();
+  }
 
   public void run(String calendarFile, String scheduleFile) throws Exception {
     CalendarDataFeed calendar = FileUtils.readProto(calendarFile, CalendarDataFeed.newBuilder());
@@ -104,10 +113,14 @@ public class ComposeLogbook {
     DateTime arrival = timeFormat.parseDateTime(flight.getActArrTimeUtc());
     List<String> components = new ArrayList<>();
     LocalDate date = departure.toLocalDate();
+    int shorthandTailNumber = Ints.tryParse(flight.getTailNumber());
+    String tailNumber = aircraftDatabase.getTailNumber(shorthandTailNumber);
+    String aircraftType = aircraftDatabase.getAircraftType(shorthandTailNumber);
+    Preconditions.checkState(aircraftType.equals(flight.getEquipmentType()));
     components.add("" + date);
     components.add("JIA" + leg.getFlightNumber());
     components.add(flight.getEquipmentType());
-    components.add(flight.getTailNumber());
+    components.add(tailNumber);
     components.add(flight.getDep());
     components.add(flight.getArr());
     components.add(hhmm.print(departure));
