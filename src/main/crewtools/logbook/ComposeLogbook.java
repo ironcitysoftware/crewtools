@@ -41,8 +41,10 @@ import crewtools.crewmobile.CalendarEntryIterator;
 import crewtools.crewmobile.Proto.CalendarDataFeed;
 import crewtools.crewmobile.Proto.CalendarEntry;
 import crewtools.crewmobile.Proto.Flight;
+import crewtools.flica.Proto.LegType;
 import crewtools.flica.Proto.Schedule;
 import crewtools.flica.adapters.ScheduleAdapter;
+import crewtools.flica.parser.ParseUtils;
 import crewtools.flica.pojo.Leg;
 import crewtools.flica.pojo.Trip;
 import crewtools.util.FileUtils;
@@ -66,12 +68,18 @@ public class ComposeLogbook {
 
   // If the block time in the feed is zero, the flight number will be one
   // of these possibilities.
-  private static final Set<String> GOOD_EXCUSES = ImmutableSet.of("RLD");
+  private final Set<String> ignoredFlightNumbers;
 
   private final AircraftDatabase aircraftDatabase;
 
   public ComposeLogbook() throws IOException {
     this.aircraftDatabase = new AircraftDatabase();
+    ImmutableSet.Builder<String> ignoredFlightNumbers = ImmutableSet.builder();
+    for (LegType legType : LegType.values()) {
+      String name = ParseUtils.getFlicaName(legType);
+      ignoredFlightNumbers.add(name == null ? legType.name() : name);
+    }
+    this.ignoredFlightNumbers = ignoredFlightNumbers.build();
   }
 
   public void run(String calendarFile, String scheduleFile) throws Exception {
@@ -84,16 +92,23 @@ public class ComposeLogbook {
       for (Leg leg : trip.getLegs()) {
         CalendarEntry entry = it.next();
         Flight flight = entry.getFlight();
+        logger.fine("Read leg " + leg.getDepartureAirportCode() + "->"
+            + leg.getArrivalAirportCode() + ", calendar " + flight.getDep() + "->"
+            + flight.getArr());
         if (leg.isDeadhead()) {
           Preconditions.checkState(entry.getFlight().getDH());
           continue;
         }
         // RLD, for example, have block minutes = 0.
         while (flight.getActBlockMinutes() == 0) {
-          Preconditions.checkState(GOOD_EXCUSES.contains(flight.getFlightNumber()));
+          Preconditions.checkState(
+              ignoredFlightNumbers.contains(flight.getFlightNumber()),
+              flight.toString());
           entry = it.next();
           flight = entry.getFlight();
         }
+        logger.fine("Skipped to calendar " + flight.getDep() + "->"
+            + flight.getArr());
         assertEquals(leg, flight);
         output(leg, flight);
       }

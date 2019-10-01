@@ -49,7 +49,7 @@ public class ParseUtils {
     }
     return builder.build();
   }
-  
+
   public static <T extends Enum<T>> String getFlicaName(ProtocolMessageEnum protoValue) {
     return protoValue.getValueDescriptor().getOptions().hasExtension(Proto.flicaName)
         ? protoValue.getValueDescriptor().getOptions().getExtension(Proto.flicaName)

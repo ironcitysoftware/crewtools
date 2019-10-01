@@ -49,6 +49,10 @@ public class Leg {
     return protoLeg.getGroundDuration();
   }
 
+  public boolean hasLegType() {
+    return protoLeg.hasLegType();
+  }
+
   public Proto.LegType getLegType() {
     return protoLeg.getLegType();
   }
