@@ -52,7 +52,8 @@ public class AwardParser {
     this.round = round;
   }
 
-  private final Pattern LINE_HOLDER = Pattern.compile("^([\\w\\s]+), ([\\w\\s]+) \\((\\d+)\\)$");
+  private final Pattern LINE_HOLDER = Pattern
+      .compile("^([\\w\\s]+), ([\\w\\s-]+) \\((\\d+)\\)$");
 
   public DomicileAward parse() throws IOException {
     DomicileAward.Builder domicileAward = DomicileAward.newBuilder();
