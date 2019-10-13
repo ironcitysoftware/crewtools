@@ -80,6 +80,10 @@ public class WriteGridLinks {
         "<p>However, open another tab and log into Flica.  Then right-click "
             + "and &quot;copy link address&quot; on the link you want, then paste "
             + "the link into the Flica tab.");
+    writer.printf(
+        "<p>For Chrome (not on a mobile device), <a href=\"%s\">this extension</a> "
+            + "will make the links work again.",
+        "https://chrome.google.com/webstore/detail/cookie-additions-to-flica/fdchlolpglcekkkdfbacmpcohhaonefg");
     writer.println(
         "<p><br/><font size=2>Notes: Opentime pot and tradeboard are restricted to your seat.</font>");
     writeLinks(writer, yearMonth);
