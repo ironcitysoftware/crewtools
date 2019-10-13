@@ -96,6 +96,10 @@ public class Leg {
     return departureDate;
   }
 
+  public LocalTime getDepartureLocalTime() {
+    return timeUtils.parseLocalTime(protoLeg.getDepartureLocalTime());
+  }
+
   public DateTime getDepartureTime() {
     return timeUtils.getDateTime(
         getDepartureDate(),
@@ -117,6 +121,10 @@ public class Leg {
     } else {
       return provisional.plusDays(1);
     }
+  }
+
+  public String toProtoString() {
+    return protoLeg.toString();
   }
 
   @Override

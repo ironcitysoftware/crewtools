@@ -12,4 +12,4 @@ CLASSPATH=$CLASSPATH:lib/joda-time-2.2.jar
 java \
   -Djava.util.logging.config.file=scripts/logging.properties \
   -cp $CLASSPATH \
-  crewtools.logbook.FormatTranscription $@
+  crewtools.logbook.GenerateLogbook $@

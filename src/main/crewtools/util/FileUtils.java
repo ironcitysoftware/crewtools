@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
 
+import com.google.common.base.Preconditions;
 import com.google.common.io.Files;
 import com.google.protobuf.Message;
 import com.google.protobuf.Message.Builder;
@@ -43,16 +44,22 @@ public class FileUtils {
     return config.build();
   }
 
-  @SuppressWarnings("unchecked")
   public static <B extends Builder, M extends Message> M
   readProto(String protoTxtFile, B builder) throws IOException {
+    return readProto(new File(protoTxtFile), builder);
+  }
+
+  @SuppressWarnings("unchecked")
+  public static <B extends Builder, M extends Message> M readProto(File protoTxtFile,
+      B builder) throws IOException {
+    Preconditions.checkState(protoTxtFile.exists(), protoTxtFile + " does not exit");
     FileReader reader = new FileReader(protoTxtFile);
     TextFormat.getParser().merge(reader, builder);
     return (M) builder.build();
   }
-  
+
   public static void writeDebugFile(String prefix, String data) throws IOException {
-    File out = new File("/opt/autobidder/debug/" 
+    File out = new File("/opt/autobidder/debug/"
         + prefix + "-" + System.currentTimeMillis() + ".txt");
     logger.info("Writing debug data to " + out.toString());
     if (data == null) {
