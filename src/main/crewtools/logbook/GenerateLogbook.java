@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.joda.time.LocalDate;
+import org.joda.time.YearMonth;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
@@ -67,24 +68,27 @@ public class GenerateLogbook {
   public void run(File input) throws Exception {
     Supplement supplement = new Supplement(aircraftDatabase, airportDatabase);
     Transcriber transcriber = new Transcriber(aircraftDatabase);
+    YearMonth currentYearMonth = null;
+    Period monthBlock = Period.ZERO;
 
     for (String line : Files.readLines(input, StandardCharsets.UTF_8)) {
-      if (line.startsWith("#")) {
+      if (parseDirective(line, supplement)) {
         continue;
       }
-
-      if (line.startsWith("supplement:")) {
-        modifySupplement(supplement, line.substring("supplement:".length()));
-        continue;
-      }
-
-      if (line.startsWith("pic")) {
-        System.out.println("Total SIC: " + totalBlock);
-        totalBlock = Period.ZERO;
-        continue;
-      }
-
       Record record = supplement.buildRecord(SPLITTER.splitToList(line));
+      YearMonth yearMonth = new YearMonth(record.date.getYear(),
+          record.date.getMonthOfYear());
+      if (currentYearMonth == null) {
+        currentYearMonth = yearMonth;
+      } else {
+        if (!yearMonth.equals(currentYearMonth)) {
+          System.out.println(currentYearMonth + " block: " + monthBlock
+              + "; total block: " + totalBlock);
+          monthBlock = Period.ZERO;
+          currentYearMonth = yearMonth;
+        }
+      }
+      monthBlock = monthBlock.plus(record.block);
       System.out.println(transcriber.transcribe(record));
       if (!dailyBlockTime.containsKey(record.date)) {
         dailyBlockTime.put(record.date, Period.ZERO);
@@ -95,7 +99,28 @@ public class GenerateLogbook {
     // for (LocalDate date : dailyBlockTime.keySet()) {
     // System.out.println(date + "," + dailyBlockTime.get(date));
     // }
+    if (currentYearMonth != null) {
+      System.out.println(currentYearMonth + " block: " + monthBlock);
+    }
     System.out.println(totalBlock.toString());
+  }
+
+  private boolean parseDirective(String line, Supplement supplement) throws IOException {
+    if (line.startsWith("#")) {
+      return true;
+    }
+
+    if (line.startsWith("supplement:")) {
+      modifySupplement(supplement, line.substring("supplement:".length()));
+      return true;
+    }
+
+    if (line.startsWith("pic")) {
+      System.out.println("Total SIC: " + totalBlock);
+      totalBlock = Period.ZERO;
+      return true;
+    }
+    return false;
   }
 
   private void modifySupplement(Supplement supplement, String line) throws IOException {
