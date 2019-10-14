@@ -288,16 +288,17 @@ public class SectionParser {
     checkState(components.next().equals("T.A.F.B.:"), "Missing TAFB label: " + row);
     trip.setTimeAwayFromBaseDuration(components.next());
 
-    if (components.hasNext()) {
-      // either DHD or TRIP RIG
+    while (components.hasNext()) {
+      // DHD and/or TRIP RIG
       String next = components.next();
       if (next.equals("DHD:")) {
         trip.setDeadheadDuration(components.next());
-      } else {
-        checkState(next.equals("TRIP"), "Expected DHD or 'TRIP' RIG: " + row + "[" + next + "]");
+      } else if (next.equals("TRIP")) {
         next = components.next();
         checkState(next.equals("RIG:"), "Expected DHD or TRIP 'RIG:' " + row + "[" + next + "]");
         trip.setTripRigDuration(components.next());
+      } else {
+        throw new ParseException("Expected DHD or TRIP, got " + next);
       }
     }
 
