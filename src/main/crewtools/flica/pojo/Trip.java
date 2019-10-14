@@ -49,8 +49,9 @@ import crewtools.util.TimeUtils;
  * This includes training, vacation, pairing, etc.
  */
 public class Trip implements Comparable<Trip> {
-  private final TimeUtils timeUtils = new TimeUtils();
   private final Logger logger = Logger.getLogger(Trip.class.getName());
+
+  private final TimeUtils timeUtils = new TimeUtils();
 
   public Trip(List<Section> sections, Period block, Period credit,
       Period tafb, Period duty,
@@ -242,15 +243,19 @@ public class Trip implements Comparable<Trip> {
 
   private static final DateTimeZone EASTERN = DateTimeZone.forID("America/New_York");
 
+  private static final Set<ScheduleType> SCHEDULE_TYPES_WITH_DUTY_TIMES = ImmutableSet.of(
+      ScheduleType.COMPANY_BUSINESS_TRIP,
+      ScheduleType.LONG_CALL_RESERVE,
+      ScheduleType.RELOCATION_DAY,
+      ScheduleType.SICK,
+      ScheduleType.VACATION,
+      ScheduleType.VACATION_START,
+      ScheduleType.VACATION_END);
+
   public DateTime getDutyStart() {
     if (!proto.hasScheduleType()) {
       return getFirstSection().getStart();
-    } else if (proto.getScheduleType() == ScheduleType.VACATION
-        || proto.getScheduleType() == ScheduleType.VACATION_START
-        || proto.getScheduleType() == ScheduleType.VACATION_END
-        || proto.getScheduleType() == ScheduleType.RELOCATION_DAY
-        || proto.getScheduleType() == ScheduleType.SICK
-        || proto.getScheduleType() == ScheduleType.LONG_CALL_RESERVE) {
+    } else if (SCHEDULE_TYPES_WITH_DUTY_TIMES.contains(proto.getScheduleType())) {
       // TODO Daylight savings?
       return LocalDate.parse(proto.getStartDate())
           .toDateTime(timeUtils.parseLocalTimeWithColon(proto.getStartTime()), EASTERN);
@@ -262,12 +267,7 @@ public class Trip implements Comparable<Trip> {
   public DateTime getDutyEnd() {
     if (!proto.hasScheduleType()) {
       return getLastSection().getEnd();
-    } else if (proto.getScheduleType() == ScheduleType.VACATION
-        || proto.getScheduleType() == ScheduleType.VACATION_START
-        || proto.getScheduleType() == ScheduleType.VACATION_END
-        || proto.getScheduleType() == ScheduleType.RELOCATION_DAY
-        || proto.getScheduleType() == ScheduleType.SICK
-        || proto.getScheduleType() == ScheduleType.LONG_CALL_RESERVE) {
+    } else if (SCHEDULE_TYPES_WITH_DUTY_TIMES.contains(proto.getScheduleType())) {
       // TODO Daylight savings?
       return LocalDate.parse(proto.getEndDate())
           .toDateTime(timeUtils.parseLocalTimeWithColon(proto.getEndTime()), EASTERN);

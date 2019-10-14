@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Iron City Software LLC
+ * Copyright 2019 Iron City Software LLC
  *
  * This file is part of CrewTools.
  *
@@ -19,15 +19,23 @@
 
 package crewtools.util;
 
+import java.io.IOException;
+
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-import crewtools.flica.StationZoneProvider;
-
 public class TimeUtils {
+  public TimeUtils() {
+    try {
+      this.airportDatabase = new AirportDatabase();
+    } catch (IOException ioe) {
+      throw new IllegalStateException(ioe);
+    }
+  }
+
   private DateTimeFormatter HHMM_LOCALTIME = DateTimeFormat.forPattern("HHmm");
 
   public LocalTime parseLocalTime(String protoHhMmField) {
@@ -40,9 +48,9 @@ public class TimeUtils {
     return LocalTime.parse(protoHhColonMmField, HH_COLON_MM_LOCALTIME);
   }
 
-  private StationZoneProvider zoneProvider = new StationZoneProvider();
+  private final AirportDatabase airportDatabase;
 
   public DateTime getDateTime(LocalDate date, LocalTime time, String station) {
-    return date.toDateTime(time, zoneProvider.getDateTimeZone(station));
+    return date.toDateTime(time, airportDatabase.getZone(station));
   }
 }

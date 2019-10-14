@@ -34,6 +34,8 @@ import com.google.common.primitives.Ints;
 
 import crewtools.flica.pojo.Leg;
 import crewtools.flica.pojo.Schedule;
+import crewtools.util.AircraftDatabase;
+import crewtools.util.AirportDatabase;
 import crewtools.util.Period;
 
 public class Supplement {
@@ -156,14 +158,10 @@ public class Supplement {
     }
 
     Period block = Period.fromText(it.next());
-    if (leg != null) {
-      Preconditions.checkState(leg.getBlockDuration().equals(block));
-    }
+    Preconditions.checkState(leg.getBlockDuration().equals(block));
 
-    DateTime zonedDepartureTime = date.toDateTime(departureTime,
-        airportDatabase.getZone(departureAirport));
-    DateTime zonedArrivalTime = date.toDateTime(arrivalTime,
-        airportDatabase.getZone(arrivalAirport));
+    DateTime zonedDepartureTime = leg.getDepartureTime();
+    DateTime zonedArrivalTime = leg.getArrivalTime();
 
     return new Record(
         date,
@@ -184,7 +182,8 @@ public class Supplement {
         record.zonedDepartureTime, record.zonedArrivalTime).getMinutes();
     if (record.block.getTotalMinutes() != minutes) {
       throw new IllegalStateException(
-          toString() + " bad block " + record.block.getTotalMinutes());
+          record + " bad block " + record.block + ", expected " +
+              Period.minutes(minutes));
     }
     if (record.shorthandTailNumber > 0) {
       Preconditions.checkState(("RJ" + record.shorthandAircraftType).equals(

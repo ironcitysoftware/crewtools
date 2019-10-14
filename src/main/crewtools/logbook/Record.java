@@ -77,6 +77,8 @@ public class Record {
         .add("arrivalAirport", arrivalAirport)
         .add("departureTime", departureTime)
         .add("arrivalTime", arrivalTime)
+        .add("zonedDepartureTime", zonedDepartureTime)
+        .add("zonedArrivalTime", zonedArrivalTime)
         .add("block", block)
         .toString();
   }

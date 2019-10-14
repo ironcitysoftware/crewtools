@@ -47,6 +47,7 @@ import crewtools.flica.adapters.ScheduleAdapter;
 import crewtools.flica.parser.ParseUtils;
 import crewtools.flica.pojo.Leg;
 import crewtools.flica.pojo.Trip;
+import crewtools.util.AircraftDatabase;
 import crewtools.util.FileUtils;
 import crewtools.util.Period;;
 

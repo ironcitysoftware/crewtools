@@ -17,7 +17,7 @@
  * along with CrewTools.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package crewtools.logbook;
+package crewtools.util;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,39 +26,27 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.joda.time.DateTimeZone;
+
 import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
-import com.google.common.primitives.Ints;
 
-public class AircraftDatabase {
-  private static final File AIRCRAFT_DATABASE = new File("data/aircraft.txt");
-
-  private static final Map<String, String> TYPES = ImmutableMap.of(
-      "CL-600-2B19", "RJ2",
-      "CL-600-2C10", "RJ7",
-      "CL-600-2D24", "RJ9");
+public class AirportDatabase {
+  private static final File AIRPORT_DATABASE = new File("data/airport.txt");
 
   private static final Splitter SPLITTER = Splitter.on(',');
 
-  private final Map<Integer, String> tailMap = new HashMap<>();
-  private final Map<Integer, String> typeMap = new HashMap<>();
+  private final Map<String, DateTimeZone> zoneMap = new HashMap<>();
 
-  public AircraftDatabase() throws IOException {
-    for (String line : Files.readLines(AIRCRAFT_DATABASE, StandardCharsets.UTF_8)) {
-      // Expect N539EA,539,10318,CL-600-2C10
+  public AirportDatabase() throws IOException {
+    for (String line : Files.readLines(AIRPORT_DATABASE, StandardCharsets.UTF_8)) {
+      // Expect LGA,America/New_York
       List<String> components = SPLITTER.splitToList(line);
-      int shorthandTailNumber = Ints.tryParse(components.get(1));
-      tailMap.put(shorthandTailNumber, components.get(0));
-      typeMap.put(shorthandTailNumber, TYPES.get(components.get(3)));
+      zoneMap.put(components.get(0), DateTimeZone.forID(components.get(1)));
     }
   }
 
-  public String getTailNumber(int shorthandTailNumber) {
-    return tailMap.get(shorthandTailNumber);
-  }
-
-  public String getAircraftType(int shorthandTailNumber) {
-    return typeMap.get(shorthandTailNumber);
+  public DateTimeZone getZone(String faaId) {
+    return zoneMap.get(faaId);
   }
 }

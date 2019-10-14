@@ -33,6 +33,8 @@ import com.google.common.base.Splitter;
 import com.google.common.io.Files;
 
 import crewtools.flica.adapters.ScheduleAdapter;
+import crewtools.util.AircraftDatabase;
+import crewtools.util.AirportDatabase;
 import crewtools.util.FileUtils;
 import crewtools.util.Period;
 
@@ -90,9 +92,9 @@ public class GenerateLogbook {
       dailyBlockTime.put(record.date, dailyBlockTime.get(record.date).plus(record.block));
       totalBlock = totalBlock.plus(record.block);
     }
-    for (LocalDate date : dailyBlockTime.keySet()) {
-      System.out.println(date + "," + dailyBlockTime.get(date));
-    }
+    // for (LocalDate date : dailyBlockTime.keySet()) {
+    // System.out.println(date + "," + dailyBlockTime.get(date));
+    // }
     System.out.println(totalBlock.toString());
   }
 

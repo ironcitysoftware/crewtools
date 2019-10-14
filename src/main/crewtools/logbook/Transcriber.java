@@ -29,6 +29,8 @@ import org.joda.time.format.DateTimeFormatter;
 
 import com.google.common.base.Joiner;
 
+import crewtools.util.AircraftDatabase;
+
 public class Transcriber {
   private static final Joiner JOINER = Joiner.on(',');
 

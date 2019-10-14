@@ -33,7 +33,7 @@ public class Leg {
   private final YearMonth yearMonth;
   private final DateTime sectionDutyStart;
   private final int tripIndex;
-  private final TimeUtils timeUtils;
+  private final TimeUtils timeUtils = new TimeUtils();
 
   public Leg(Proto.Leg protoLeg, DateTime sectionDutyStart,
       int tripIndex) {
@@ -42,7 +42,6 @@ public class Leg {
         sectionDutyStart.getMonthOfYear());
     this.sectionDutyStart = sectionDutyStart;
     this.tripIndex = tripIndex;
-    this.timeUtils = new TimeUtils();
   }
 
   public String getGroundDuration() {
