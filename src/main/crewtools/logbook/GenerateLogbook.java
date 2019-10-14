@@ -33,6 +33,8 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.google.common.io.Files;
 
+import crewtools.crewmobile.CalendarEntryIterator;
+import crewtools.crewmobile.Proto.CalendarDataFeed;
 import crewtools.flica.adapters.ScheduleAdapter;
 import crewtools.util.AircraftDatabase;
 import crewtools.util.AirportDatabase;
@@ -62,20 +64,19 @@ public class GenerateLogbook {
   private static final Splitter SPLITTER = Splitter.on(CharMatcher.anyOf(" ,"));
   private static final Splitter EQUAL_SPLITTER = Splitter.on('=');
 
-  private Map<LocalDate, Period> dailyBlockTime = new TreeMap<>();
-  private Period totalBlock = Period.ZERO;
+  private class Context {
+    private YearMonth currentYearMonth;
+    private Map<LocalDate, Period> dailyBlockTime = new TreeMap<>();
+    private Period monthBlock;
+    private Period totalBlock;
 
-  public void run(File input) throws Exception {
-    Supplement supplement = new Supplement(aircraftDatabase, airportDatabase);
-    Transcriber transcriber = new Transcriber(aircraftDatabase);
-    YearMonth currentYearMonth = null;
-    Period monthBlock = Period.ZERO;
+    public Context(Supplement supplement) {
+      this.currentYearMonth = null;
+      this.monthBlock = Period.ZERO;
+      this.totalBlock = Period.ZERO;
+    }
 
-    for (String line : Files.readLines(input, StandardCharsets.UTF_8)) {
-      if (parseDirective(line, supplement)) {
-        continue;
-      }
-      Record record = supplement.buildRecord(SPLITTER.splitToList(line));
+    public void process(Record record) {
       YearMonth yearMonth = new YearMonth(record.date.getYear(),
           record.date.getMonthOfYear());
       if (currentYearMonth == null) {
@@ -89,23 +90,56 @@ public class GenerateLogbook {
         }
       }
       monthBlock = monthBlock.plus(record.block);
-      System.out.println(transcriber.transcribe(record));
       if (!dailyBlockTime.containsKey(record.date)) {
         dailyBlockTime.put(record.date, Period.ZERO);
       }
       dailyBlockTime.put(record.date, dailyBlockTime.get(record.date).plus(record.block));
       totalBlock = totalBlock.plus(record.block);
     }
-    // for (LocalDate date : dailyBlockTime.keySet()) {
-    // System.out.println(date + "," + dailyBlockTime.get(date));
-    // }
-    if (currentYearMonth != null) {
-      System.out.println(currentYearMonth + " block: " + monthBlock);
+
+    public void resetTotalBlock() {
+      System.out.println("Total SIC: " + totalBlock);
+      totalBlock = Period.ZERO;
     }
-    System.out.println(totalBlock.toString());
+
+    public void close() {
+      // for (LocalDate date : dailyBlockTime.keySet()) {
+      // System.out.println(date + "," + dailyBlockTime.get(date));
+      // }
+      if (currentYearMonth != null) {
+        System.out.println(currentYearMonth + " block: " + monthBlock);
+      }
+      System.out.println(totalBlock.toString());
+    }
   }
 
-  private boolean parseDirective(String line, Supplement supplement) throws IOException {
+  public void run(File input) throws Exception {
+    Supplement supplement = new Supplement(aircraftDatabase, airportDatabase);
+    Transcriber transcriber = new Transcriber(aircraftDatabase);
+    Context context = new Context(supplement);
+
+    for (String line : Files.readLines(input, StandardCharsets.UTF_8)) {
+      if (parseDirective(line, supplement, context)) {
+        // If we have both a schedule and calendar, iterate them.
+        if (supplement.shouldIterate()) {
+          for (Record record : supplement.getRecords()) {
+            context.process(record);
+            System.out.println(transcriber.transcribe(record));
+          }
+        }
+        continue;
+      }
+      // Otherwise, we iterate each line of the transcription.
+      Record record = supplement.buildRecord(SPLITTER.splitToList(line));
+      context.process(record);
+      System.out.println(transcriber.transcribe(record));
+    }
+
+    context.close();
+  }
+
+  private boolean parseDirective(String line, Supplement supplement, Context context)
+      throws IOException {
     if (line.startsWith("#")) {
       return true;
     }
@@ -116,8 +150,7 @@ public class GenerateLogbook {
     }
 
     if (line.startsWith("pic")) {
-      System.out.println("Total SIC: " + totalBlock);
-      totalBlock = Period.ZERO;
+      context.resetTotalBlock();
       return true;
     }
     return false;
@@ -134,6 +167,11 @@ public class GenerateLogbook {
             new File(inputDirectory, parts.get(1)),
             crewtools.flica.Proto.Schedule.newBuilder());
         supplement.useSchedule(new ScheduleAdapter().adapt(scheduleProto));
+      } else if (parts.get(0).equals("calendar")) {
+        CalendarDataFeed calendar = FileUtils.readProto(
+            new File(inputDirectory, parts.get(1)),
+            CalendarDataFeed.newBuilder());
+        supplement.useCalendar(new CalendarEntryIterator(calendar));
       }
     }
   }

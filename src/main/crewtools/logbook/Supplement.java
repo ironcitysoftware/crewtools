@@ -19,8 +19,11 @@
 
 package crewtools.logbook;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.logging.Logger;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -30,8 +33,14 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
 
+import crewtools.crewmobile.Proto.CalendarEntry;
+import crewtools.crewmobile.Proto.Flight;
+import crewtools.flica.Proto.LegType;
+import crewtools.flica.Proto.ScheduleType;
+import crewtools.flica.parser.ParseUtils;
 import crewtools.flica.pojo.Leg;
 import crewtools.flica.pojo.Schedule;
 import crewtools.util.AircraftDatabase;
@@ -39,18 +48,23 @@ import crewtools.util.AirportDatabase;
 import crewtools.util.Period;
 
 public class Supplement {
-  final DateTimeFormatter inputTimeFormat = DateTimeFormat
-      .forPattern("HHmm");
-  final AircraftDatabase aircraftDatabase;
-  final AirportDatabase airportDatabase;
+  private final Logger logger = Logger.getLogger(Supplement.class.getName());
 
-  Iterator<Leg> legs;
+  private final DateTimeFormatter inputTimeFormat = DateTimeFormat
+      .forPattern("HHmm");
+  private final AircraftDatabase aircraftDatabase;
+  private final AirportDatabase airportDatabase;
+  private final Set<String> ignoredMagicFlightNumbers;
+
+  private Iterator<Leg> legs;
+  private Iterator<CalendarEntry> calendar;
 
   public Supplement(
       AircraftDatabase aircraftDatabase,
       AirportDatabase airportDatabase) {
     this.aircraftDatabase = aircraftDatabase;
     this.airportDatabase = airportDatabase;
+    this.ignoredMagicFlightNumbers = populateIgnoredMagicFlightNumbers();
   }
 
   public void useSchedule(Schedule schedule) {
@@ -63,6 +77,101 @@ public class Supplement {
     } else {
       this.legs = new LegIterator(schedule);
     }
+  }
+
+  public void useCalendar(Iterator<CalendarEntry> calendar) {
+    this.calendar = calendar;
+  }
+
+  public boolean shouldIterate() {
+    return this.legs != null && this.calendar != null;
+  }
+
+  public List<Record> getRecords() {
+    List<Record> result = new ArrayList<>();
+    while (legs.hasNext()) {
+      Leg leg = legs.next();
+      CalendarEntry entry = calendar.next();
+      Flight flight = entry.getFlight();
+      logger.fine("Read leg " + leg.getDepartureAirportCode() + "->"
+          + leg.getArrivalAirportCode() + ", calendar " + flight.getDep() + "->"
+          + flight.getArr());
+      if (leg.isDeadhead()) {
+        Preconditions.checkState(entry.getFlight().getDH());
+        continue;
+      }
+      while (flight.getDH()) {
+        entry = calendar.next();
+        flight = entry.getFlight();
+      }
+      // RLD, for example, have block minutes = 0.
+      while (flight.getActBlockMinutes() == 0) {
+        Preconditions.checkState(
+            ignoredMagicFlightNumbers.contains(flight.getFlightNumber()),
+            flight.toString() + " flight number not in " +
+                ignoredMagicFlightNumbers);
+        entry = calendar.next();
+        flight = entry.getFlight();
+      }
+      logger.fine("Skipped to calendar " + flight.getDep() + "->"
+          + flight.getArr());
+      assertEquals(leg, flight);
+      Record record = buildRecord(leg, flight);
+      validate(record);
+      result.add(record);
+    }
+    return result;
+  }
+
+  private final DateTimeFormatter calendarTimeFormat = DateTimeFormat
+      .forPattern("yyyy-MM-dd'T'HH:mm:ss");
+
+  private void assertEquals(Leg leg, Flight flight) {
+    String diff = leg.toString() + " vs " + flight.toString();
+    Preconditions.checkState(
+        leg.getFlightNumber() == Ints.tryParse(flight.getFlightNumber()),
+        "Flight number " + diff);
+    Preconditions.checkState(leg.getDepartureAirportCode().equals(
+        flight.getDep()), "Departure " + diff);
+    Preconditions.checkState(leg.getArrivalAirportCode().equals(
+        flight.getArr()), "Arrival " + diff);
+    Preconditions.checkState(leg.getDepartureTime().toLocalTime().equals(
+        calendarTimeFormat.parseDateTime(flight.getActDepTime()).toLocalTime()),
+        "Departure time " + diff);
+    Preconditions.checkState(leg.getArrivalTime().toLocalTime().equals(
+        calendarTimeFormat.parseDateTime(flight.getActArrTime()).toLocalTime()),
+        "Arrival time " + diff);
+  }
+
+  public Record buildRecord(Leg leg, Flight flight) {
+    DateTime departure = calendarTimeFormat.parseDateTime(flight.getActDepTimeUtc());
+    DateTime arrival = calendarTimeFormat.parseDateTime(flight.getActArrTimeUtc());
+    LocalDate date = departure.toLocalDate();
+    String flightNumber = new Integer(leg.getFlightNumber()).toString();
+    int shorthandTailNumber = Ints.tryParse(flight.getTailNumber());
+    String shorthandAircraftType = flight.getEquipmentType().substring(2);
+    String departureAirport = flight.getDep();
+    String arrivalAirport = flight.getArr();
+    Period block = Period.fromTextWithColon(flight.getActBlockTime());
+    DateTime zonedDepartureTime = departure.withZone(
+        airportDatabase.getZone(departureAirport));
+    DateTime zonedArrivalTime = arrival.withZone(
+        airportDatabase.getZone(arrivalAirport));
+    LocalTime departureTime = zonedDepartureTime.toLocalTime();
+    LocalTime arrivalTime = zonedArrivalTime.toLocalTime();
+
+    return new Record(
+        date,
+        flightNumber,
+        shorthandAircraftType,
+        shorthandTailNumber,
+        departureAirport,
+        arrivalAirport,
+        departureTime,
+        arrivalTime,
+        block,
+        zonedDepartureTime,
+        zonedArrivalTime);
   }
 
   public Record buildRecord(List<String> line) {
@@ -191,5 +300,18 @@ public class Supplement {
           "Is " + record.shorthandTailNumber + " really a RJ"
               + record.shorthandAircraftType);
     }
+  }
+
+  private Set<String> populateIgnoredMagicFlightNumbers() {
+    ImmutableSet.Builder<String> ignoredFlightNumbers = ImmutableSet.builder();
+    for (LegType legType : LegType.values()) {
+      String name = ParseUtils.getFlicaName(legType);
+      ignoredFlightNumbers.add(name == null ? legType.name() : name);
+    }
+    for (ScheduleType scheduleType : ScheduleType.values()) {
+      String name = ParseUtils.getFlicaName(scheduleType);
+      ignoredFlightNumbers.add(name == null ? scheduleType.name() : name);
+    }
+    return ignoredFlightNumbers.build();
   }
 }
