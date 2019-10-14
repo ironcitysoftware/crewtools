@@ -44,6 +44,7 @@ public class TripScore implements Comparable<TripScore> {
   public static final int START_HOUR_INCLUSIVE = 12;
   public static final int END_HOUR_INCLUSIVE = 18;
   private static final int DEUCE_CANOE_FACTOR = 20;
+  private static final int DESPISED_TURN_PENALITY = 10000;
 
   private final Period favoriteOvernightPeriod;
   private final int numFavoriteOvernights;
@@ -110,6 +111,11 @@ public class TripScore implements Comparable<TripScore> {
         if (config.getFavoriteTurnList().contains(airportCode)) {
           goodPoints++;
           scoreExplanation.add("+1 for a turn to " + airportCode);
+        }
+        if (config.getDespisedTurnList().contains(airportCode)) {
+          badPoints += DESPISED_TURN_PENALITY;
+          scoreExplanation
+              .add("-" + DESPISED_TURN_PENALITY + " for a turn to " + airportCode);
         }
       }
     }

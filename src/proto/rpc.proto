@@ -132,6 +132,9 @@ message BidConfig {
   optional bool enable_ding_partial_trips = 28;
 
   optional bool enable_multiple_adds = 29;
+
+  // Turns to these airports are discouraged.
+  repeated string despised_turn = 30;
 }
 
 message ScoreAdjustment {
