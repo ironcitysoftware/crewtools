@@ -183,6 +183,9 @@ public class SectionParser {
     if (LEG_TYPES.containsKey(flightNumber)) {
       leg.setLegType(LEG_TYPES.get(flightNumber));
     } else {
+      if (flightNumber.startsWith("`")) {
+        flightNumber = flightNumber.substring(1);
+      }
       leg.setFlightNumber(Integer.parseInt(flightNumber));
     }
 
