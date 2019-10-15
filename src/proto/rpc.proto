@@ -135,6 +135,9 @@ message BidConfig {
 
   // Turns to these airports are discouraged.
   repeated string despised_turn = 30;
+
+  // Minimum number of days between trips.
+  optional int32 minimum_number_of_days_between_trips = 31;
 }
 
 message ScoreAdjustment {

@@ -22,13 +22,16 @@ package crewtools.flica.bid;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import org.joda.time.Interval;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
 import org.joda.time.YearMonth;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
@@ -38,6 +41,8 @@ import crewtools.flica.pojo.Trip;
 import crewtools.rpc.Proto.BidConfig;
 
 public class OverlapEvaluator {
+  private final Logger logger = Logger.getLogger(OverlapEvaluator.class.getName());
+
   public static class OverlapEvaluation {
     public enum Overlap {
       UNDROPPABLE,
@@ -57,11 +62,35 @@ public class OverlapEvaluator {
 
     public final Overlap overlap;
     public final Set<Trip> overlappedTrips;
+
+    @Override
+    public boolean equals(Object o) {
+      if (o == null || !(o instanceof OverlapEvaluation)) {
+        return false;
+      }
+      OverlapEvaluation that = (OverlapEvaluation) o;
+      return this.overlap == that.overlap
+          && this.overlappedTrips.equals(that.overlappedTrips);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(overlap, overlappedTrips);
+    }
+
+    @Override
+    public String toString() {
+      return MoreObjects.toStringHelper(this)
+          .add("overlap", overlap)
+          .add("overlappedTrips", overlappedTrips)
+          .toString();
+    }
   }
 
   private final Set<LocalDate> requiredDaysOff;
   private final Set<Interval> nonTripIntervals;
   private final ReducedSchedule alteredSchedule;
+  private final BidConfig bidConfig;
 
   private static final LocalTime LOCALTIME_END_OF_DAY = LocalTime.parse("23:59");
 
@@ -74,8 +103,10 @@ public class OverlapEvaluator {
     this.requiredDaysOff = builder.build();
     this.alteredSchedule = alteredSchedule;
     this.nonTripIntervals = alteredSchedule.getNonTripIntervals();
+    this.bidConfig = bidConfig;
   }
 
+  /** dates are the dates of the trip we're looking at adding. */
   public OverlapEvaluation evaluate(Set<LocalDate> dates) {
     LocalDate first = Ordering.natural().min(dates);
     LocalDate last = Ordering.natural().max(dates);
@@ -140,15 +171,34 @@ public class OverlapEvaluator {
   private static final int MAX_DAYS_IN_A_ROW = 5;
 
   // TODO use Interval instead.
+  // Returns true if the potential trip dates conflict with a scheduled trip.
   private boolean overlapsDates(Trip scheduledTrip, Set<LocalDate> potentialTripDates) {
     // Add the day before and after a scheduled trip.
     // We don't want to end up with adjacent trips.
-    Set<LocalDate> scheduledDates = new HashSet<>(scheduledTrip.getDepartureDates());
+    Set<LocalDate> scheduledDates = new HashSet<>(
+        scheduledTrip.getDepartureDates());
     Preconditions.checkState(!scheduledDates.isEmpty());
+    // Pure overlap.
+    // TODO: this does not account for time of day.
+    // Hence the comment above to use intervals.
     if (overlaps(scheduledDates, potentialTripDates)) {
       return true;
     }
-    // Check for abutment.
+
+    // Check for abutment within N days of existing trip.
+    if (bidConfig.getMinimumNumberOfDaysBetweenTrips() > 0) {
+      Set<LocalDate> extendedScheduledDates = new HashSet<>(scheduledDates);
+      for (int i = 0; i < bidConfig.getMinimumNumberOfDaysBetweenTrips(); ++i) {
+        extendedScheduledDates
+            .add(Ordering.natural().min(extendedScheduledDates).minusDays(1));
+        extendedScheduledDates
+            .add(Ordering.natural().max(extendedScheduledDates).plusDays(1));
+      }
+      if (overlaps(extendedScheduledDates, potentialTripDates)) {
+        return true;
+      }
+    }
+
     LocalDate priorDate = Ordering.natural().min(scheduledDates).minusDays(1);
     LocalDate nextDate = Ordering.natural().max(scheduledDates).plusDays(1);
     if (potentialTripDates.contains(priorDate)
