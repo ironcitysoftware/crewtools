@@ -101,7 +101,13 @@ public class BaseFlicaConnection implements Closeable {
   }
 
   public void disconnect() throws IOException {
-    retrieveUrl(FLICA_LOGOUT_URL);
+    Request request = new Request.Builder()
+        .url(FLICA_LOGOUT_URL)
+        .header(USER_AGENT_KEY, CHROME_USER_AGENT)
+        .build();
+    Response response = httpclient.newCall(request).execute();
+    response.close();
+    cookieJar.clear();
   }
 
   @Override
@@ -120,6 +126,7 @@ public class BaseFlicaConnection implements Closeable {
     if (response.code() == HttpURLConnection.HTTP_MOVED_TEMP) {
       response.body().close();
       logger.info("(Re)Logging in");
+      disconnect();
       Preconditions.checkState(connect(), "connect failed");
       response = httpclient.newCall(request).execute();
       Preconditions.checkState(response.code() != HttpURLConnection.HTTP_MOVED_TEMP,
