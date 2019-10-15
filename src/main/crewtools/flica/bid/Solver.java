@@ -160,6 +160,14 @@ public class Solver {
     ProposedSchedule schedule = new ProposedSchedule(reducedSchedule, taskCombinations);
     if (schedule.isValid(evaluator)) {
       Solution solution = new Solution(schedule, tripDatabase, bidConfig);
+      int numAdds = solution.getProposedSchedule().getAddedKeys().size();
+      int numDrops = solution.getProposedSchedule().getReducedSchedule().getDropKeys()
+          .size();
+      if (numAdds > numDrops) {
+        // Avoid a 4-day turning into two 2-days.
+        return;
+      }
+
       boolean workLess = schedule.getNumWorkingDays() < reducedSchedule
           .getOriginalNumWorkingDays();
       boolean workSame = schedule.getNumWorkingDays() == reducedSchedule
