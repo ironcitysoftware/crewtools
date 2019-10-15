@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Iron City Software LLC
+ * Copyright 2019 Iron City Software LLC
  *
  * This file is part of CrewTools.
  *
@@ -43,26 +43,27 @@ import crewtools.flica.parser.ScheduleParser;
 import crewtools.flica.pojo.FlicaTask;
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Schedule;
+import crewtools.rpc.Proto.BidConfig;
+import crewtools.util.FileUtils;
 import crewtools.util.FlicaConfig;
 
 // Submits a swap request (opentime or SAP)
 public class SubmitSwap {
   private final Logger logger = Logger.getLogger(SubmitSwap.class.getName());
 
-  private static final int ROUND = FlicaService.BID_SENIORITY_BASED;
-
   public static void main(String args[]) throws Exception {
     new SubmitSwap().run(args);
   }
 
   public void run(String args[]) throws Exception {
-    YearMonth yearMonth = YearMonth.parse("2019-5");
+    BidConfig bidConfig = FileUtils.readBidConfig();
+    YearMonth yearMonth = YearMonth.parse(bidConfig.getYearMonth());
 
     FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
     FlicaService service = new FlicaService(connection);
     service.connect();
 
-    List<PairingKey> openTimeTrips = getOpenTimeTrips(service, yearMonth);
+    List<PairingKey> openTimeTrips = getOpenTimeTrips(bidConfig, service, yearMonth);
     Map<String, PairingKey> openTime = new HashMap<>();
     for (PairingKey key : openTimeTrips) {
       openTime.put(key.getPairingName(), key);
@@ -102,7 +103,7 @@ public class SubmitSwap {
     logger.info("ADD : " + addTrips);
     logger.info("DROP: " + dropTrips);
     String result = service.submitSwap(
-        ROUND,
+        bidConfig.getRound(),
         yearMonth,
         firstDayOfMonth,
         addTrips,
@@ -110,9 +111,13 @@ public class SubmitSwap {
     System.out.println(result);
   }
 
-  private List<PairingKey> getOpenTimeTrips(FlicaService service, YearMonth yearMonth) throws Exception {
+  private List<PairingKey> getOpenTimeTrips(BidConfig bidConfig,
+      FlicaService service, YearMonth yearMonth) throws Exception {
+    Rank rank = Rank.valueOf(bidConfig.getRank());
+    int round = bidConfig.getRound();
+    AwardDomicile awardDomicile = AwardDomicile.valueOf(bidConfig.getAwardDomicile());
     String rawOpenTime = service.getOpenTime(
-        AwardDomicile.CLT, Rank.FIRST_OFFICER, ROUND, yearMonth);
+        awardDomicile, rank, round, yearMonth);
     OpenTimeParser openTimeParser =
         new OpenTimeParser(yearMonth.getYear(), rawOpenTime);
     List<FlicaTask> tasks = openTimeParser.parse();
