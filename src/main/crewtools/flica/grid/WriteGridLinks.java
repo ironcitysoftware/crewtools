@@ -109,9 +109,19 @@ public class WriteGridLinks {
     for (Rank rank : Rank.values()) {
       writer.println("<tr><td>" + SHORT_RANK.get(rank) + "</td>");
       for (AwardDomicile domicile : AwardDomicile.values()) {
+        // Hack until we determine FO_SBB BCID
+        String sbbAnchor = rank == Rank.CAPTAIN
+            ? "<a target=_blank href=\"%s\">SBB</a>"
+            : "%s";
+        String sbbUrl = rank == Rank.CAPTAIN
+            ? FlicaService
+                .getOpenTimeUrl(domicile, rank, FlicaService.BID_CA_SBB, yearMonth)
+                .toString()
+            : "SBB";
         writer.printf("  <td><a target=_blank href=\"%s\">reserve grid</a>,<br />\n"
             + "<a target=_blank href=\"%s\">reserve avail</a>,<br />\n"
-            + "<a target=_blank href=\"%s\">opentime pot</a>,<br />\n"
+            + "pot:&nbsp;" + sbbAnchor + "&nbsp;|&nbsp;"
+            + "<a target=_blank href=\"%s\">FCFS</a><br />\n"
             + "<a target=_blank href=\"%s\">lines</a>,<br />\n"
             + "<a target=_blank href=\"%s\">pairings</a>,<br />\n"
             + "<a target=_blank href=\"%s\">tradeboard</a></td>",
@@ -120,6 +130,7 @@ public class WriteGridLinks {
             FlicaService.getReserveAvailabilityUrl(domicile, rank,
                 FlicaService.BID_FIRST_COME,
                 yearMonth),
+            sbbUrl,
             FlicaService.getOpenTimeUrl(domicile, rank, FlicaService.BID_FIRST_COME,
                 yearMonth),
             FlicaService.getAllLinesUrl(domicile, rank, FlicaService.BID_ROUND_ONE,
