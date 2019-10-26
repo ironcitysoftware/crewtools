@@ -22,6 +22,7 @@ package crewtools.flica;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -34,6 +35,7 @@ import org.joda.time.format.DateTimeFormatter;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
 
 import crewtools.flica.Proto.Rank;
 import crewtools.flica.pojo.PairingKey;
@@ -104,31 +106,48 @@ public class FlicaService {
   private static final String BID_CLOSE_ID_FORMAT_SPEC = "01%d.%03d";
   private static final int JUN_2019_CODE_CA_SAP = 34;
   private static final YearMonth JUN_2019 = YearMonth.parse("2019-06");
+  private static final int NOV_2019_CODE_CA_SBB = 2;
+  private static final YearMonth NOV_2019 = YearMonth.parse("2019-11");
 
   public static final int BID_ROUND_ONE = 1;
   public static final int BID_ROUND_TWO = 2;
-  public static final int BID_SENIORITY_BASED = 4;
+  public static final int BID_LEGACY_SENIORITY_BASED = 4;
   public static final int BID_OPENTIME = 5;
-  public static final int BID_FIRST_COME = 5;
+  public static final int BID_FIRST_COME = 5; // alias
   public static final int BID_TRADEBOARD = 6;
+  public static final int BID_CA_SBB = 7;
+  // TODO FO_SBB
   public static final int BID_CA_SAP = 9;
   public static final int BID_FO_SAP = 10;
 
-  // BCID = 01[Round 1=0, Round 2=1, SeniorityBased=3, Opentime=5, CA SAP=8, FO
-  // SAP=9].xxx where 040 = March 2017
+  private static final Set<Integer> LEGAL_ROUNDS = ImmutableSet.<Integer>builder()
+      .add(BID_ROUND_ONE)
+      .add(BID_ROUND_TWO)
+      .add(BID_LEGACY_SENIORITY_BASED)
+      .add(BID_OPENTIME)
+      .add(BID_TRADEBOARD)
+      .add(BID_CA_SBB)
+      .add(BID_CA_SAP)
+      .add(BID_FO_SAP)
+      .build();
+
+  // BCID = 01[Round 1=0, Round 2=1, SeniorityBased=3, Opentime=5,
+  // CA SBB=6, CA SAP=8, FO SAP=9].xxx where 040 = March 2017
   public static String getBidCloseId(int round, YearMonth yearMonth) {
-    Preconditions.checkState(round == 1 || round == 2 || round == 3
-        || round == 4 || round == 5 || round == 6 || round == 9 || round == 10);
+    Preconditions.checkState(LEGAL_ROUNDS.contains(round));
     int roundCode = round - 1;
     int yearMonthCode;
-    if (roundCode == 9) {
+    if (round == BID_FO_SAP) {
       yearMonthCode = AUG_2017_CODE_FO_SAP + Months.monthsBetween(AUG_2017, yearMonth).getMonths();
-    } else if (roundCode == 8) {
+    } else if (round == BID_CA_SAP) {
       yearMonthCode = JUN_2019_CODE_CA_SAP
           + Months.monthsBetween(JUN_2019, yearMonth).getMonths();
+    } else if (round == BID_CA_SBB) {
+      yearMonthCode = NOV_2019_CODE_CA_SBB
+          + Months.monthsBetween(NOV_2019, yearMonth).getMonths();
     } else {
       int monthsBetween = Months.monthsBetween(JAN_2017, yearMonth).getMonths();
-      if (roundCode == 4) {
+      if (round == BID_OPENTIME) {
         // To view November opentime we need 014.049, not 014.048
         monthsBetween++;
       } else {
