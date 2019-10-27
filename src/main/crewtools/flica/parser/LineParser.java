@@ -143,10 +143,13 @@ public class LineParser {
         currentPairing.setDate(cellDate.toString());
         isFirstDayOfPairing = true;
       } else {
-        if (components.size() == 2
-            && components.get(0).equals(DASH)
-            && (components.get(1).equals("LCR")
-                || components.get(1).equals("LCRR"))) {
+        boolean isLongCallReserve =
+            (components.size() == 1 && components.get(0).equals("R1LCR")) // sic
+            || (components.size() == 2
+                && components.get(0).equals(DASH)
+                && (components.get(1).equals("LCR")
+                    || components.get(1).equals("LCRR")));
+        if (isLongCallReserve) {
           // Long call reserve has -, LCR for every day.
           if (currentPairing == null) {
             currentPairing = builder.addThinPairingBuilder();
