@@ -38,7 +38,7 @@ public class Referee {
       case FlicaService.BID_CA_SAP:
       case FlicaService.BID_FO_SAP:
         return Duration.standardMinutes(15);
-      case FlicaService.BID_SENIORITY_BASED:
+      case FlicaService.BID_CA_SBB:
         return Duration.standardHours(12);
       case FlicaService.BID_FIRST_COME:
         return Duration.standardHours(1);
@@ -53,7 +53,7 @@ public class Referee {
       case FlicaService.BID_CA_SAP:
       case FlicaService.BID_FO_SAP:
         return Duration.standardMinutes(6);
-      case FlicaService.BID_SENIORITY_BASED:
+      case FlicaService.BID_CA_SBB:
         return Duration.standardHours(12);
       case FlicaService.BID_FIRST_COME:
         return Duration.standardHours(1);
@@ -68,7 +68,7 @@ public class Referee {
       case FlicaService.BID_CA_SAP:
       case FlicaService.BID_FO_SAP:
         return Duration.standardMinutes(2);
-      case FlicaService.BID_SENIORITY_BASED:
+      case FlicaService.BID_CA_SBB:
       case FlicaService.BID_FIRST_COME:
         return Duration.standardHours(3);
       default:
@@ -91,7 +91,7 @@ public class Referee {
             .withHourOfDay(19);
         return new Duration(clock.now(), biddingStartTime);
       }
-      case FlicaService.BID_SENIORITY_BASED: {
+      case FlicaService.BID_CA_SBB: {
         DateTime biddingStartTime = new DateTime().withTimeAtStartOfDay()
             .withDayOfMonth(24).withHourOfDay(17);
         return new Duration(clock.now(), biddingStartTime);
