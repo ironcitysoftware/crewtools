@@ -83,6 +83,10 @@ public class MonthlyDataRetriever {
 
   private void getLinesForAllDomiciles(FlicaService service)
       throws ParseException, URISyntaxException, IOException {
+    // If only retrieiving round 2, an error will be returned if round 1 is
+    // not retrieved first.
+    String linesUnused = service.getAllLines(AwardDomicile.CLT, Rank.CAPTAIN, 1,
+        yearMonth);
     for (AwardDomicile awardDomicile : AwardDomicile.values()) {
       for (Rank rank : Rank.values()) {
         for (int round = 1; round < 3; ++round) {
