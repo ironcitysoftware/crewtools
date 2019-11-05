@@ -58,6 +58,8 @@ public class Supplement {
 
   private Iterator<Leg> legs;
   private Iterator<CalendarEntry> calendar;
+  private boolean strictTimeParsing;
+  private boolean isPic;
 
   public Supplement(
       AircraftDatabase aircraftDatabase,
@@ -65,6 +67,7 @@ public class Supplement {
     this.aircraftDatabase = aircraftDatabase;
     this.airportDatabase = airportDatabase;
     this.ignoredMagicFlightNumbers = populateIgnoredMagicFlightNumbers();
+    this.strictTimeParsing = true;
   }
 
   public void useSchedule(Schedule schedule) {
@@ -83,8 +86,16 @@ public class Supplement {
     this.calendar = calendar;
   }
 
+  public void setStrictTimeParsing(boolean value) {
+    this.strictTimeParsing = value;
+  }
+
   public boolean shouldIterate() {
     return this.legs != null && this.calendar != null;
+  }
+
+  public void beginPic() {
+    isPic = true;
   }
 
   public List<Record> getRecords() {
@@ -170,6 +181,7 @@ public class Supplement {
         departureTime,
         arrivalTime,
         block,
+        isPic,
         zonedDepartureTime,
         zonedArrivalTime);
   }
@@ -195,13 +207,30 @@ public class Supplement {
     int shorthandTailNumber = Ints.tryParse(it.next());
     String departureAirport = it.next();
     String arrivalAirport = it.next();
-    LocalTime departureTime = inputTimeFormat.parseLocalTime(it.next());
-    LocalTime arrivalTime = inputTimeFormat.parseLocalTime(it.next());
+
+    String rawDepartureTime = it.next();
+    LocalTime departureTime = null;
+    if (!rawDepartureTime.isEmpty() || strictTimeParsing) {
+      departureTime = inputTimeFormat.parseLocalTime(rawDepartureTime);
+    }
+
+    String rawArrivalTime = it.next();
+    LocalTime arrivalTime = null;
+    if (!rawArrivalTime.isEmpty() || strictTimeParsing) {
+      arrivalTime = inputTimeFormat.parseLocalTime(rawArrivalTime);
+    }
     Period block = Period.fromText(it.next());
-    DateTime zonedDepartureTime = date.toDateTime(departureTime,
-        airportDatabase.getZone(departureAirport));
-    DateTime zonedArrivalTime = date.toDateTime(arrivalTime,
-        airportDatabase.getZone(arrivalAirport));
+
+    DateTime zonedDepartureTime = null;
+    if (departureTime != null) {
+      zonedDepartureTime = date.toDateTime(departureTime,
+          airportDatabase.getZone(departureAirport));
+    }
+    DateTime zonedArrivalTime = null;
+    if (arrivalTime != null) {
+      zonedArrivalTime = date.toDateTime(arrivalTime,
+          airportDatabase.getZone(arrivalAirport));
+    }
 
     return new Record(
         date,
@@ -213,6 +242,7 @@ public class Supplement {
         departureTime,
         arrivalTime,
         block,
+        isPic,
         zonedDepartureTime,
         zonedArrivalTime);
   }
@@ -282,17 +312,21 @@ public class Supplement {
         departureTime,
         arrivalTime,
         block,
+        isPic,
         zonedDepartureTime,
         zonedArrivalTime);
   }
 
   private void validate(Record record) {
-    int minutes = Minutes.minutesBetween(
-        record.zonedDepartureTime, record.zonedArrivalTime).getMinutes();
-    if (record.block.getTotalMinutes() != minutes) {
-      throw new IllegalStateException(
-          record + " bad block " + record.block + ", expected " +
-              Period.minutes(minutes));
+    if (record.zonedDepartureTime != null
+        && record.zonedArrivalTime != null) {
+      int minutes = Minutes.minutesBetween(
+          record.zonedDepartureTime, record.zonedArrivalTime).getMinutes();
+      if (record.block.getTotalMinutes() != minutes) {
+        throw new IllegalStateException(
+            record + " bad block " + record.block + ", expected " +
+                Period.minutes(minutes));
+      }
     }
     if (record.shorthandTailNumber > 0) {
       Preconditions.checkState(("RJ" + record.shorthandAircraftType).equals(

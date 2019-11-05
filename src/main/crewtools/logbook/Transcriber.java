@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -45,9 +46,16 @@ public class Transcriber {
 
   public String transcribe(Record record) {
     List<String> components = new ArrayList<>();
-    DateTime departureTimeUtc = record.zonedDepartureTime.withZone(DateTimeZone.UTC);
-    DateTime arrivalTimeUtc = record.zonedArrivalTime.withZone(DateTimeZone.UTC);
-    components.add("" + departureTimeUtc.toLocalDate());
+    DateTime departureTimeUtc = record.zonedDepartureTime != null
+        ? record.zonedDepartureTime.withZone(DateTimeZone.UTC)
+        : null;
+    DateTime arrivalTimeUtc = record.zonedArrivalTime != null
+        ? record.zonedArrivalTime.withZone(DateTimeZone.UTC)
+        : null;
+    LocalDate date = departureTimeUtc != null
+        ? departureTimeUtc.toLocalDate()
+        : record.date;
+    components.add(date.toString());
     components.add("JIA" + record.flightNumber);
     if (record.shorthandTailNumber == 0) {
       components.add("");
@@ -58,8 +66,19 @@ public class Transcriber {
     }
     components.add(record.departureAirport);
     components.add(record.arrivalAirport);
-    components.add(outputTimeFormat.print(departureTimeUtc.toLocalTime()));
-    components.add(outputTimeFormat.print(arrivalTimeUtc.toLocalTime()));
+
+    if (departureTimeUtc != null) {
+      components.add(outputTimeFormat.print(departureTimeUtc.toLocalTime()));
+    } else {
+      components.add("");
+    }
+
+    if (arrivalTimeUtc != null) {
+      components.add(outputTimeFormat.print(arrivalTimeUtc.toLocalTime()));
+    } else {
+      components.add("");
+    }
+
     components.add(record.block.toString());
     return JOINER.join(components);
   }

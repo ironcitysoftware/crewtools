@@ -37,6 +37,7 @@ public class Record {
   public final LocalTime departureTime;
   public final LocalTime arrivalTime;
   public final Period block;
+  public final boolean isPic;
 
   public final DateTime zonedDepartureTime;
   public final DateTime zonedArrivalTime;
@@ -51,6 +52,7 @@ public class Record {
       LocalTime departureTime,
       LocalTime arrivalTime,
       Period block,
+      boolean isPic,
       DateTime zonedDepartureTime,
       DateTime zonedArrivalTime) {
     this.date = date;
@@ -62,6 +64,7 @@ public class Record {
     this.departureTime = departureTime;
     this.arrivalTime = arrivalTime;
     this.block = block;
+    this.isPic = isPic;
     this.zonedDepartureTime = zonedDepartureTime;
     this.zonedArrivalTime = zonedArrivalTime;
   }
@@ -80,6 +83,7 @@ public class Record {
         .add("zonedDepartureTime", zonedDepartureTime)
         .add("zonedArrivalTime", zonedArrivalTime)
         .add("block", block)
+        .add("pic", isPic)
         .toString();
   }
 }

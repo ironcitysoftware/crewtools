@@ -64,6 +64,7 @@ public class GenerateLogbook {
   private static final Splitter SPLITTER = Splitter.on(CharMatcher.anyOf(" ,"));
   private static final Splitter EQUAL_SPLITTER = Splitter.on('=');
 
+  // TODO: remove, replaced with Summary
   private class Context {
     private YearMonth currentYearMonth;
     private Map<LocalDate, Period> dailyBlockTime = new TreeMap<>();
@@ -117,6 +118,7 @@ public class GenerateLogbook {
     Supplement supplement = new Supplement(aircraftDatabase, airportDatabase);
     Transcriber transcriber = new Transcriber(aircraftDatabase);
     Context context = new Context(supplement);
+    Summary summary = new Summary();
 
     for (String line : Files.readLines(input, StandardCharsets.UTF_8)) {
       if (parseDirective(line, supplement, context)) {
@@ -124,6 +126,7 @@ public class GenerateLogbook {
         if (supplement.shouldIterate()) {
           for (Record record : supplement.getRecords()) {
             context.process(record);
+            summary.add(record);
             System.out.println(transcriber.transcribe(record));
           }
         }
@@ -132,10 +135,12 @@ public class GenerateLogbook {
       // Otherwise, we iterate each line of the transcription.
       Record record = supplement.buildRecord(SPLITTER.splitToList(line));
       context.process(record);
+      summary.add(record);
       System.out.println(transcriber.transcribe(record));
     }
 
     context.close();
+    System.out.println(summary);
   }
 
   private boolean parseDirective(String line, Supplement supplement, Context context)
@@ -150,6 +155,7 @@ public class GenerateLogbook {
     }
 
     if (line.startsWith("pic")) {
+      supplement.beginPic();
       context.resetTotalBlock();
       return true;
     }
@@ -172,6 +178,8 @@ public class GenerateLogbook {
             new File(inputDirectory, parts.get(1)),
             CalendarDataFeed.newBuilder());
         supplement.useCalendar(new CalendarEntryIterator(calendar));
+      } else if (parts.get(0).equals("time")) {
+        supplement.setStrictTimeParsing(Boolean.valueOf(parts.get(1)));
       }
     }
   }
