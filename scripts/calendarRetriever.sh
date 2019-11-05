@@ -8,7 +8,8 @@ CLASSPATH=$CLASSPATH:lib/okhttp-3.10.0.jar
 CLASSPATH=$CLASSPATH:lib/okio-1.14.1.jar
 CLASSPATH=$CLASSPATH:lib/protobuf-2.6.1.jar
 CLASSPATH=$CLASSPATH:lib/joda-time-2.2.jar
-CLASSPATH=$CLASSPATH:../crewtools-private/bin/crewtools-private.jar
+#CLASSPATH=$CLASSPATH:../crewtools-private/bin/crewtools-private.jar
+CLASSPATH=$CLASSPATH:../crewtools-private/bin
 
 java \
   -Djava.util.logging.config.file=scripts/logging.properties \
