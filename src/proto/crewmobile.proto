@@ -201,6 +201,7 @@ message Flight {
   optional string sched_dep_time_utc = 49;
   optional string tail_number = 50;
   optional string time_between_flights = 51;
+  optional string full_tail_number = 52;
 }
 
 message MinimumEquipmentList {
