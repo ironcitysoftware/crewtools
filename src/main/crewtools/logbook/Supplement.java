@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
 import org.joda.time.Minutes;
@@ -59,6 +60,7 @@ public class Supplement {
   private Iterator<Leg> legs;
   private Iterator<CalendarEntry> calendar;
   private boolean strictTimeParsing;
+  private boolean utcTime;
   private boolean isPic;
 
   public Supplement(
@@ -68,6 +70,7 @@ public class Supplement {
     this.airportDatabase = airportDatabase;
     this.ignoredMagicFlightNumbers = populateIgnoredMagicFlightNumbers();
     this.strictTimeParsing = true;
+    this.utcTime = false;
   }
 
   public void useSchedule(Schedule schedule) {
@@ -88,6 +91,10 @@ public class Supplement {
 
   public void setStrictTimeParsing(boolean value) {
     this.strictTimeParsing = value;
+  }
+
+  public void setUtcTime(boolean value) {
+    this.utcTime = value;
   }
 
   public boolean shouldIterate() {
@@ -155,18 +162,18 @@ public class Supplement {
   }
 
   public Record buildRecord(Leg leg, Flight flight) {
-    DateTime departure = calendarTimeFormat.parseDateTime(flight.getActDepTimeUtc());
-    DateTime arrival = calendarTimeFormat.parseDateTime(flight.getActArrTimeUtc());
-    LocalDate date = departure.toLocalDate();
+    DateTime departureUtc = calendarTimeFormat.parseDateTime(flight.getActDepTimeUtc());
+    DateTime arrivalUtc = calendarTimeFormat.parseDateTime(flight.getActArrTimeUtc());
+    LocalDate date = departureUtc.toLocalDate();
     String flightNumber = new Integer(leg.getFlightNumber()).toString();
     int shorthandTailNumber = Ints.tryParse(flight.getTailNumber());
     String shorthandAircraftType = flight.getEquipmentType().substring(2);
     String departureAirport = flight.getDep();
     String arrivalAirport = flight.getArr();
     Period block = Period.fromTextWithColon(flight.getActBlockTime());
-    DateTime zonedDepartureTime = departure.withZone(
+    DateTime zonedDepartureTime = departureUtc.withZone(
         airportDatabase.getZone(departureAirport));
-    DateTime zonedArrivalTime = arrival.withZone(
+    DateTime zonedArrivalTime = arrivalUtc.withZone(
         airportDatabase.getZone(arrivalAirport));
     LocalTime departureTime = zonedDepartureTime.toLocalTime();
     LocalTime arrivalTime = zonedArrivalTime.toLocalTime();
@@ -221,13 +228,34 @@ public class Supplement {
     }
     Period block = Period.fromText(it.next());
 
+    if (utcTime) {
+      /**
+       * The paper times are in UTC, not local. The date, however, is local. Work
+       * backwards to determine the local times.
+       */
+      if (departureTime != null) {
+        DateTime guessDepartureTime = date.toDateTime(departureTime,
+            DateTimeZone.UTC).withZone(
+                airportDatabase.getZone(departureAirport));
+        departureTime = guessDepartureTime.toLocalTime();
+      }
+      if (arrivalTime != null) {
+        DateTime guessArrivalTime = date.toDateTime(arrivalTime,
+            DateTimeZone.UTC).withZone(
+                airportDatabase.getZone(arrivalAirport));
+        arrivalTime = guessArrivalTime.toLocalTime();
+      }
+    }
+
     DateTime zonedDepartureTime = null;
     if (departureTime != null) {
       zonedDepartureTime = date.toDateTime(departureTime,
           airportDatabase.getZone(departureAirport));
     }
+
     DateTime zonedArrivalTime = null;
     if (arrivalTime != null) {
+      // TODO: the date may be wrong.
       zonedArrivalTime = date.toDateTime(arrivalTime,
           airportDatabase.getZone(arrivalAirport));
     }

@@ -145,7 +145,7 @@ public class GenerateLogbook {
 
   private boolean parseDirective(String line, Supplement supplement, Context context)
       throws IOException {
-    if (line.startsWith("#")) {
+    if (line.startsWith("#") || line.isEmpty()) {
       return true;
     }
 
@@ -178,8 +178,10 @@ public class GenerateLogbook {
             new File(inputDirectory, parts.get(1)),
             CalendarDataFeed.newBuilder());
         supplement.useCalendar(new CalendarEntryIterator(calendar));
-      } else if (parts.get(0).equals("time")) {
+      } else if (parts.get(0).equals("strict_time_parsing")) {
         supplement.setStrictTimeParsing(Boolean.valueOf(parts.get(1)));
+      } else if (parts.get(0).equals("utc")) {
+        supplement.setUtcTime(Boolean.valueOf(parts.get(1)));
       }
     }
   }
