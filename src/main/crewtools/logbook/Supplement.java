@@ -255,9 +255,11 @@ public class Supplement {
 
     DateTime zonedArrivalTime = null;
     if (arrivalTime != null) {
-      // TODO: the date may be wrong.
       zonedArrivalTime = date.toDateTime(arrivalTime,
           airportDatabase.getZone(arrivalAirport));
+      if (zonedDepartureTime != null && zonedArrivalTime.isBefore(zonedDepartureTime)) {
+        zonedArrivalTime = zonedArrivalTime.plusDays(1);
+      }
     }
 
     return new Record(
