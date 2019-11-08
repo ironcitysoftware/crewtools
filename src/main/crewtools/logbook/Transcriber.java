@@ -57,11 +57,14 @@ public class Transcriber {
         : record.date;
     components.add(date.toString());
     components.add("JIA" + record.flightNumber);
-    if (record.shorthandTailNumber == 0) {
-      components.add("");
+    if (record.shorthandAircraftType.isEmpty()) {
       components.add("");
     } else {
       components.add("RJ" + record.shorthandAircraftType);
+    }
+    if (record.shorthandTailNumber == 0) {
+      components.add("");
+    } else {
       components.add(aircraftDatabase.getTailNumber(record.shorthandTailNumber));
     }
     components.add(record.departureAirport);
