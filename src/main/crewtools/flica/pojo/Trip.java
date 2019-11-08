@@ -245,6 +245,7 @@ public class Trip implements Comparable<Trip> {
 
   private static final Set<ScheduleType> SCHEDULE_TYPES_WITH_DUTY_TIMES = ImmutableSet.of(
       ScheduleType.COMPANY_BUSINESS_TRIP,
+      ScheduleType.IGNORE,
       ScheduleType.LONG_CALL_RESERVE,
       ScheduleType.RELOCATION_DAY,
       ScheduleType.SICK,

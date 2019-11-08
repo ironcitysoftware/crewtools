@@ -174,6 +174,7 @@ enum ScheduleType {
   COMPANY_BUSINESS_TRIP = 32 [(flica_name)="COB"];
 
   SICK_2 = 33 [(flica_name)="SIC"];
+  IGNORE = 34 [(flica_name)="IGN"];
 }
 
 // Next ID 21
