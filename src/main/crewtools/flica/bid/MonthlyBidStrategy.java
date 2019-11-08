@@ -20,6 +20,7 @@
 package crewtools.flica.bid;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.logging.Logger;
 
 import crewtools.flica.pojo.Trip;
@@ -29,12 +30,23 @@ import crewtools.util.Period;
 public class MonthlyBidStrategy implements Comparator<LineScore> {
   private final Logger logger = Logger.getLogger(MonthlyBidStrategy.class.getName());
 
-  private static final Period MIN_CREDIT = Period.hours(65);
-
   private final BidConfig bidConfig;
+  private final Period minimumCredit;
+  private List<String> currentDebug;
 
   public MonthlyBidStrategy(BidConfig bidConfig) {
     this.bidConfig = bidConfig;
+    this.minimumCredit = Period.hours(bidConfig.getMinimumCreditHours());
+  }
+
+  public void setDebug(List<String> debug) {
+    currentDebug = debug;
+  }
+
+  private void debug(String spec, Object... args) {
+    if (currentDebug != null) {
+      currentDebug.add(String.format(spec, args));
+    }
   }
 
   @Override
@@ -42,33 +54,39 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
     int aOverrideIndex = bidConfig.getMonthlyBidOverrideList().indexOf(a.getLineName());
     int bOverrideIndex = bidConfig.getMonthlyBidOverrideList().indexOf(b.getLineName());
     if (aOverrideIndex > -1 && bOverrideIndex > -1) {
+      debug("override:left %d vs right %d", aOverrideIndex, bOverrideIndex);
       return Integer.compare(aOverrideIndex, bOverrideIndex);
     }
     if (aOverrideIndex > -1 && bOverrideIndex == -1) {
+      debug("override:left %d vs right %d", aOverrideIndex, bOverrideIndex);
       return -1;
     }
     if (aOverrideIndex == -1 && bOverrideIndex > -1) {
+      debug("override:left %d vs right %d", aOverrideIndex, bOverrideIndex);
       return +1;
     }
     int isReserve = new Boolean(a.hasReserve()).compareTo(b.hasReserve());
     if (isReserve != 0) {
+      debug("reserve:left %s vs right %s", "" + a.hasReserve(), "" + b.hasReserve());
       return -isReserve;
     }
-
 
     if (bidConfig.getEnableMonthlySortByDesirable()) {
       int isDesirable = new Boolean(a.isDesirableLine())
           .compareTo(b.isDesirableLine());
       if (isDesirable != 0) {
+        debug("desirable:left %s vs right %s", "" + a.isDesirableLine(),
+            "" + b.isDesirableLine());
         return -isDesirable;
       }
     }
 
     int aHighest = new Integer(
-        a.getNHighestCreditsPlusCarryIn().compareTo(MIN_CREDIT));
+        a.getNHighestCreditsPlusCarryIn().compareTo(minimumCredit));
     int bHighest = new Integer(
-        b.getNHighestCreditsPlusCarryIn().compareTo(MIN_CREDIT));
+        b.getNHighestCreditsPlusCarryIn().compareTo(minimumCredit));
     if (aHighest >= 0 ^ bHighest >= 0) {
+      debug("highestCredit:left %d vs right %d", aHighest, bHighest);
       return (aHighest >= 0) ? -1 : 1;
     }
 
@@ -77,6 +95,9 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
           a.getNHighestCreditsPlusCarryIn().compareTo(
               b.getNHighestCreditsPlusCarryIn()));
       if (creditCmp != 0) {
+        debug("sortedCredit:left %s vs right %s",
+            a.getNHighestCreditsPlusCarryIn().toString(),
+            b.getNHighestCreditsPlusCarryIn().toString());
         return -creditCmp;
       }
     }
@@ -84,27 +105,43 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
     int aPoints = 0;
     String aTrips = "";
     for (Trip trip : a.getMinimumTrips()) {
-      aPoints += new TripScore(trip, bidConfig).getPoints();
+      TripScore tripScore = new TripScore(trip, bidConfig);
+      debug("Scoring trip %s", trip.getPairingName());
+      for (String explanation : tripScore.getScoreExplanation()) {
+        debug("   %s", explanation);
+      }
+      debug(" left:%s points %d", trip.getPairingName(), tripScore.getPoints());
+      aPoints += tripScore.getPoints();
       if (!aTrips.isEmpty()) {
         aTrips += ", ";
       }
       aTrips += trip.getPairingName();
     }
+    debug(" left:adjst points %d", a.getScoreAdjustmentPoints());
     aPoints += a.getScoreAdjustmentPoints();
 
     int bPoints = 0;
     String bTrips = "";
     for (Trip trip : b.getMinimumTrips()) {
-      bPoints += new TripScore(trip, bidConfig).getPoints();
+      TripScore tripScore = new TripScore(trip, bidConfig);
+      debug("Scoring trip %s", trip.getPairingName());
+      for (String explanation : tripScore.getScoreExplanation()) {
+        debug("   %s", explanation);
+      }
+      debug("right:%s points %d", trip.getPairingName(), tripScore.getPoints());
+      bPoints += tripScore.getPoints();
       if (!bTrips.isEmpty()) {
         bTrips += ", ";
       }
       bTrips += trip.getPairingName();
     }
+    debug("right:adjst points %d", b.getScoreAdjustmentPoints());
     bPoints += b.getScoreAdjustmentPoints();
 
     logger.fine("T" + a.getLineName() + " (" + aTrips + "=" + aPoints + ") vs "
         + "T" + b.getLineName() + " (" + bTrips + "=" + bPoints + ")");
+
+    debug("points:left %d vs right %d", aPoints, bPoints);
 
     return -((Integer) aPoints).compareTo(bPoints);
   }

@@ -65,7 +65,8 @@ public class LineScore {
   private Map<Trip, Period> creditsInMonthMap = new HashMap<>();
 
   public LineScore(ThinLine line,
-      Map<PairingKey, Trip> trips, BidConfig bidConfig,
+      Map<PairingKey, Trip> trips,
+      BidConfig bidConfig,
       Map<LocalDate, Period> carryInCredit) {
     this.line = line;
     this.trips = trips;
