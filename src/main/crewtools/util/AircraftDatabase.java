@@ -39,15 +39,15 @@ public class AircraftDatabase {
       "CL-600-2C10", "RJ7",
       "CL-600-2D24", "RJ9");
 
-  private static final Splitter SPLITTER = Splitter.on(',');
+  private static final Splitter SPLITTER = Splitter.on(',').trimResults();
 
   private final Map<Integer, String> tailMap = new HashMap<>();
   private final Map<Integer, String> typeMap = new HashMap<>();
 
   public AircraftDatabase() throws IOException {
     for (String line : Files.readLines(AIRCRAFT_DATABASE, StandardCharsets.UTF_8)) {
-      // Expect N539EA,539,10318,CL-600-2C10
-      List<String> components = SPLITTER.splitToList(line);
+      // Expect N539EA,539,10318,CL-600-2C10 # comment
+      List<String> components = SPLITTER.splitToList(line.replaceAll("#.*", ""));
       int shorthandTailNumber = Ints.tryParse(components.get(1));
       tailMap.put(shorthandTailNumber, components.get(0));
       typeMap.put(shorthandTailNumber, TYPES.get(components.get(3)));
