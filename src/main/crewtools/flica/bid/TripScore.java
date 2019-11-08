@@ -46,6 +46,10 @@ public class TripScore implements Comparable<TripScore> {
   private static final int DEUCE_CANOE_FACTOR = 20;
   private static final int DESPISED_TURN_PENALITY = 10000;
 
+  // Hub will be odd, even.., odd. Non-hub all even.
+  private static final int IDEAL_NUMBER_OF_LEGS_FIRST_OR_LAST_DAY = 4;
+  private static final int IDEAL_NUMBER_OF_LEGS_OTHER_DAYS = 4;
+
   private final Period favoriteOvernightPeriod;
   private final int numFavoriteOvernights;
   private final int startTimePoints;
@@ -124,7 +128,9 @@ public class TripScore implements Comparable<TripScore> {
     for (int i = 0; i < trip.getSections().size(); i++) {
       Section section = trip.getSections().get(i);
       boolean isFirstOrLast = i == 0 || i == trip.getNumSections() - 1;
-      int idealNumLegs = isFirstOrLast ? 3 : 2;
+      int idealNumLegs = isFirstOrLast
+          ? IDEAL_NUMBER_OF_LEGS_FIRST_OR_LAST_DAY
+          : IDEAL_NUMBER_OF_LEGS_OTHER_DAYS;
       int excessiveLegs = section.getNumLegs() - idealNumLegs;
       if (excessiveLegs > 0) {
         badPoints += excessiveLegs;
