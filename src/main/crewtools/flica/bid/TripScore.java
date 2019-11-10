@@ -41,8 +41,8 @@ public class TripScore implements Comparable<TripScore> {
   private final Logger logger = Logger.getLogger(TripScore.class.getName());
 
   public static final int START_END_SCORE_FACTOR = 1;
-  public static final int START_HOUR_INCLUSIVE = 12;
-  public static final int END_HOUR_INCLUSIVE = 18;
+  public static final int START_HOUR_INCLUSIVE = 11;
+  public static final int END_HOUR_INCLUSIVE = 19;
   private static final int DEUCE_CANOE_FACTOR = 20;
   private static final int DESPISED_TURN_PENALITY = 10000;
 
@@ -144,6 +144,8 @@ public class TripScore implements Comparable<TripScore> {
     int startTimePoints = 0;
     int endTimePoints = 0;
     boolean hasEquipmentTwoHundredSegments = false;
+    boolean arriveDayEarly = false;
+    boolean leaveDayLate = false;
 
     Section firstSection = trip.getFirstSection();
     if (firstSection != null) {
@@ -159,8 +161,10 @@ public class TripScore implements Comparable<TripScore> {
           goodPoints += START_END_SCORE_FACTOR;
           scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for good start time");
         } else {
+          arriveDayEarly = true;
           badPoints += START_END_SCORE_FACTOR;
-          scoreExplanation.add("-" + START_END_SCORE_FACTOR + " for bad start time");
+          scoreExplanation
+              .add("-" + START_END_SCORE_FACTOR + " for bad start time (uncommutable)");
         }
       }
     }
@@ -179,8 +183,10 @@ public class TripScore implements Comparable<TripScore> {
           goodPoints += START_END_SCORE_FACTOR;
           scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for good end time");
         } else {
+          leaveDayLate = true;
           badPoints += START_END_SCORE_FACTOR;
-          scoreExplanation.add("-" + START_END_SCORE_FACTOR + " for bad end time");
+          scoreExplanation
+              .add("-" + START_END_SCORE_FACTOR + " for bad end time (uncommutable)");
         }
       }
     }
@@ -218,10 +224,32 @@ public class TripScore implements Comparable<TripScore> {
         goodPoints += adjustment;
         scoreExplanation.add(String.format("%d for crew", adjustment));
       }
-      if (scoreAdjustment.getSoftDayOffCount() > 0
-          && trip.spansDaysOfMonth(scoreAdjustment.getSoftDayOffList())) {
-        goodPoints += adjustment;
-        scoreExplanation.add(String.format("%d for soft day off", adjustment));
+      if (scoreAdjustment.getSoftDayOffCount() > 0) {
+        if (trip.spansDaysOfMonth(scoreAdjustment.getSoftDayOffList())) {
+          goodPoints += adjustment;
+          scoreExplanation.add(String.format("%d for soft day off", adjustment));
+        } else {
+          // TODO: this won't work for February or months where we don't
+          // want to commute the last day of the previous month.
+          if (arriveDayEarly && trip.getDutyStart().minusDays(1).getMonthOfYear() == trip
+              .getDutyStart().getMonthOfYear()) {
+            if (scoreAdjustment.getSoftDayOffList().contains(
+                trip.getDutyStart().getDayOfMonth() - 1)) {
+              goodPoints += adjustment;
+              scoreExplanation.add(
+                  String.format("%d for soft day off (uncommutable start)", adjustment));
+            }
+          }
+          if (leaveDayLate && trip.getDutyEnd().plusDays(1).getMonthOfYear() == trip
+              .getDutyEnd().getMonthOfYear()) {
+            if (scoreAdjustment.getSoftDayOffList().contains(
+                trip.getDutyEnd().getDayOfMonth() + 1)) {
+              goodPoints += adjustment;
+              scoreExplanation.add(
+                  String.format("%d for soft day off (uncommutable end)", adjustment));
+            }
+          }
+        }
       }
       if (scoreAdjustment.getPreferWeekdays()) {
         int dayAdjustment = computeDayAdjustment(trip.getDepartureDates(), WEEKDAYS,
