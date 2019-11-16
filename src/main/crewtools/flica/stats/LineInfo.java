@@ -19,17 +19,35 @@
 
 package crewtools.flica.stats;
 
+import java.util.Map;
 import java.util.Objects;
 
-public class LineCount {
+public class LineInfo {
+  private final Map<String, AwardType> lineNameToAwardType;
   private final int roundOne;
   private final int roundTwo;
   private final int longCall;
 
-  public LineCount(int roundOne, int roundTwo, int longCall) {
+  public LineInfo(Map<String, AwardType> lineNameToAwardType, int roundOne, int roundTwo,
+      int longCall) {
+    this.lineNameToAwardType = lineNameToAwardType;
     this.roundOne = roundOne;
     this.roundTwo = roundTwo;
     this.longCall = longCall;
+  }
+
+  public int getNum(AwardType awardType) {
+    switch (awardType) {
+      case ROUND1:
+        return roundOne;
+      case ROUND2:
+        return roundTwo;
+      case LCR:
+        return longCall;
+      case SCR:
+        return 0;
+    }
+    throw new IllegalStateException("Handle awardType: " + awardType);
   }
 
   public int getNumRoundOne() {
@@ -44,22 +62,27 @@ public class LineCount {
     return longCall;
   }
 
-  public LineCount increment(int factor) {
-    return new LineCount(roundOne + factor, roundTwo, longCall);
+  public AwardType getAwardType(String lineName) {
+    return lineNameToAwardType.get(lineName);
+  }
+
+  public LineInfo increment(int factor) {
+    return new LineInfo(lineNameToAwardType, roundOne + factor, roundTwo, longCall);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(roundOne, roundTwo, longCall);
+    return Objects.hash(lineNameToAwardType, roundOne, roundTwo, longCall);
   }
 
   @Override
   public boolean equals(Object o) {
-    if (o == null || !(o instanceof LineCount)) {
+    if (o == null || !(o instanceof LineInfo)) {
       return false;
     }
-    LineCount that = (LineCount) o;
-    return this.roundOne == that.roundOne
+    LineInfo that = (LineInfo) o;
+    return this.lineNameToAwardType.equals(that.lineNameToAwardType)
+        && this.roundOne == that.roundOne
         && this.roundTwo == that.roundTwo
         && this.longCall == that.longCall;
   }

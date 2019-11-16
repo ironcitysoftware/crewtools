@@ -24,11 +24,8 @@ import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.List;
-import java.util.Map;
 
 import org.joda.time.YearMonth;
-
-import com.google.common.base.Preconditions;
 
 import crewtools.flica.Proto.Domicile;
 import crewtools.flica.stats.BaseList.Member;
@@ -36,7 +33,6 @@ import crewtools.flica.stats.BaseList.Member;
 public class SeniorityRenderer {
   private static final String OUTPUT_PATH = "/tmp/bl.html";
   private final List<BaseList> lists;
-  private final Map<YearMonth, LineCount> lineCounts;
   private final YearMonth startingYearMonth;
   private final Domicile domicile;
 
@@ -65,6 +61,9 @@ public class SeniorityRenderer {
       + "td.interesting {\n"
       + "  background-color: yellow;\n"
       + "}\n"
+      + "td.override {\n"
+      + "  background-color: #dedede;\n"
+      + "}\n"
       + "td.heading {\n"
       + "  font-variant: small-caps;\n"
       + "  text-align: center;\n"
@@ -76,11 +75,9 @@ public class SeniorityRenderer {
 
   public SeniorityRenderer(
       List<BaseList> lists,
-      Map<YearMonth, LineCount> lineCounts,
       YearMonth startingYearMonth,
       Domicile domicile) {
     this.lists = lists;
-    this.lineCounts = lineCounts;
     this.startingYearMonth = startingYearMonth;
     this.domicile = domicile;
   }
@@ -95,45 +92,48 @@ public class SeniorityRenderer {
         startingYearMonth, domicile));
     writer.println("<p><table class=\"inner\">"
         + "<tr><td class=\"departed\">Last month in base</td>"
-        + "<td class=\"arrived\">New to base this month</td></tr></table>");
+        + "<td class=\"arrived\">New to base this month</td>"
+        + "<td class=\"override\">Bids less than seniority permits</td></tr></table>");
     writer.println("<p><table><tr>");
     for (BaseList list : lists) {
       writer.println("<td>");
       writer.println("  <table class=\"inner\"><tr><td colspan=2>");
       writer.print(list.getYearMonth() + " " + list.getHeader());
       writer.println("</td></tr>");
-      List<Member> members = list.getMembers();
-      for (int i = 0; i < members.size(); ++i) {
-        int employeeId = members.get(i).employeeId;
-        String cssClass = "";
-        if (list.hasCssClass(employeeId)) {
-          cssClass = String.format(" class=\"%s\"", list.getCssClass(employeeId));
-        }
-        writer.printf("<tr><td%s>%d</td><td%s>%s</td></tr>\n",
-            cssClass,
-            i + 1,
-            cssClass,
-            members.get(i).format());
-        LineCount lineCount = Preconditions.checkNotNull(
-            lineCounts.get(list.getYearMonth()),
-            "Missing line counts for " + list.getYearMonth());
-        if (i + 1 == lineCount.getNumRoundOne()) {
-          writer.printf("<tr><td colspan=2 class=\"heading\" "
-              + ">Round Two</td></tr>\n");
-        } else if (i + 1 == lineCount.getNumRoundOne() + lineCount.getNumRoundTwo()) {
-          writer.printf("<tr><td colspan=2 class=\"heading\" "
-              + ">LCR</td></tr>\n");
-        } else if (i + 1 == lineCount.getNumRoundOne() + lineCount.getNumRoundTwo()
-            + lineCount.getNumLongCall()) {
-          writer.printf("<tr><td colspan=2 class=\"heading\" "
-              + ">SCR</td></tr>\n");
-        }
-      }
+      renderMembers(writer, list);
       writer.println("</table></td>");
     }
     writer.println("</table>");
     writer.println("</body></html>");
     writer.close();
     System.err.println("Wrote to " + OUTPUT_PATH);
+  }
+
+  private void renderMembers(PrintWriter writer, BaseList baseList) {
+    renderMemberSubset(writer, baseList, baseList.getMembers(AwardType.ROUND1), "");
+    renderMemberSubset(writer, baseList, baseList.getMembers(AwardType.ROUND2),
+        "Round Two");
+    renderMemberSubset(writer, baseList, baseList.getMembers(AwardType.LCR), "LCR");
+    renderMemberSubset(writer, baseList, baseList.getMembers(AwardType.SCR), "SCR");
+  }
+
+  private void renderMemberSubset(PrintWriter writer, BaseList list, List<Member> members,
+      String header) {
+    if (!header.isEmpty()) {
+      writer.printf("<tr><td colspan=2 class=\"heading\" "
+          + ">%s</td></tr>\n", header);
+    }
+    for (int i = 0; i < members.size(); ++i) {
+      int employeeId = members.get(i).employeeId;
+      String cssClass = "";
+      if (list.hasCssClass(employeeId)) {
+        cssClass = String.format(" class=\"%s\"", list.getCssClass(employeeId));
+      }
+      writer.printf("<tr><td%s>%d</td><td%s>%s</td></tr>\n",
+          cssClass,
+          i + 1,
+          cssClass,
+          members.get(i).format());
+    }
   }
 }

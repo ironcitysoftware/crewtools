@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Iron City Software LLC
+ * Copyright 2019 Iron City Software LLC
  *
  * This file is part of CrewTools.
  *
@@ -36,6 +36,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Ordering;
 
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.FlicaService;
@@ -54,12 +55,9 @@ import crewtools.flica.Proto.SeniorityList;
 import crewtools.flica.Proto.Status;
 import crewtools.flica.Proto.ThinLine;
 import crewtools.flica.Proto.ThinLineList;
-import crewtools.flica.stats.BaseList.Member;
 
 public class SeniorityPredictor {
   private final Logger logger = Logger.getLogger(SeniorityPredictor.class.getName());
-
-  private final static int DEFAULT_MONTHLY_LINE_INCREASE = 1;
 
   private final AwardDomicile awardDomicile;
   private final Domicile domicile;
@@ -68,8 +66,6 @@ public class SeniorityPredictor {
   private final int interestingEmployeeId;
   private final Multimap<YearMonth, DatedBaseMove> moves;
   private final List<BaseList> lists;
-  private final int monthlyLineIncrease = DEFAULT_MONTHLY_LINE_INCREASE;
-  private final Map<YearMonth, LineCount> lineCounts;
   private final DataReader dataReader;
   private final Multimap<YearMonth, Integer> terminations;
 
@@ -93,13 +89,12 @@ public class SeniorityPredictor {
     this.moves = readCrewMoves(periodicAwards);
     this.terminations = readTerminations(periodicAwards);
     this.lists = new ArrayList<>();
-    this.lineCounts = new HashMap<>();
   }
 
   private class DatedBaseMove {
-    public DatedBaseMove(BaseMove baseMove, LocalDate localDate) {
+    public DatedBaseMove(BaseMove baseMove, LocalDate awardDate) {
       this.baseMove = baseMove;
-      this.localDate = localDate;
+      this.localDate = awardDate;
     }
 
     public final BaseMove baseMove;
@@ -134,7 +129,7 @@ public class SeniorityPredictor {
           effective.getMonthOfYear());
       for (BaseMove baseMove : award.getBaseMoveList()) {
         result.put(yearMonth,
-            new DatedBaseMove(baseMove, LocalDate.parse(award.getAwardDate())));
+            new DatedBaseMove(baseMove, LocalDate.parse(award.getEffectiveDate())));
       }
     }
     return result;
@@ -164,6 +159,8 @@ public class SeniorityPredictor {
 
     DomicileAward roundOneAward = dataReader.readAwards(
         startingYearMonth, awardDomicile, rank, FlicaService.BID_ROUND_ONE);
+    ThinLineList roundOneLines = dataReader.readLines(
+        startingYearMonth, awardDomicile, rank, FlicaService.BID_ROUND_ONE);
     Optional<DomicileAward> roundTwoAward = Optional.absent();
     Optional<ThinLineList> roundTwoLines = Optional.absent();
     try {
@@ -174,21 +171,21 @@ public class SeniorityPredictor {
     } catch (Exception e) {
       logger.log(Level.INFO, "Unable to read round 2", e.getMessage());
     }
-    lineCounts.put(startingYearMonth,
-        getLineCount(roundOneAward, roundTwoAward, roundTwoLines));
+    LineInfo startingLineInfo =
+        getLineInfo(roundOneAward, roundOneLines, roundTwoAward, roundTwoLines);
 
     BaseList seniorityList = createBaseListFromSeniority(
-        startingYearMonth, pilotsBySeniority);
+        startingYearMonth, pilotsBySeniority, startingLineInfo);
     lists.add(seniorityList);
     seniorityList.setCssClass(interestingEmployeeId, "interesting");
 
     BaseList awardList = createBaseListFromAward(
-        startingYearMonth, pilotsByEmployee, pilotsBySeniority);
-    addUnawardedPilots(awardList, seniorityList);
+        startingYearMonth, pilotsByEmployee, pilotsBySeniority, startingLineInfo);
+    // addUnawardedPilots(awardList, seniorityList);
     lists.add(awardList);
 
     CrewMember interestingPilot = pilotsByEmployee.get(interestingEmployeeId);
-    awardList.add(interestingEmployeeId, interestingPilot.getSeniorityId(),
+    awardList.addWithoutAward(interestingEmployeeId, interestingPilot.getSeniorityId(),
         interestingPilot.getName());
     awardList.setCssClass(interestingEmployeeId, "interesting");
 
@@ -196,23 +193,26 @@ public class SeniorityPredictor {
     List<BaseList> colorize = new ArrayList<>();
     colorize.add(seniorityList);
     colorize.add(awardList);
-    while (moves.containsKey(currentYearMonth)) {
-      lineCounts.put(currentYearMonth,
-          lineCounts.get(currentYearMonth.minusMonths(1)).increment(monthlyLineIncrease));
+    YearMonth maxYearMonth = Ordering.natural().max(moves.keySet());
+    while (!currentYearMonth.isAfter(maxYearMonth)) {
       BaseList previousList = colorize.get(colorize.size() - 1);
       BaseList currentList = previousList
           .copyWithoutStyles(currentYearMonth, "prediction");
       currentList.setCssClass(interestingEmployeeId, "interesting");
       lists.add(currentList);
       colorize.add(currentList);
+      logger.info("Applying base moves for " + currentYearMonth + " ("
+          + moves.get(currentYearMonth).size() + ")");
       for (DatedBaseMove baseMove : moves.get(currentYearMonth)) {
         adjustBaseList(pilotsByEmployee, currentList, baseMove, currentYearMonth);
       }
-      if (dataReader.doesAwardExist(currentYearMonth, awardDomicile, rank, 1)) {
+      // TODO fix multiple award case.
+      if (false && dataReader.doesAwardExist(currentYearMonth, awardDomicile, rank, 1)) {
         BaseList anotherAwardList = createBaseListFromAward(
-            currentYearMonth, pilotsByEmployee, pilotsBySeniority);
-        addUnawardedPilots(anotherAwardList, seniorityList);
-        anotherAwardList.add(interestingEmployeeId, interestingPilot.getSeniorityId(),
+            currentYearMonth, pilotsByEmployee, pilotsBySeniority,
+            currentList.getLineInfo());
+        anotherAwardList.addWithoutAward(interestingEmployeeId,
+            interestingPilot.getSeniorityId(),
             interestingPilot.getName());
         anotherAwardList.setCssClass(interestingEmployeeId, "interesting");
         lists.add(anotherAwardList);
@@ -224,17 +224,8 @@ public class SeniorityPredictor {
       colorizeDiff(colorize.get(i), colorize.get(i + 1));
     }
 
-    new SeniorityRenderer(lists, lineCounts,
-        startingYearMonth, domicile).render();
-  }
-
-  private void addUnawardedPilots(BaseList awardList, BaseList seniorityList) {
-    int juniorAwardedSeniorityId = awardList.getJuniorSeniorityId();
-    for (Member member : seniorityList.getMembers()) {
-      if (member.seniorityId > juniorAwardedSeniorityId) {
-        awardList.add(member);
-      }
-    }
+    new SeniorityRenderer(
+        lists, startingYearMonth, domicile).render();
   }
 
   /**
@@ -243,8 +234,9 @@ public class SeniorityPredictor {
    */
   private BaseList createBaseListFromSeniority(
       YearMonth yearMonth,
-      Map<Integer, CrewMember> pilotsBySeniority) {
-    BaseList result = new BaseList(yearMonth, "SYSSEN");
+      Map<Integer, CrewMember> pilotsBySeniority,
+      LineInfo lineInfo) {
+    BaseList result = new BaseList(yearMonth, "SYSSEN", lineInfo);
     for (int seniorityId : pilotsBySeniority.keySet()) {
       CrewMember pilot = pilotsBySeniority.get(seniorityId);
       if (pilot.getEmployeeId() != interestingEmployeeId
@@ -254,7 +246,7 @@ public class SeniorityPredictor {
       }
       if (pilot.getStatus().equals(Status.ACTIVE)
           || pilot.getStatus().equals(Status.TRAINING_STATUS)) {
-        result.add(pilot.getEmployeeId(), seniorityId, pilot.getName());
+        result.addWithoutAward(pilot.getEmployeeId(), seniorityId, pilot.getName());
       }
     }
     return result;
@@ -263,7 +255,8 @@ public class SeniorityPredictor {
   private BaseList createBaseListFromAward(
       YearMonth yearMonth,
       Map<Integer, CrewMember> pilotsByEmployee,
-      Map<Integer, CrewMember> pilotsBySenioritys)
+      Map<Integer, CrewMember> pilotsBySenioritys,
+      LineInfo lineInfo)
       throws FileNotFoundException, IOException {
     DomicileAward roundOneAwards = dataReader.readAwards(
         yearMonth, awardDomicile, rank, 1);
@@ -272,32 +265,30 @@ public class SeniorityPredictor {
             ? dataReader.readAwards(
                 yearMonth, awardDomicile, rank, 2)
             : null;
-    BaseList result = new BaseList(yearMonth, "award");
-    for (CrewMember pilot : getCrewMembersFromAward(pilotsByEmployee, roundOneAwards)) {
-      result.add(pilot);
-    }
+    BaseList result = new BaseList(yearMonth, "award", lineInfo);
+    addCrewMembersFromAward(pilotsByEmployee, roundOneAwards, lineInfo, result);
     if (roundTwoAwards != null) {
-      for (CrewMember pilot : getCrewMembersFromAward(pilotsByEmployee, roundTwoAwards)) {
-        result.add(pilot);
-      }
+      addCrewMembersFromAward(pilotsByEmployee, roundTwoAwards, lineInfo, result);
     }
+    result.removeUnnecessaryAwards();
     return result;
   }
 
-  private List<CrewMember> getCrewMembersFromAward(
-      Map<Integer, CrewMember> pilotsByEmployee, DomicileAward domicileAward) {
-    List<CrewMember> result = new ArrayList<>();
+  private void addCrewMembersFromAward(
+      Map<Integer, CrewMember> pilotsByEmployee,
+      DomicileAward domicileAward,
+      LineInfo lineInfo,
+      BaseList baseList) {
     for (Award award : domicileAward.getAwardList()) {
       int employeeId = award.getPilot().hasEmployeeId()
           ? award.getPilot().getEmployeeId()
           : award.getPilot().getSeniority();  // sic
       CrewMember pilot = pilotsByEmployee.get(employeeId);
-      if (pilot == null) {
-        System.err.println("Where did " + employeeId + " go ?");
-      }
-      result.add(pilot);
+      Preconditions.checkNotNull(pilot, "Missing employee id " + employeeId);
+      AwardType awardType = lineInfo.getAwardType(award.getLine());
+      Preconditions.checkNotNull(awardType, "Unknown line " + award.getLine());
+      baseList.add(pilot, awardType);
     }
-    return result;
   }
 
   private void colorizeDiff(BaseList previousList, BaseList currentList) {
@@ -311,6 +302,9 @@ public class SeniorityPredictor {
       if (!previousList.containsEmployeeId(employeeId)) {
         currentList.setCssClass(employeeId, "arrived");
       }
+    }
+    for (int employeeId : currentList.getAwardOverrideEmployeeIds()) {
+      currentList.setCssClass(employeeId, "override");
     }
   }
 
@@ -326,7 +320,7 @@ public class SeniorityPredictor {
         } else {
           if (!terminations.containsKey(yearMonth)
               || !terminations.get(yearMonth).contains(employeeId)) {
-            logger.warning(String.format("%d from %s award is not in %s for %s",
+            logger.fine(String.format("%d from %s award is not in %s for %s",
                 employeeId, datedBaseMove.localDate, domicile, yearMonth));
           }
         }
@@ -339,9 +333,10 @@ public class SeniorityPredictor {
         if (!baseList.containsEmployeeId(employeeId)) {
           CrewMember pilot = pilotsByEmployee.get(employeeId);
           if (pilot == null) {
-            baseList.add(employeeId, 100000 + employeeId, "unknown");
+            baseList.addWithoutAward(employeeId, 100000 + employeeId, "unknown");
           } else {
-            baseList.add(pilot);
+            baseList.addWithoutAward(pilot.getEmployeeId(), pilot.getSeniorityId(),
+                pilot.getName());
           }
         } else {
           logger.warning(String.format("%d from %s award is already in %s",
@@ -351,17 +346,28 @@ public class SeniorityPredictor {
     }
   }
 
-  private LineCount getLineCount(
+  private LineInfo getLineInfo(
       DomicileAward roundOneAward,
+      ThinLineList roundOneLineList,
       Optional<DomicileAward> roundTwoAward,
       Optional<ThinLineList> roundTwoLineList) {
+    Map<String, AwardType> lines = new HashMap<>();
     int numRoundOne = roundOneAward.getAwardCount();
+    Preconditions.checkState(numRoundOne == roundOneLineList.getThinLineCount(),
+        "Award count does not match line count");
+    for (ThinLine line : roundOneLineList.getThinLineList()) {
+      Preconditions.checkState(!lines.containsKey(line.getLineName()));
+      lines.put(line.getLineName(), AwardType.ROUND1);
+    }
     int numRoundTwo = 0;
     int numLongCall = 0;
+    int numShortCall = 0;
     if (roundTwoAward.isPresent()) {
       for (Award award : roundTwoAward.get().getAwardList()) {
         if (!award.getLine().startsWith("RES")) {
           numRoundTwo++;
+          Preconditions.checkState(!lines.containsKey(award.getLine()));
+          lines.put(award.getLine(), AwardType.ROUND2);
         } else {
           boolean lineFound = false;
           for (ThinLine line : roundTwoLineList.get().getThinLineList()) {
@@ -370,7 +376,12 @@ public class SeniorityPredictor {
               if (line.getThinPairing(0)
                   .getScheduleType(0) == ScheduleType.LONG_CALL_RESERVE) {
                 numLongCall++;
+                Preconditions.checkState(!lines.containsKey(award.getLine()));
+                lines.put(award.getLine(), AwardType.LCR);
               } else {
+                numShortCall++;
+                Preconditions.checkState(!lines.containsKey(award.getLine()));
+                lines.put(award.getLine(), AwardType.SCR);
                 // it is a SCR line
               }
               break;
@@ -380,6 +391,8 @@ public class SeniorityPredictor {
         }
       }
     }
-    return new LineCount(numRoundOne, numRoundTwo, numLongCall);
+    Preconditions.checkState(numRoundTwo + numLongCall + numShortCall == roundTwoLineList
+        .get().getThinLineCount());
+    return new LineInfo(lines, numRoundOne, numRoundTwo, numLongCall);
   }
 }

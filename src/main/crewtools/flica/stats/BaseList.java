@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Iron City Software LLC
+ * Copyright 2019 Iron City Software LLC
  *
  * This file is part of CrewTools.
  *
@@ -20,32 +20,47 @@
 package crewtools.flica.stats;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.joda.time.YearMonth;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterators;
+import com.google.common.collect.ImmutableList;
 
 import crewtools.flica.Proto.CrewMember;
 
 public class BaseList {
+  private final Logger logger = Logger.getLogger(BaseList.class.getName());
+
+  private final static int DEFAULT_MONTHLY_LINE_INCREASE = 1;
+
   private final YearMonth yearMonth;
   private final String header;
-  // seniority id to member
-  private Map<Integer, Member> list = new TreeMap<>();
-  private Set<Integer> employeeIds = new HashSet<>();
-  private Map<Integer, String> cssClasses = new HashMap<>();
+  private final LineInfo lineInfo;
 
-  public BaseList(YearMonth yearMonth, String header) {
+  private Map<Integer, Member> membersByEmployeeId = new TreeMap<>();
+  private Map<Integer, Member> membersBySeniorityId = new TreeMap<>();
+  private Map<Member, AwardType> awardOverrides = new HashMap<>();
+  private Map<Integer, String> cssClassesByEmployeeId = new HashMap<>();
+
+  public BaseList(YearMonth yearMonth, String header, LineInfo lineInfo) {
     this.yearMonth = yearMonth;
     this.header = header;
+    this.lineInfo = lineInfo;
+  }
+
+  public LineInfo getLineInfo() {
+    return lineInfo;
   }
 
   public static class Member {
@@ -86,71 +101,139 @@ public class BaseList {
   }
 
   public void remove(int employeeId) {
-    Preconditions.checkState(employeeIds.contains(employeeId),
-        "Removing " + employeeId + " where it does not exist: " + list);
-    employeeIds.remove(employeeId);
-    cssClasses.remove(employeeId);
-    for (Member member : list.values()) {
-      if (member.employeeId == employeeId) {
-        list.remove(member.seniorityId);
-        return;
-      }
-    }
-    throw new IllegalStateException("No member with employee id " + employeeId);
+    Preconditions.checkState(membersByEmployeeId.containsKey(employeeId),
+        "Removing " + employeeId + " where it does not exist");
+    Member member = membersByEmployeeId.remove(employeeId);
+    membersBySeniorityId.remove(member.seniorityId);
+    cssClassesByEmployeeId.remove(employeeId);
+    awardOverrides.remove(member);
   }
 
-  public void add(Member pilot) {
-    add(pilot.employeeId, pilot.seniorityId, pilot.name);
+  public void addWithoutAward(int employeeId, int seniorityId, String name) {
+    addInternal(employeeId, seniorityId, name, null);
   }
 
-  public void add(CrewMember pilot) {
-    add(pilot.getEmployeeId(), pilot.getSeniorityId(), pilot.getName());
+  public void add(CrewMember pilot, AwardType awardType) {
+    addInternal(pilot.getEmployeeId(), pilot.getSeniorityId(),
+        pilot.getName(), awardType);
   }
 
-  public void add(int employeeId, int seniorityId, String name) {
-    if (list.containsKey(seniorityId)) {
+  public void add(int employeeId, int seniorityId, String name, AwardType awardType) {
+    addInternal(employeeId, seniorityId, name, awardType);
+  }
+
+  private void addInternal(int employeeId, int seniorityId, String name,
+      AwardType awardType) {
+    if (membersByEmployeeId.containsKey(employeeId)) {
       return;
     }
-    list.put(seniorityId, new Member(employeeId, seniorityId, name));
-    Preconditions.checkState(employeeIds.add(employeeId),
-        String.format("Attempt to add %d (%s) to list %s",
-            employeeId, name, list.values()));
-  }
-
-  public int size() {
-    return list.size();
+    Member member = new Member(employeeId, seniorityId, name);
+    membersByEmployeeId.put(employeeId, member);
+    membersBySeniorityId.put(seniorityId, member);
+    if (awardType != null) {
+      awardOverrides.put(member, awardType);
+    }
   }
 
   public String getHeader() {
     return header;
   }
 
-  public int getJuniorSeniorityId() {
-    return Iterators.getLast(list.keySet().iterator());
+  private Map<AwardType, Integer> determineMostJuniorAward() {
+    Map<AwardType, Integer> juniorSeniorityIds = new HashMap<>();
+    List<Integer> seniorityIds = new ArrayList<>(membersBySeniorityId.keySet());
+    Collections.sort(seniorityIds);
+    for (int seniorityId : seniorityIds) {
+      Member member = membersBySeniorityId.get(seniorityId);
+      if (!awardOverrides.containsKey(member)) {
+        continue;
+      }
+      juniorSeniorityIds.put(awardOverrides.get(member), member.seniorityId);
+    }
+    return juniorSeniorityIds;
   }
 
-  public List<Member> getMembers() {
-    return new ArrayList<>(list.values());
+  private Set<Member> determineAwardsToRemove() {
+    List<Integer> seniorityIds = new ArrayList<>(membersBySeniorityId.keySet());
+    Collections.sort(seniorityIds);
+    Map<AwardType, Integer> juniorSeniorityIds = determineMostJuniorAward();
+
+    Set<Member> removeTheseAwards = new HashSet<>();
+    for (int seniorityId : seniorityIds) {
+      Member member = membersBySeniorityId.get(seniorityId);
+      if (!awardOverrides.containsKey(member)) {
+        continue;
+      }
+      AwardType awardType = awardOverrides.get(member);
+      if (awardType == AwardType.ROUND1) {
+        removeTheseAwards.add(member);
+        continue;
+      }
+      AwardType previousAwardType = AwardType.values()[awardType.ordinal() - 1];
+      if (member.seniorityId > juniorSeniorityIds.get(previousAwardType)) {
+        removeTheseAwards.add(member);
+      }
+    }
+    return removeTheseAwards;
+  }
+
+  public void removeUnnecessaryAwards() {
+    Set<Member> removeTheseAwards = determineAwardsToRemove();
+    for (Member member : removeTheseAwards) {
+      awardOverrides.remove(member);
+    }
+  }
+
+  public Set<Integer> getAwardOverrideEmployeeIds() {
+    return awardOverrides
+        .keySet()
+        .stream()
+        .map(m -> m.employeeId)
+        .collect(Collectors.toSet());
+  }
+
+  public List<Member> getMembers(AwardType awardType) {
+    Map<AwardType, List<Member>> computedAwards = new HashMap<>();
+    for (AwardType at : AwardType.values()) {
+      computedAwards.put(at, new ArrayList<>());
+    }
+    Iterator<Member> it = membersBySeniorityId.values().iterator();
+    for (AwardType at : ImmutableList.of(
+        AwardType.ROUND1, AwardType.ROUND2, AwardType.LCR)) {
+      List<Member> result = computedAwards.get(at);
+      while (result.size() < lineInfo.getNum(at)) {
+        Member member = it.next();
+        if (awardOverrides.containsKey(member)) {
+          computedAwards.get(awardOverrides.get(member)).add(member);
+        } else {
+          result.add(member);
+        }
+      }
+    }
+    while (it.hasNext()) {
+      computedAwards.get(AwardType.SCR).add(it.next());
+    }
+    return computedAwards.get(awardType);
   }
 
   public void setCssClass(int employeeId, String clazz) {
-    cssClasses.put(employeeId, clazz);
+    cssClassesByEmployeeId.put(employeeId, clazz);
   }
 
   public boolean hasCssClass(int employeeId) {
-    return cssClasses.containsKey(employeeId);
+    return cssClassesByEmployeeId.containsKey(employeeId);
   }
 
   public String getCssClass(int employeeId) {
-    return cssClasses.get(employeeId);
+    return cssClassesByEmployeeId.get(employeeId);
   }
 
   public Set<Integer> getEmployeeIds() {
-    return employeeIds;
+    return membersByEmployeeId.keySet();
   }
 
   public boolean containsEmployeeId(int employeeId) {
-    return employeeIds.contains(employeeId);
+    return membersByEmployeeId.containsKey(employeeId);
   }
 
   public YearMonth getYearMonth() {
@@ -158,17 +241,18 @@ public class BaseList {
   }
 
   public BaseList copyWithoutStyles(YearMonth yearMonth, String newHeader) {
-    BaseList copy = new BaseList(yearMonth, newHeader);
-    for (Member member : list.values()) {
-      copy.list.put(member.seniorityId, member);
-      copy.employeeIds.add(member.employeeId);
-    }
+    BaseList copy = new BaseList(yearMonth, newHeader,
+        lineInfo.increment(DEFAULT_MONTHLY_LINE_INCREASE));
+    copy.membersByEmployeeId.putAll(membersByEmployeeId);
+    copy.membersBySeniorityId.putAll(membersBySeniorityId);
+    copy.awardOverrides.putAll(awardOverrides);
     return copy;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(header, list);
+    return Objects.hashCode(header, membersByEmployeeId, awardOverrides,
+        membersBySeniorityId);
   }
 
   @Override
@@ -177,12 +261,14 @@ public class BaseList {
       return false;
     }
     BaseList that = (BaseList) o;
-    return this.list.equals(that.list)
+    return this.membersByEmployeeId.equals(that.membersByEmployeeId)
+        && this.membersBySeniorityId.equals(that.membersBySeniorityId)
+        && this.awardOverrides.equals(that.awardOverrides)
         && this.header.equals(that.header);
   }
 
   @Override
   public String toString() {
-    return header + "=" + list.toString();
+    return header + "=" + membersByEmployeeId.toString();
   }
 }
