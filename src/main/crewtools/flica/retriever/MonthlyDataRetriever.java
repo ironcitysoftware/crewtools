@@ -101,7 +101,7 @@ public class MonthlyDataRetriever {
             continue;
           }
           LocalDate today = new LocalDate();
-          if (yearMonth.minusMonths(1).toLocalDate(15).isAfter(today)
+          if (yearMonth.minusMonths(1).toLocalDate(16).isAfter(today)
               && round == 2) {
             logger.info("SKIP as round 2 has not been published");
             continue;
