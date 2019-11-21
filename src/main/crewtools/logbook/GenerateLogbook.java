@@ -121,6 +121,9 @@ public class GenerateLogbook {
     Summary summary = new Summary();
 
     for (String line : Files.readLines(input, StandardCharsets.UTF_8)) {
+      if (line.equals("quit")) {
+        break;
+      }
       if (parseDirective(line, supplement, context)) {
         // If we have both a schedule and calendar, iterate them.
         if (supplement.shouldIterate()) {

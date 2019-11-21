@@ -122,6 +122,7 @@ public class CrewmobileService {
         appConfig.getToken());
     // response is an array of Month objects, but the parser doesn't handle
     // a top-level array.
+    logger.fine(json);
     json = "{\"month\":" + json + "}";
     CalendarDataFeed.Builder builder = CalendarDataFeed.newBuilder();
     JsonFormat.parser().merge(json, builder);

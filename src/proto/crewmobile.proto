@@ -81,6 +81,9 @@ message ServiceInfo {
   optional Url pairing_service = 15 [(json_name)="PairingsService"];
   optional Url rtc_lookup_service = 16 [(json_name)="RTCLookUpService"];
   optional Url trip_match_notification_queue_timer = 17 [(json_name)="TripMatchNotificationQueueTimer"];
+  optional Url help_data_service = 18 [(json_name)="HelpDataService"];
+  optional Url preferences_service = 19 [(json_name)="PreferencesService"];
+  optional Url test_notification_service = 20 [(json_name)="TestNotificationService"];
 }
 
 message Claim {
@@ -227,6 +230,22 @@ message FlightTeam {
   optional string position = 10;
   optional bool self = 11;
   optional int32 sort_order = 12;
+  optional CrewLocation crew_location = 13;
+}
+
+message CrewLocation {
+  optional int32 crew_id = 1 [(json_name)="crewID"];
+  optional int32 flight_number = 2;
+  optional string dep_station = 3;
+  optional string sched_dep_dt = 4;
+  optional int32 flight_date_id = 5 [(json_name)="flightDateID"];
+  optional string prev_flight_arrival_time = 6;
+  optional string prev_flight_dhd = 7;
+  optional string arrival_date_type = 8;
+  optional string coming_from = 9;
+  optional int32 prev_flight_number = 10;
+  optional string prev_flight_dep_station = 11;
+  optional string prev_flight_arr_station = 12;
 }
 
 // -- CalendarDataFeed

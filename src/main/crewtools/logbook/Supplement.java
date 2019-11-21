@@ -118,7 +118,7 @@ public class Supplement {
         Preconditions.checkState(entry.getFlight().getDH());
         continue;
       }
-      while (flight.getDH()) {
+      while (shouldSkipFlight(flight, leg.getDate())) {
         entry = calendar.next();
         flight = entry.getFlight();
       }
@@ -139,6 +139,14 @@ public class Supplement {
       result.add(record);
     }
     return result;
+  }
+
+  private boolean shouldSkipFlight(Flight flight, LocalDate legDate) {
+    if (flight.getDH()) {
+      return true;
+    }
+    DateTime departureDateTime = calendarTimeFormat.parseDateTime(flight.getActDepTime());
+    return departureDateTime.getMonthOfYear() < legDate.getMonthOfYear();
   }
 
   private final DateTimeFormatter calendarTimeFormat = DateTimeFormat
