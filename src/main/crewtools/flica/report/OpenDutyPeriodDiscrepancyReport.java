@@ -140,10 +140,9 @@ public class OpenDutyPeriodDiscrepancyReport {
   }
 
   /**
-   * Returns a map of duty days to trips in opentime.
-   * Opentime 'numDays' appears to include the full duty period,
-   * but the reserve grid does not include the arrivals on the next
-   * day or the trailing :15 minutes of duty time.
+   * Returns a map of duty days to trips in opentime. Opentime 'numDays' appears
+   * to include the full duty period, but the reserve grid does not include the
+   * arrivals on the next day or the trailing :15 minutes of duty time.
    */
   private SetMultimap<LocalDate, FlicaTask> getOpentimeMap(
       AwardDomicile awardDomicile, Report report)
@@ -176,7 +175,7 @@ public class OpenDutyPeriodDiscrepancyReport {
   private Map<LocalDate, ReserveGridEntry> getReserveGrid(
       AwardDomicile awardDomicile) throws URISyntaxException, IOException {
     String reserveGridRequest = service.getReserveGrid(awardDomicile, rank,
-        FlicaService.BID_FIRST_COME, yearMonth);
+        FlicaService.BID_FIRST_COME, yearMonth, "TODO");
     ReserveGridParser reserveGridParser = new ReserveGridParser();
     return reserveGridParser.parse(
         yearMonth.getYear(), reserveGridRequest);

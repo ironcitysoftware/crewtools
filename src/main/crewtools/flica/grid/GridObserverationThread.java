@@ -90,7 +90,8 @@ public class GridObserverationThread extends PeriodicDaemonThread {
   }
 
   private GridObservation getGridObservation() throws IOException, URISyntaxException {
-    String rawReserveGridJson = service.getReserveGrid(domicile, rank, FlicaService.BID_FIRST_COME, yearMonth);
+    String rawReserveGridJson = service.getReserveGrid(
+        domicile, rank, FlicaService.BID_FIRST_COME, yearMonth, "TODO");
     JsonParser parser = new JsonParser();
     JsonObject jsonObject = parser.parse(rawReserveGridJson).getAsJsonObject();
     Preconditions.checkState(

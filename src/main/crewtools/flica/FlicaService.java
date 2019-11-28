@@ -370,7 +370,8 @@ public class FlicaService {
         .build();
   }
 
-  public synchronized String getReserveGrid(AwardDomicile awardDomicile, Rank rank,
+  public synchronized String getReserveGrid(
+      AwardDomicile awardDomicile, Rank rank,
       int round, YearMonth yearMonth, String airlineId)
       throws URISyntaxException, IOException {
     HttpUrl url = getReserveGridUrl(awardDomicile, rank, round, yearMonth, airlineId);

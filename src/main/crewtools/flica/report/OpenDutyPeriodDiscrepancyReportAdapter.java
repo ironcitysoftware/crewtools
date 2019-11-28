@@ -121,7 +121,7 @@ public class OpenDutyPeriodDiscrepancyReportAdapter {
       firstHeader += String.format("<th colspan=2><strong>%s</strong></th>",
           awardDomicile.name());
       secondHeader += String.format("<th><a target=\"_blank\" href=\"%s\">grid</a></th>",
-          FlicaService.getReserveGridUrl(awardDomicile, rank, ROUND, yearMonth));
+          FlicaService.getReserveGridUrl(awardDomicile, rank, ROUND, yearMonth, "TODO"));
       secondHeader += String.format("<th><a target=\"_blank\" href=\"%s\">pot</a></th>",
           FlicaService.getOpenTimeUrl(awardDomicile, rank, ROUND, yearMonth));
     }
