@@ -22,8 +22,10 @@ package crewtools.flica.bid;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import org.joda.time.LocalDate;
@@ -63,11 +65,8 @@ public class SubmitSwap {
     FlicaService service = new FlicaService(connection);
     service.connect();
 
-    List<PairingKey> openTimeTrips = getOpenTimeTrips(bidConfig, service, yearMonth);
+    Set<AwardDomicile> loadedOpentime = new HashSet<>();
     Map<String, PairingKey> openTime = new HashMap<>();
-    for (PairingKey key : openTimeTrips) {
-      openTime.put(key.getPairingName(), key);
-    }
     Schedule schedule = getSchedule(service, yearMonth);
 
     List<PairingKey> addTrips = new ArrayList<>();
@@ -84,6 +83,16 @@ public class SubmitSwap {
       if (parsingDrop) {
         key = getPairingKey(schedule, arg);
       } else {
+        AwardDomicile domicile = getDomicileFromTripName(arg);
+        if (!loadedOpentime.contains(domicile)) {
+          System.out.println("Loading opentime for " + domicile);
+          List<PairingKey> opentimeTrips = getOpenTimeTrips(bidConfig, service,
+              yearMonth, domicile);
+          for (PairingKey trip : opentimeTrips) {
+            openTime.put(trip.getPairingName(), trip);
+          }
+          loadedOpentime.add(domicile);
+        }
         key = Preconditions.checkNotNull(openTime.get(arg),
             "Pairing " + arg + " is not in opentime");
       }
@@ -111,11 +120,20 @@ public class SubmitSwap {
     System.out.println(result);
   }
 
+  private AwardDomicile getDomicileFromTripName(String name) {
+    for (AwardDomicile domicile : AwardDomicile.values()) {
+      if (name.charAt(0) == domicile.getAwardId()) {
+        return domicile;
+      }
+    }
+    throw new IllegalStateException("Unknown domicile for trip " + name);
+  }
+
   private List<PairingKey> getOpenTimeTrips(BidConfig bidConfig,
-      FlicaService service, YearMonth yearMonth) throws Exception {
+      FlicaService service, YearMonth yearMonth, AwardDomicile awardDomicile)
+      throws Exception {
     Rank rank = Rank.valueOf(bidConfig.getRank());
     int round = bidConfig.getRound();
-    AwardDomicile awardDomicile = AwardDomicile.valueOf(bidConfig.getAwardDomicile());
     String rawOpenTime = service.getOpenTime(
         awardDomicile, rank, round, yearMonth);
     OpenTimeParser openTimeParser =
