@@ -120,7 +120,8 @@ public class LineParser {
     for (int dayOfMonth = 1; dayOfMonth < numColumns; ++dayOfMonth) {
       LocalDate cellDate = dates.get(dayOfMonth - 1);
       Element cell = tds.get(dayOfMonth);
-      if (cell.text().equals(NBSP)) {
+      if (cell.text().equals(NBSP)
+          || cell.text().equals("- TR")) { // 2020 training built into lines.
         currentPairing = null;
         continue;
       }
