@@ -103,11 +103,12 @@ public class FlicaService {
   private static final int AUG_2017_CODE_FO_SAP = 12;
   private static final YearMonth AUG_2017 = YearMonth.parse("2017-08");
   private static final int JAN_2017_CODE = 38;
-  private static final String BID_CLOSE_ID_FORMAT_SPEC = "01%d.%03d";
+  private static final String BID_CLOSE_ID_FORMAT_SPEC = "0%d%d.%03d";
   private static final int JUN_2019_CODE_CA_SAP = 34;
   private static final YearMonth JUN_2019 = YearMonth.parse("2019-06");
   private static final int NOV_2019_CODE_CA_SBB = 2;
   private static final YearMonth NOV_2019 = YearMonth.parse("2019-11");
+  private static final YearMonth DEC_2019 = YearMonth.parse("2019-12");
 
   public static final int BID_ROUND_ONE = 1;
   public static final int BID_ROUND_TWO = 2;
@@ -119,6 +120,7 @@ public class FlicaService {
   // TODO FO_SBB
   public static final int BID_CA_SAP = 9;
   public static final int BID_FO_SAP = 10;
+  public static final int BID_CA_FIRST_COME = 27;
 
   private static final Set<Integer> LEGAL_ROUNDS = ImmutableSet.<Integer>builder()
       .add(BID_ROUND_ONE)
@@ -129,14 +131,17 @@ public class FlicaService {
       .add(BID_CA_SBB)
       .add(BID_CA_SAP)
       .add(BID_FO_SAP)
+      .add(BID_CA_FIRST_COME)
       .build();
 
   // BCID = 01[Round 1=0, Round 2=1, SeniorityBased=3, Opentime=5,
   // CA SBB=6, CA SAP=8, FO SAP=9].xxx where 040 = March 2017
+  // BCID = 02
   public static String getBidCloseId(int round, YearMonth yearMonth) {
     Preconditions.checkState(LEGAL_ROUNDS.contains(round));
     int roundCode = round - 1;
     int yearMonthCode;
+    int prefixDigit = 1;
     if (round == BID_FO_SAP) {
       yearMonthCode = AUG_2017_CODE_FO_SAP + Months.monthsBetween(AUG_2017, yearMonth).getMonths();
     } else if (round == BID_CA_SAP) {
@@ -145,6 +150,10 @@ public class FlicaService {
     } else if (round == BID_CA_SBB) {
       yearMonthCode = NOV_2019_CODE_CA_SBB
           + Months.monthsBetween(NOV_2019, yearMonth).getMonths();
+    } else if (round == BID_CA_FIRST_COME) {
+      prefixDigit = 2;
+      roundCode = 7;
+      yearMonthCode = Months.monthsBetween(DEC_2019, yearMonth).getMonths();
     } else {
       int monthsBetween = Months.monthsBetween(JAN_2017, yearMonth).getMonths();
       if (round == BID_OPENTIME) {
@@ -155,7 +164,7 @@ public class FlicaService {
       }
       yearMonthCode = JAN_2017_CODE + monthsBetween;
     }
-    return String.format(BID_CLOSE_ID_FORMAT_SPEC, roundCode, yearMonthCode);
+    return String.format(BID_CLOSE_ID_FORMAT_SPEC, prefixDigit, roundCode, yearMonthCode);
   }
 
   private static final String CREW_CLASS_ID_FORMAT_SPEC = "%s6%c";
