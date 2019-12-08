@@ -38,6 +38,7 @@ import crewtools.flica.CachingFlicaService;
 import crewtools.flica.FlicaConnection;
 import crewtools.flica.FlicaService;
 import crewtools.flica.Proto;
+import crewtools.flica.Proto.DayOfWeek;
 import crewtools.flica.Proto.Rank;
 import crewtools.flica.adapters.PairingAdapter;
 import crewtools.flica.adapters.ScheduleAdapter;
@@ -227,8 +228,18 @@ public class MonthlyBidder {
     for (Proto.Trip protoTrip : pairingList.getTripList()) {
       for (PairingOverride override : bidConfig.getPairingOverrideList()) {
         if (protoTrip.getPairingName().equals(override.getPairingName())) {
-          protoTrip = Proto.Trip.newBuilder(protoTrip).setOperatesExcept(
-              override.getOperatesExcept()).build();
+          if (override.hasOperatesExcept()) {
+            protoTrip = Proto.Trip.newBuilder(protoTrip).setOperatesExcept(
+                override.getOperatesExcept()).build();
+          }
+          if (override.hasOperates()) {
+            protoTrip = Proto.Trip.newBuilder(protoTrip).setOperates(
+                override.getOperates()).build();
+          }
+          if (override.hasDayOfWeek()) {
+            protoTrip = Proto.Trip.newBuilder(protoTrip).addDayOfWeek(
+                DayOfWeek.valueOf(override.getDayOfWeek())).build();
+          }
           break;
         }
       }

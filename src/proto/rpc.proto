@@ -151,6 +151,8 @@ message ScoreAdjustment {
 message PairingOverride {
   optional string pairing_name = 1;
   optional string operates_except = 2;
+  optional string operates = 3;
+  optional string day_of_week = 4;
 }
 
 message GridObservation {
