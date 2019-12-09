@@ -84,7 +84,7 @@ public class ScheduleParserHelper {
 
   private static final String BASE_REPORT_PREFIX = "BSE REPT: ";
   private static final Pattern BASE_EQUIPMENT_PATTERN = Pattern
-      .compile("^Base/Equip: (CLT|DCA|CVG|DAY|TYS|TRG|NHF|PHL|ORF)/(CRJ)$");
+      .compile("^Base/Equip: (CLT|DCA|CVG|DAY|TYS|TRG|NHF|PHL|ORF)/(CRJ|RJ2)$");
   private static final Pattern CREW_MEMBERS = Pattern.compile("((FO|CA|FA)(\\d{2}))+?");
   private static final String OPERATES_PREFIX = "Operates: ";
   private static final String EXCEPT_PREFIX = "EXCEPT ON ";
@@ -127,7 +127,7 @@ public class ScheduleParserHelper {
 
     return baseReportTime;
   }
-  
+
   void parseDayOfWeek(String dayOfWeekText, Trip.Builder trip) throws ParseException {
     if (dayOfWeekText.equals("EVERY DAY")) {
       addDayOfWeekRange(
@@ -137,7 +137,7 @@ public class ScheduleParserHelper {
           trip);
       return;
     }
-    
+
     Matcher singleDayOfWeekMatcher = SINGLE_DAY_OF_WEEK_PATTERN.matcher(dayOfWeekText);
     if (singleDayOfWeekMatcher.matches()) {
       addSingleDayOfWeek(
@@ -174,7 +174,7 @@ public class ScheduleParserHelper {
       addDayOfWeekList(except, daysSpecified, trip);
     }
   }
-  
+
   private DayOfWeek lookupShortDayOfWeek(String text) throws ParseException {
     checkState(text != null, "provided text was null");
     checkState(SHORT_TO_LONG_DAY_OF_WEEK.containsKey(text), "Unparseable " + text);
@@ -189,7 +189,7 @@ public class ScheduleParserHelper {
       addExcept(ImmutableList.of(dayOfWeek), trip);
     }
   }
-  
+
   private void addDayOfWeekRange(boolean except, DayOfWeek start, DayOfWeek end, Trip.Builder trip) throws ParseException {
     checkState(start.ordinal() < end.ordinal(), "Assumed " + start + " is before " + end);
     List<DayOfWeek> daysSpecified = new ArrayList<>();
@@ -198,7 +198,7 @@ public class ScheduleParserHelper {
     }
     addDayOfWeekList(except, daysSpecified, trip);
   }
-  
+
   private void addDayOfWeekList(boolean except, List<DayOfWeek> daysOfWeek, Trip.Builder trip) throws ParseException {
     if (except) {
       addExcept(daysOfWeek, trip);
@@ -206,7 +206,7 @@ public class ScheduleParserHelper {
       trip.addAllDayOfWeek(daysOfWeek);
     }
   }
-  
+
   private void addExcept(List<DayOfWeek> daysOfWeek, Trip.Builder trip) {
     for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
       if (!daysOfWeek.contains(dayOfWeek)) {
