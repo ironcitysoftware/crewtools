@@ -27,9 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.joda.time.LocalDate;
-import org.joda.time.LocalTime;
 import org.joda.time.YearMonth;
 
 import com.google.common.collect.ImmutableMap;
@@ -41,6 +41,7 @@ import crewtools.flica.pojo.ThinLine;
 import crewtools.flica.pojo.Trip;
 import crewtools.rpc.Proto.BidConfig;
 import crewtools.rpc.Proto.ScoreAdjustment;
+import crewtools.util.Calendar;
 import crewtools.util.Collections;
 import crewtools.util.Period;
 
@@ -57,12 +58,11 @@ public class LineScore {
   private final int numFavoriteOvernights;
   private final Map<Trip, Period> minimumTripsThatMeetMinCredit;
   private final Period minimumTripFavoriteOvernightPeriod;
-  private final int startTimePoints;
-  private final int endTimePoints;
   private final int scoreAdjustmentPoints;
   private final int numEquipmentTwoHundredSegments;
   private final boolean hasReserve;
   private Map<Trip, Period> creditsInMonthMap = new HashMap<>();
+  private Map<Integer, Integer> tripLengthToCount = new HashMap<>();
 
   public LineScore(ThinLine line,
       Map<PairingKey, Trip> trips,
@@ -77,7 +77,7 @@ public class LineScore {
     Period favoriteOvernightPeriod = Period.ZERO;
     int numFavoriteOvernights = 0;
 
-    Set<Integer> daysObligated = new HashSet<>();  // Carry-ins or trips
+    Set<LocalDate> daysObligated = new HashSet<>(); // Carry-ins or trips
     for (Trip trip : trips.values()) {
       // credit of this trip, handling overlapping CI credit, vacation credit.
       Period creditInMonth = trip.getCreditInMonth(
@@ -89,7 +89,7 @@ public class LineScore {
 
       boolean hasFavoriteOvernight = false;
       for (Section section : trip.getSections()) {
-        daysObligated.add(section.getDepartureDate().getDayOfMonth());
+        daysObligated.add(section.getDepartureDate());
         if (bidConfig.getVacationDateList().contains(section.date.getDayOfMonth())) {
           // This day will be dropped as it falls on vacation.
           continue;
@@ -109,17 +109,19 @@ public class LineScore {
       }
     }
     for (LocalDate date : line.getCarryInDays()) {
-      daysObligated.add(date.getDayOfMonth());
+      daysObligated.add(date);
     }
 
     // Include non-overlapping CI credit in allCredit.
     Period nonOverlappingCarryInCredit = Period.ZERO;
     for (LocalDate date : carryInCredit.keySet()) {
-      if (!daysObligated.contains(date.getDayOfMonth())) {
+      if (!daysObligated.contains(date)) {
         nonOverlappingCarryInCredit = nonOverlappingCarryInCredit
             .plus(carryInCredit.get(date));
       }
     }
+
+    this.tripLengthToCount = computeHistogram(daysObligated);
     this.nonOverlappingCarryInCredit = nonOverlappingCarryInCredit;
     this.favoriteOvernightCredit = favoriteOvernightCredit;
     this.favoriteOvernightPeriod = favoriteOvernightPeriod;
@@ -141,22 +143,6 @@ public class LineScore {
     }
     this.minimumTripFavoriteOvernightPeriod = minimumTripFavoriteOvernightPeriod;
 
-    // more points are better.
-    int startTimePoints = 0;
-    int endTimePoints = 0;
-
-    for (Trip trip : minimumTripsThatMeetMinCredit.keySet()) {
-      LocalTime reportTime = trip.getDutyStart().toLocalTime();
-      if (reportTime.getHourOfDay() > 9 && reportTime.getHourOfDay() <= 20) {
-        startTimePoints++;
-      }
-
-      LocalTime endTime = trip.getDutyEnd().toLocalTime();
-      if (endTime.getHourOfDay() <= 18) {
-        endTimePoints++;
-      }
-    }
-
     int numEquipmentTwoHundredSegments = 0;
     for (Trip trip : trips.values()) {
       for (Section section : trip.getSections()) {
@@ -165,8 +151,6 @@ public class LineScore {
         }
       }
     }
-    this.startTimePoints = startTimePoints;
-    this.endTimePoints = endTimePoints;
     this.numEquipmentTwoHundredSegments = numEquipmentTwoHundredSegments;
     this.scoreAdjustmentPoints = getScoreAdjustments(daysObligated);
     this.hasReserve = line.hasReserve();
@@ -188,10 +172,28 @@ public class LineScore {
     }
   }
 
-  private int getScoreAdjustments(Set<Integer> daysObligated) {
+  private Map<Integer, Integer> computeHistogram(Set<LocalDate> daysObligated) {
+    Calendar calendar = new Calendar(YearMonth.parse(bidConfig.getYearMonth()));
+    Map<Integer, Integer> result = new HashMap<>();
+    int currentTripLength = 0;
+    for (LocalDate date : calendar.getDatesInPeriod()) {
+      if (daysObligated.contains(date)) {
+        currentTripLength++;
+      } else if (currentTripLength > 0) {
+        int currentValue = result.containsKey(currentTripLength)
+            ? result.get(currentTripLength)
+            : 0;
+        result.put(currentTripLength, currentValue + 1);
+        currentTripLength = 0;
+      }
+    }
+    return ImmutableMap.copyOf(result);
+  }
+
+  private int getScoreAdjustments(Set<LocalDate> daysObligated) {
     for (ScoreAdjustment scoreAdjustment : bidConfig.getScoreAdjustmentList()) {
-      for (int dayOfMonth : scoreAdjustment.getSoftDayOffList()) {
-        if (daysObligated.contains(dayOfMonth)) {
+      for (String localDateString : scoreAdjustment.getSoftDayOffList()) {
+        if (daysObligated.contains(LocalDate.parse(localDateString))) {
           return scoreAdjustment.getScoreAdjustment();
         }
       }
@@ -268,13 +270,15 @@ public class LineScore {
           }
         }
       }
-      if (trip.spansDaysOfMonth(bidConfig.getRequiredDayOffList())) {
+      Set<LocalDate> requiredDaysOff = bidConfig.getRequiredDayOffList()
+          .stream().map(s -> LocalDate.parse(s)).collect(Collectors.toSet());
+      if (trip.spansDaysOfMonth(requiredDaysOff)) {
         // A trip on this line spans a desired day off. Disqualify the line.
         return false;
       }
       if (bidConfig.getEnableCarryInsRespectRequiredDaysOff()) {
         for (LocalDate carryInDay : line.getCarryInDays()) {
-          if (bidConfig.getRequiredDayOffList().contains(carryInDay.getDayOfMonth())) {
+          if (requiredDaysOff.contains(carryInDay)) {
             return false;
           }
         }
@@ -336,14 +340,6 @@ public class LineScore {
     return minimumTripFavoriteOvernightPeriod;
   }
 
-  public int getStartTimePoints() {
-    return startTimePoints;
-  }
-
-  public int getEndTimePoints() {
-    return endTimePoints;
-  }
-
   public int getScoreAdjustmentPoints() {
     return scoreAdjustmentPoints;
   }
@@ -362,5 +358,9 @@ public class LineScore {
 
   public Period getAdjustedCredit(Trip trip) {
     return creditsInMonthMap.get(trip);
+  }
+
+  public Map<Integer, Integer> getTripLengthToCount() {
+    return tripLengthToCount;
   }
 }

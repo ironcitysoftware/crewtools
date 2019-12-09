@@ -20,6 +20,7 @@
 package crewtools.flica.pojo;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -184,9 +185,9 @@ public class Trip implements Comparable<Trip> {
     return false;
   }
 
-  public boolean spansDaysOfMonth(List<Integer> daysOfMonthList) {
+  public boolean spansDaysOfMonth(Collection<LocalDate> daysOfMonthList) {
     for (LocalDate date : getDepartureDates()) {
-      if (daysOfMonthList.contains(date.getDayOfMonth())) {
+      if (daysOfMonthList.contains(date)) {
         return true;
       }
     }

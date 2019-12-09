@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.joda.time.DateTimeConstants;
 import org.joda.time.LocalDate;
@@ -40,7 +41,7 @@ import crewtools.util.Period;
 public class TripScore implements Comparable<TripScore> {
   private final Logger logger = Logger.getLogger(TripScore.class.getName());
 
-  public static final int START_END_SCORE_FACTOR = 1;
+  public static final int START_END_SCORE_FACTOR = 10;
   public static final int START_HOUR_INCLUSIVE = 11;
   public static final int END_HOUR_INCLUSIVE = 19;
   private static final int DEUCE_CANOE_FACTOR = 20;
@@ -225,25 +226,21 @@ public class TripScore implements Comparable<TripScore> {
         scoreExplanation.add(String.format("%d for crew", adjustment));
       }
       if (scoreAdjustment.getSoftDayOffCount() > 0) {
-        if (trip.spansDaysOfMonth(scoreAdjustment.getSoftDayOffList())) {
+        Set<LocalDate> softDaysOff = scoreAdjustment.getSoftDayOffList()
+            .stream().map(s -> LocalDate.parse(s)).collect(Collectors.toSet());
+        if (trip.spansDaysOfMonth(softDaysOff)) {
           goodPoints += adjustment;
           scoreExplanation.add(String.format("%d for soft day off", adjustment));
         } else {
-          // TODO: this won't work for February or months where we don't
-          // want to commute the last day of the previous month.
-          if (arriveDayEarly && trip.getDutyStart().minusDays(1).getMonthOfYear() == trip
-              .getDutyStart().getMonthOfYear()) {
-            if (scoreAdjustment.getSoftDayOffList().contains(
-                trip.getDutyStart().getDayOfMonth() - 1)) {
+          if (arriveDayEarly) {
+            if (softDaysOff.contains(trip.getDutyStart().minusDays(1).toLocalDate())) {
               goodPoints += adjustment;
               scoreExplanation.add(
                   String.format("%d for soft day off (uncommutable start)", adjustment));
             }
           }
-          if (leaveDayLate && trip.getDutyEnd().plusDays(1).getMonthOfYear() == trip
-              .getDutyEnd().getMonthOfYear()) {
-            if (scoreAdjustment.getSoftDayOffList().contains(
-                trip.getDutyEnd().getDayOfMonth() + 1)) {
+          if (leaveDayLate) {
+            if (softDaysOff.contains(trip.getDutyEnd().plusDays(1).toLocalDate())) {
               goodPoints += adjustment;
               scoreExplanation.add(
                   String.format("%d for soft day off (uncommutable end)", adjustment));

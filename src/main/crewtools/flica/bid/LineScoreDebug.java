@@ -64,7 +64,7 @@ public class LineScoreDebug {
     this.bidConfig = FileUtils.readBidConfig();
     this.awardDomicile = AwardDomicile.valueOf(bidConfig.getAwardDomicile());
     this.rank = Rank.valueOf(bidConfig.getRank());
-    YearMonth yearMonth = YearMonth.parse("2019-12");
+    YearMonth yearMonth = YearMonth.parse(bidConfig.getYearMonth());
     this.dataReader = new DataReader();
     this.pairings = getAllPairings(yearMonth);
     this.lines = getAllLines(yearMonth);

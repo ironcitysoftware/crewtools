@@ -23,6 +23,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Logger;
 
+import com.google.common.collect.Ordering;
+
 import crewtools.flica.pojo.Trip;
 import crewtools.rpc.Proto.BidConfig;
 import crewtools.util.Period;
@@ -99,6 +101,19 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
             a.getNHighestCreditsPlusCarryIn().toString(),
             b.getNHighestCreditsPlusCarryIn().toString());
         return -creditCmp;
+      }
+    }
+
+    // sort 5-days-in-a-row below 4-days-in-a-row
+    int aMaxLength = Ordering.natural().max(a.getTripLengthToCount().keySet());
+    int bMaxLength = Ordering.natural().max(b.getTripLengthToCount().keySet());
+    if (aMaxLength > 4 || bMaxLength > 4) {
+      if (aMaxLength != bMaxLength) {
+        return Integer.compare(aMaxLength, bMaxLength);
+      } else {
+        return Integer.compare(
+            a.getTripLengthToCount().get(aMaxLength),
+            b.getTripLengthToCount().get(bMaxLength));
       }
     }
 
