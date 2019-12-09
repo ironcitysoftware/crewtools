@@ -391,8 +391,11 @@ public class SeniorityPredictor {
         }
       }
     }
-    Preconditions.checkState(numRoundTwo + numLongCall + numShortCall == roundTwoLineList
-        .get().getThinLineCount());
+    // The numVars are award counts, which should be <= the original line counts.
+    Preconditions.checkState(numRoundTwo + numLongCall + numShortCall <= roundTwoLineList
+        .get().getThinLineCount(), String.format("RD2:%d LCR:%d SCR:%d != %d",
+            numRoundTwo, numLongCall, numShortCall,
+            roundTwoLineList.get().getThinLineCount()));
     return new LineInfo(lines, numRoundOne, numRoundTwo, numLongCall);
   }
 }
