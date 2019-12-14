@@ -25,11 +25,11 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.joda.time.Interval;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
-import org.joda.time.YearMonth;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
@@ -95,10 +95,12 @@ public class OverlapEvaluator {
   private static final LocalTime LOCALTIME_END_OF_DAY = LocalTime.parse("23:59");
 
   public OverlapEvaluator(ReducedSchedule alteredSchedule,
-      YearMonth yearMonth, BidConfig bidConfig) {
+      BidConfig bidConfig) {
     ImmutableSet.Builder<LocalDate> builder = ImmutableSet.builder();
-    for (int dayOfMonth : bidConfig.getRequiredDayOffList()) {
-      builder.add(yearMonth.toLocalDate(dayOfMonth));
+    Set<LocalDate> requiredDaysOff = bidConfig.getRequiredDayOffList()
+        .stream().map(s -> LocalDate.parse(s)).collect(Collectors.toSet());
+    for (LocalDate date : requiredDaysOff) {
+      builder.add(date);
     }
     this.requiredDaysOff = builder.build();
     this.alteredSchedule = alteredSchedule;

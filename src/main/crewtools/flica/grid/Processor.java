@@ -295,7 +295,7 @@ public class Processor extends Thread implements Observer {
       }
 
       OverlapEvaluator evaluator = new OverlapEvaluator(
-          reducedSchedule, yearMonth, bidConfig);
+          reducedSchedule, bidConfig);
       OverlapEvaluation eval = evaluator.evaluate(addTrip);
       switch (eval.overlap) {
         case UNDROPPABLE:

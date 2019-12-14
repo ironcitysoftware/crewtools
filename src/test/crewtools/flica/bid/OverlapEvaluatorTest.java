@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 
 import org.joda.time.Interval;
 import org.joda.time.LocalDate;
-import org.joda.time.YearMonth;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
@@ -48,8 +47,7 @@ public class OverlapEvaluatorTest {
 
     OverlapEvaluator evaluator = new OverlapEvaluator(
         reducedSchedule,
-        YearMonth.parse("2019-11"),
-        BidConfig.newBuilder().addRequiredDayOff(1).build());
+        BidConfig.newBuilder().addRequiredDayOff("2019-11-01").build());
     assertEquals(Overlap.DAY_OFF, evaluator.evaluate(proposedTrip).overlap);
   }
 
@@ -71,7 +69,6 @@ public class OverlapEvaluatorTest {
 
     OverlapEvaluator evaluator = new OverlapEvaluator(
         reducedSchedule,
-        YearMonth.parse("2019-11"),
         BidConfig.newBuilder().setMinimumNumberOfDaysBetweenTrips(2).build());
     OverlapEvaluation result = evaluator.evaluate(proposedTrip);
     assertEquals(Overlap.RETAINED_TRIP, result.overlap);
@@ -99,7 +96,6 @@ public class OverlapEvaluatorTest {
 
     OverlapEvaluator evaluator = new OverlapEvaluator(
         reducedSchedule,
-        YearMonth.parse("2019-11"),
         BidConfig.newBuilder().build());
     OverlapEvaluation result = evaluator.evaluate(proposedTrip);
     assertEquals(Overlap.RETAINED_TRIP, result.overlap);

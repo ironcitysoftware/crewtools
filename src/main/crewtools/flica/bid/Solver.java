@@ -109,7 +109,7 @@ public class Solver {
       ReducedSchedule reducedSchedule)
       throws ParseException, IOException, URISyntaxException {
     OverlapEvaluator evaluator = new OverlapEvaluator(
-        reducedSchedule, yearMonth, bidConfig);
+        reducedSchedule, bidConfig);
     // Find all opentime trips which could possibly be added.
     Set<FlicaTaskWrapper> candidateTasks = new HashSet<>();
     Set<LocalDate> dates = new HashSet<>();
