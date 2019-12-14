@@ -203,6 +203,17 @@ public class Trip implements Comparable<Trip> {
     return result.build();
   }
 
+  public Period getCreditInMonth(YearMonth yearMonth) {
+    Period period = Period.ZERO;
+    Calendar calendar = new Calendar(yearMonth);
+    for (Section section : sections) {
+      if (calendar.isWithinPeriod(section.date)) {
+        period = period.plus(section.credit);
+      }
+    }
+    return period;
+  }
+
   public Period getCredit() {
     return credit;
   }

@@ -78,7 +78,7 @@ public class Schedule {
     ImmutableMap.Builder<PairingKey, Integer> numWorkDays = ImmutableMap.builder();
     for (Trip trip : trips) {
       if (calendar.isWithinPeriod(trip.getEarliestDepartureDate())) {
-        Period creditInMonth = trip.getCredit();
+        Period creditInMonth = trip.getCreditInMonth(yearMonth);
         totalCreditInMonth = totalCreditInMonth.plus(creditInMonth);
         if (trip.hasScheduleType()) {
           // vacation, training...

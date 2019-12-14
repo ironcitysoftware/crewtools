@@ -78,12 +78,17 @@ public class ProposedSchedule {
   public boolean isValid(OverlapEvaluator evaluator) {
     // CHECK: check that we have 65.
     Period credit = reducedSchedule.getCredit();
+    String debugTaskCredit = "";
     for (FlicaTaskWrapper task : tasks) {
       credit = credit.plus(task.getCredit());
+      debugTaskCredit += String.format("%s@%s,", task.getPairingName(), task.getCredit());
     }
     if (credit.isLessThan(SIXTY_FIVE)) {
       logger.fine("Invalid: credit is " + credit);
       return false;
+    } else {
+      logger.info(
+          reducedSchedule.getDebugCredit() + " plus " + debugTaskCredit + " = " + credit);
     }
 
     // CHECK: check that the task combination doesn't overlap.

@@ -43,6 +43,7 @@ public class ReducedSchedule {
   private final Period credit;
   private final Set<PairingKey> dropKeys;
   private final int score;
+  private final String debugCredit;
 
   public ReducedSchedule(Schedule schedule, Set<PairingKey> retainedTripKeys,
       BidConfig bidConfig) {
@@ -58,13 +59,18 @@ public class ReducedSchedule {
     this.retainedTrips = new HashSet<>();
     Period credit = schedule.getNonTripCreditInMonth();
     int score = 0;
+
+    String debugCredit = "";
     for (PairingKey retainedTripKey : retainedTripKeys) {
       Trip trip = schedule.getTrips().get(retainedTripKey);
       Preconditions.checkNotNull(trip);
       retainedTrips.add(trip);
-      credit = credit.plus(schedule.getTripCreditInMonth().get(retainedTripKey));
+      Period creditInMonth = schedule.getTripCreditInMonth().get(retainedTripKey);
+      credit = credit.plus(creditInMonth);
+      debugCredit += retainedTripKey.getPairingName() + "@" + creditInMonth + ",";
       score += new TripScore(trip, bidConfig).getPoints();
     }
+    this.debugCredit = debugCredit;
     this.credit = credit;
     this.score = score;
 
@@ -94,6 +100,10 @@ public class ReducedSchedule {
 
   public Period getCredit() {
     return credit;
+  }
+
+  public String getDebugCredit() {
+    return debugCredit;
   }
 
   public Set<PairingKey> getDropKeys() {
