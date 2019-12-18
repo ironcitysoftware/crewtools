@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import org.joda.time.Interval;
 import org.joda.time.LocalDate;
@@ -95,16 +94,10 @@ public class OverlapEvaluator {
   private static final LocalTime LOCALTIME_END_OF_DAY = LocalTime.parse("23:59");
 
   public OverlapEvaluator(ReducedSchedule alteredSchedule,
-      BidConfig bidConfig) {
-    ImmutableSet.Builder<LocalDate> builder = ImmutableSet.builder();
-    Set<LocalDate> requiredDaysOff = bidConfig.getRequiredDayOffList()
-        .stream().map(s -> LocalDate.parse(s)).collect(Collectors.toSet());
-    for (LocalDate date : requiredDaysOff) {
-      builder.add(date);
-    }
-    this.requiredDaysOff = builder.build();
+      Set<LocalDate> requiredDaysOff, BidConfig bidConfig) {
     this.alteredSchedule = alteredSchedule;
     this.nonTripIntervals = alteredSchedule.getNonTripIntervals();
+    this.requiredDaysOff = requiredDaysOff;
     this.bidConfig = bidConfig;
   }
 

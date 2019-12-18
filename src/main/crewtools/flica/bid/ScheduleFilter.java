@@ -23,6 +23,11 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 
+import org.joda.time.LocalDate;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+
 import crewtools.flica.pojo.PairingKey;
 import crewtools.flica.pojo.Schedule;
 import crewtools.util.Clock;
@@ -33,17 +38,38 @@ public class ScheduleFilter implements Predicate<Set<PairingKey>> {
 
   private final Schedule schedule;
   private final Clock clock;
+  private final Set<LocalDate> requiredDaysOff;
+  private final Set<PairingKey> requiredDropsDueToOverlapWithRequiredDaysOff;
 
-  public ScheduleFilter(Schedule schedule, Clock clock) {
+  public ScheduleFilter(Schedule schedule, Clock clock, Set<LocalDate> requiredDaysOff) {
     this.schedule = schedule;
     this.clock = clock;
+    this.requiredDaysOff = requiredDaysOff;
+    ImmutableSet.Builder<PairingKey> requiredDropsDueToOverlapWithRequiredDaysOff = ImmutableSet
+        .builder();
+    for (PairingKey key : schedule.getTrips().keySet()) {
+      Set<LocalDate> workDays = schedule.getTrips().get(key).getDepartureDates();
+      if (!Sets.intersection(workDays, requiredDaysOff).isEmpty()) {
+        requiredDropsDueToOverlapWithRequiredDaysOff.add(key);
+      }
+    }
+    this.requiredDropsDueToOverlapWithRequiredDaysOff = requiredDropsDueToOverlapWithRequiredDaysOff
+        .build();
   }
 
+  /** Returns true if this is a valid schedule subset. */
   @Override
   public boolean test(Set<PairingKey> tripSet) {
+    // The subset must contain all undroppable pairings.
     if (!tripSet.containsAll(schedule.getUndroppable(clock))) {
       return false;
     }
+    // The subset must not contain a required day off.
+    if (!Sets.intersection(tripSet,
+        requiredDropsDueToOverlapWithRequiredDaysOff).isEmpty()) {
+      return false;
+    }
+
     // TODO: in SBB/Opentime mode, consult reserve grid.
     return true;
   }

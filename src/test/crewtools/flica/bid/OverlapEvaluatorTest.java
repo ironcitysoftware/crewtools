@@ -47,7 +47,8 @@ public class OverlapEvaluatorTest {
 
     OverlapEvaluator evaluator = new OverlapEvaluator(
         reducedSchedule,
-        BidConfig.newBuilder().addRequiredDayOff("2019-11-01").build());
+        ImmutableSet.of(new LocalDate(2019, 11, 1)),
+        BidConfig.getDefaultInstance());
     assertEquals(Overlap.DAY_OFF, evaluator.evaluate(proposedTrip).overlap);
   }
 
@@ -69,6 +70,7 @@ public class OverlapEvaluatorTest {
 
     OverlapEvaluator evaluator = new OverlapEvaluator(
         reducedSchedule,
+        ImmutableSet.of(),
         BidConfig.newBuilder().setMinimumNumberOfDaysBetweenTrips(2).build());
     OverlapEvaluation result = evaluator.evaluate(proposedTrip);
     assertEquals(Overlap.RETAINED_TRIP, result.overlap);
@@ -96,7 +98,8 @@ public class OverlapEvaluatorTest {
 
     OverlapEvaluator evaluator = new OverlapEvaluator(
         reducedSchedule,
-        BidConfig.newBuilder().build());
+        ImmutableSet.of(),
+        BidConfig.getDefaultInstance());
     OverlapEvaluation result = evaluator.evaluate(proposedTrip);
     assertEquals(Overlap.RETAINED_TRIP, result.overlap);
     assertEquals(ImmutableSet.of(retainedTrip), result.overlappedTrips);

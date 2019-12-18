@@ -38,6 +38,7 @@ import org.joda.time.YearMonth;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.FlicaService;
@@ -294,8 +295,12 @@ public class Processor extends Thread implements Observer {
         continue;
       }
 
+      ImmutableSet.Builder<LocalDate> builder = ImmutableSet.builder();
+      bidConfig.getRequiredDayOffList()
+          .forEach(s -> builder.add(LocalDate.parse(s)));
+
       OverlapEvaluator evaluator = new OverlapEvaluator(
-          reducedSchedule, bidConfig);
+          reducedSchedule, builder.build(), bidConfig);
       OverlapEvaluation eval = evaluator.evaluate(addTrip);
       switch (eval.overlap) {
         case UNDROPPABLE:

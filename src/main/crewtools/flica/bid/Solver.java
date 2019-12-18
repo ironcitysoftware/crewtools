@@ -62,6 +62,7 @@ public class Solver {
   private final TripDatabase tripDatabase;
   private final int originalScore;
   private final ScheduleFilter scheduleFilter;
+  private final Set<LocalDate> requiredDaysOff;
 
   public Solver(Schedule schedule, Collection<FlicaTaskWrapper> tasks,
       YearMonth yearMonth, BidConfig bidConfig, TripDatabase tripDatabase,
@@ -77,7 +78,11 @@ public class Solver {
       originalScore += new TripScore(trip, bidConfig).getPoints();
     }
     this.originalScore = originalScore;
-    this.scheduleFilter = new ScheduleFilter(schedule, clock);
+    ImmutableSet.Builder<LocalDate> builder = ImmutableSet.builder();
+    bidConfig.getRequiredDayOffList()
+        .forEach(s -> builder.add(LocalDate.parse(s)));
+    this.requiredDaysOff = builder.build();
+    this.scheduleFilter = new ScheduleFilter(schedule, clock, requiredDaysOff);
   }
 
   public List<Solution> solve() throws ParseException, IOException, URISyntaxException {
@@ -92,12 +97,13 @@ public class Solver {
     int count = 1;
     while (retainedTripsSet.hasNext()) {
       Set<PairingKey> retainedTrips = retainedTripsSet.next();
+      ReducedSchedule reducedSchedule = new ReducedSchedule(schedule, retainedTrips,
+          bidConfig);
       if (logger.isLoggable(Level.FINE)) {
         logger.fine(
             "Considering schedule combination " + count + ": " + retainedTrips);
       }
       count++;
-      ReducedSchedule reducedSchedule = new ReducedSchedule(schedule, retainedTrips, bidConfig);
       enumerateSolutions(solutions, reducedSchedule);
     }
     logger.info("Considered " + count + " schedule combinations x "
@@ -105,20 +111,24 @@ public class Solver {
     return solutions;
   }
 
+  /** Called once for every set of retained trips in the schedule. */
   private void enumerateSolutions(List<Solution> solutions,
       ReducedSchedule reducedSchedule)
       throws ParseException, IOException, URISyntaxException {
     OverlapEvaluator evaluator = new OverlapEvaluator(
-        reducedSchedule, bidConfig);
+        reducedSchedule, requiredDaysOff, bidConfig);
     // Find all opentime trips which could possibly be added.
     Set<FlicaTaskWrapper> candidateTasks = new HashSet<>();
-    Set<LocalDate> dates = new HashSet<>();
+    // This prevents overlapping candidates from being added.
+    // TODO doesn't this only then look at the first viable candidate?
+    Set<LocalDate> cumulativeTaskDates = new HashSet<>();
     for (FlicaTaskWrapper task : tasks) {
       if (!bidConfig.getEnableAllowTwoHundredTrips() && task.isTwoHundred()) {
         logger.fine(".. ignoring 200 trip " + task.getPairingName());
         continue;
       }
-      if (!checkTaskDates(task.getPairingName(), dates, task.getTaskDates())) {
+      if (!checkTaskDates(task.getPairingName(), cumulativeTaskDates,
+          task.getTaskDates())) {
         continue;
       }
       if (evaluator.evaluate(task.getTaskDates()).overlap != Overlap.NO_OVERLAP) {
@@ -173,7 +183,7 @@ public class Solver {
       boolean workSame = schedule.getNumWorkingDays() == reducedSchedule
           .getOriginalNumWorkingDays();
       boolean betterSchedule = solution.getScore() > originalScore;
-      logger.fine(schedule.getTransition()
+      logger.info(schedule.getTransition()
           + " workLess: " + workLess
           + " workSame: " + workSame
           + " betterSchedule: " + betterSchedule
