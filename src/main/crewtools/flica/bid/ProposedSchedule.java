@@ -162,6 +162,6 @@ public class ProposedSchedule {
 
   @Override
   public String toString() {
-    return reducedSchedule.toString() + " plus " + tasks;
+    return "drop " + reducedSchedule + " add " + tasks;
   }
 }

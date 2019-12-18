@@ -90,4 +90,9 @@ public class FlicaTaskWrapper {
     FlicaTaskWrapper that = (FlicaTaskWrapper) o;
     return this.flicaTask.equals(that.flicaTask);
   }
+
+  @Override
+  public String toString() {
+    return flicaTask.pairingName;
+  }
 }

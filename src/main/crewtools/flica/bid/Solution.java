@@ -73,6 +73,6 @@ public class Solution {
 
   @Override
   public String toString() {
-    return proposedSchedule.toString() + ", score: " + score;
+    return proposedSchedule + ", score: " + score;
   }
 }
