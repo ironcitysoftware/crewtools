@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.joda.time.Interval;
 
@@ -44,10 +45,12 @@ public class ReducedSchedule {
   private final Set<PairingKey> dropKeys;
   private final int score;
   private final String debugCredit;
+  private final Set<PairingKey> retainedKeys;
 
   public ReducedSchedule(Schedule schedule, Set<PairingKey> retainedTripKeys,
       BidConfig bidConfig) {
     this.schedule = schedule;
+    this.retainedKeys = retainedTripKeys;
 
     int numWorkingDays = 0;
     Map<PairingKey, Integer> workDays = schedule.getNumWorkDays();
@@ -112,5 +115,12 @@ public class ReducedSchedule {
 
   public int getScore() {
     return score;
+  }
+
+  // TODO: potentially confusing. These are the drop keys, not the retained keys.
+  @Override
+  public String toString() {
+    return dropKeys.stream().map(k -> k.getPairingName())
+        .collect(Collectors.toList()).toString();
   }
 }
