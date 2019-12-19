@@ -26,12 +26,9 @@ import java.util.logging.Logger;
 
 import org.joda.time.LocalDate;
 
-import crewtools.flica.FlicaService;
 import crewtools.rpc.Proto.BidConfig;
 
 public class TaskFilter implements Predicate<Set<FlicaTaskWrapper>> {
-
-  private final static int MAX_TASK_SET_SIZE_DURING_SAP = 3;
 
   private final Logger logger = Logger.getLogger(TaskFilter.class.getName());
   private final BidConfig bidConfig;
@@ -51,12 +48,10 @@ public class TaskFilter implements Predicate<Set<FlicaTaskWrapper>> {
       return false;
     }
 
-    // Unlikely that we can add more than 3 tasks in SAP.
-    if (bidConfig.getRound() == FlicaService.BID_CA_SAP
-        || bidConfig.getRound() == FlicaService.BID_FO_SAP) {
-      if (taskSet.size() > MAX_TASK_SET_SIZE_DURING_SAP) {
-        return false;
-      }
+    // Unlikely to pick up this many adds at once, and,
+    // we don't want them, even if we can get them.
+    if (taskSet.size() > bidConfig.getMinimumNumberOfTrips()) {
+      return false;
     }
 
     // The tasks must not overlap with each other.
