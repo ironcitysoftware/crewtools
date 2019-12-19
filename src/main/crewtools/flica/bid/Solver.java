@@ -62,6 +62,7 @@ public class Solver {
   private final TripDatabase tripDatabase;
   private final int originalScore;
   private final ScheduleFilter scheduleFilter;
+  private final TaskFilter taskFilter;
   private final Set<LocalDate> requiredDaysOff;
 
   public Solver(Schedule schedule, Collection<FlicaTaskWrapper> tasks,
@@ -83,6 +84,7 @@ public class Solver {
         .forEach(s -> builder.add(LocalDate.parse(s)));
     this.requiredDaysOff = builder.build();
     this.scheduleFilter = new ScheduleFilter(schedule, clock, requiredDaysOff);
+    this.taskFilter = new TaskFilter(bidConfig);
   }
 
   public List<Solution> solve() throws ParseException, IOException, URISyntaxException {
@@ -104,7 +106,7 @@ public class Solver {
             "Considering schedule combination " + count + ": " + retainedTrips);
       }
       count++;
-      enumerateSolutions(solutions, reducedSchedule);
+      enumerateSolutions(count, solutions, reducedSchedule);
     }
     logger.info("Considered " + count + " schedule combinations x "
         + tasks.size() + " tasks");
@@ -112,23 +114,19 @@ public class Solver {
   }
 
   /** Called once for every set of retained trips in the schedule. */
-  private void enumerateSolutions(List<Solution> solutions,
+  private void enumerateSolutions(int count, List<Solution> solutions,
       ReducedSchedule reducedSchedule)
       throws ParseException, IOException, URISyntaxException {
     OverlapEvaluator evaluator = new OverlapEvaluator(
         reducedSchedule, requiredDaysOff, bidConfig);
     // Find all opentime trips which could possibly be added.
     Set<FlicaTaskWrapper> candidateTasks = new HashSet<>();
-    // This prevents overlapping candidates from being added.
-    // TODO doesn't this only then look at the first viable candidate?
-    Set<LocalDate> cumulativeTaskDates = new HashSet<>();
     for (FlicaTaskWrapper task : tasks) {
       if (!bidConfig.getEnableAllowTwoHundredTrips() && task.isTwoHundred()) {
         logger.fine(".. ignoring 200 trip " + task.getPairingName());
         continue;
       }
-      if (!checkTaskDates(task.getPairingName(), cumulativeTaskDates,
-          task.getTaskDates())) {
+      if (!checkTaskDatesWithinPeriod(task.getPairingName(), task.getTaskDates())) {
         continue;
       }
       if (evaluator.evaluate(task.getTaskDates()).overlap != Overlap.NO_OVERLAP) {
@@ -149,16 +147,23 @@ public class Solver {
       return;
     }
 
+    logger.info("For schedule combination " + count + ", there are "
+        + candidateTasks.size() + " task candidates");
+
     // PowerSet requires <= 30 elements.
     if (candidateTasks.size() > MAX_POWERSET_INPUT_SIZE) {
       logger.info("WARNING: Paring down candidate set due to too many inputs");
       candidateTasks = selectBestCandidates(candidateTasks);
     }
 
-    for (Set<FlicaTaskWrapper> taskCombination : Sets.powerSet(candidateTasks)) {
-      if (taskCombination.isEmpty()) {
-        continue;
-      }
+    Iterator<Set<FlicaTaskWrapper>> taskCombinations = Sets
+        .powerSet(candidateTasks)
+        .stream()
+        .filter(taskFilter)
+        .iterator();
+
+    while (taskCombinations.hasNext()) {
+      Set<FlicaTaskWrapper> taskCombination = taskCombinations.next();
       evaluateTasks(solutions, reducedSchedule, taskCombination, evaluator);
     }
   }
@@ -183,7 +188,7 @@ public class Solver {
       boolean workSame = schedule.getNumWorkingDays() == reducedSchedule
           .getOriginalNumWorkingDays();
       boolean betterSchedule = solution.getScore() > originalScore;
-      logger.info(schedule.getTransition()
+      logger.fine(schedule.getTransition()
           + " workLess: " + workLess
           + " workSame: " + workSame
           + " betterSchedule: " + betterSchedule
@@ -194,13 +199,9 @@ public class Solver {
     }
   }
 
-  private boolean checkTaskDates(String pairingName, Set<LocalDate> existingDates,
-      Set<LocalDate> proposedDates) {
+  private boolean checkTaskDatesWithinPeriod(
+      String pairingName, Set<LocalDate> proposedDates) {
     for (LocalDate date : proposedDates) {
-      if (!existingDates.add(date)) {
-        logger.fine(".. ignoring " + pairingName + " due to taks overlap");
-        return false;
-      }
       if (!calendar.isWithinPeriod(date)) {
         logger.fine(".. ignoring " + pairingName + " due to blend");
         return false;

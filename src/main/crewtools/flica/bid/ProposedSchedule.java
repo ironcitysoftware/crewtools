@@ -87,7 +87,7 @@ public class ProposedSchedule {
       logger.fine("Invalid: credit is " + credit);
       return false;
     } else {
-      logger.info(
+      logger.fine(
           reducedSchedule.getDebugCredit() + " plus " + debugTaskCredit + " = " + credit);
     }
 
