@@ -188,7 +188,7 @@ public class ReplayManager {
     try {
       Files.write(
           SWAP_RECORD,
-          transition.toString().getBytes(StandardCharsets.UTF_8),
+          String.format("%s\n", transition).getBytes(StandardCharsets.UTF_8),
           StandardOpenOption.APPEND);
     } catch (IOException ioe) {
       logger.log(Level.WARNING, "Error recording swap", ioe);
