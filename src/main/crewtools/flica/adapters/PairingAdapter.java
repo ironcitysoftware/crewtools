@@ -27,6 +27,7 @@ import java.util.logging.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
+import org.joda.time.YearMonth;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -373,8 +374,15 @@ public class PairingAdapter {
   List<Leg> getLegs(Proto.Section protoSection, LocalDate legDate) {
     List<Leg> legs = new ArrayList<>();
     DateTime startDuty = timeHelper.getLocalDutyStartDateTime(protoSection, legDate);
+    YearMonth yearMonth = new YearMonth(startDuty.getYear(),
+        startDuty.getMonthOfYear());
+    int originalDayOfMonth = startDuty.getDayOfMonth();
     for (int i = 0; i < protoSection.getLegCount(); ++i) {
-      legs.add(new Leg(protoSection.getLeg(i), startDuty, i));
+      if (protoSection.getLeg(i).getDayOfMonth() < originalDayOfMonth) {
+        yearMonth = yearMonth.plusMonths(1);
+        originalDayOfMonth = protoSection.getLeg(i).getDayOfMonth();
+      }
+      legs.add(new Leg(protoSection.getLeg(i), startDuty, i, yearMonth));
     }
     return legs;
   }

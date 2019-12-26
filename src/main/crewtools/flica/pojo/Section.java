@@ -27,6 +27,7 @@ import java.util.logging.Logger;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
+import org.joda.time.YearMonth;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
@@ -54,9 +55,11 @@ public class Section implements Comparable<Section> {
     this.endDuty = endDuty;
     this.legs = new ArrayList<>();
     int i = 0;
+    YearMonth yearMonth = new YearMonth(startDuty.getYear(),
+        startDuty.getMonthOfYear());
     for (Proto.Leg leg : protoSection.getLegList()) {
       if (!leg.hasLegType()) {
-        legs.add(new Leg(leg, startDuty, i++));
+        legs.add(new Leg(leg, startDuty, i++, yearMonth));
       }
     }
     if (protoSection.getLegCount() > 0) {

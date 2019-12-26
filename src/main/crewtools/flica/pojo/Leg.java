@@ -36,10 +36,9 @@ public class Leg {
   private final TimeUtils timeUtils = new TimeUtils();
 
   public Leg(Proto.Leg protoLeg, DateTime sectionDutyStart,
-      int tripIndex) {
+      int tripIndex, YearMonth yearMonth) {
     this.protoLeg = protoLeg;
-    this.yearMonth = new YearMonth(sectionDutyStart.getYear(),
-        sectionDutyStart.getMonthOfYear());
+    this.yearMonth = yearMonth;
     this.sectionDutyStart = sectionDutyStart;
     this.tripIndex = tripIndex;
   }
