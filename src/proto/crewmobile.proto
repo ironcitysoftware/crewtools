@@ -84,6 +84,7 @@ message ServiceInfo {
   optional Url help_data_service = 18 [(json_name)="HelpDataService"];
   optional Url preferences_service = 19 [(json_name)="PreferencesService"];
   optional Url test_notification_service = 20 [(json_name)="TestNotificationService"];
+  optional Url crew_cover_history_service = 21 [(json_name)="CrewCoverHistoryService"];
 }
 
 message Claim {
