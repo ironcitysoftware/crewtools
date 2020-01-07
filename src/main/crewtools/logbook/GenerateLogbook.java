@@ -23,11 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
-import org.joda.time.LocalDate;
-import org.joda.time.YearMonth;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
@@ -39,96 +34,51 @@ import crewtools.flica.adapters.ScheduleAdapter;
 import crewtools.util.AircraftDatabase;
 import crewtools.util.AirportDatabase;
 import crewtools.util.FileUtils;
-import crewtools.util.Period;
 
 public class GenerateLogbook {
   public static void main(String args[]) throws Exception {
-    if (args.length != 1) {
+    if (args.length == 0) {
       System.err.println("GenerateLogbook transcription.txt");
       System.exit(-1);
     }
     File input = new File(args[0]);
-    new GenerateLogbook(input.getParentFile()).run(input);
+    GenerateLogbook generateLogbook = new GenerateLogbook(input.getParentFile());
+    for (String arg : args) {
+      input = new File(arg);
+      generateLogbook.run(input);
+    }
+    generateLogbook.generate();
   }
 
   private final AircraftDatabase aircraftDatabase;
   private final AirportDatabase airportDatabase;
   private final File inputDirectory;
+  private final Supplement supplement;
+  private final Transcriber transcriber;
+  private final Summary summary;
 
   public GenerateLogbook(File inputDirectory) throws IOException {
     this.aircraftDatabase = new AircraftDatabase();
     this.airportDatabase = new AirportDatabase();
     this.inputDirectory = inputDirectory;
+    this.supplement = new Supplement(aircraftDatabase, airportDatabase);
+    this.transcriber = new Transcriber(aircraftDatabase);
+    this.summary = new Summary();
   }
 
   private static final Splitter SPLITTER = Splitter.on(CharMatcher.anyOf(" ,"));
   private static final Splitter EQUAL_SPLITTER = Splitter.on('=');
 
-  // TODO: remove, replaced with Summary
-  private class Context {
-    private YearMonth currentYearMonth;
-    private Map<LocalDate, Period> dailyBlockTime = new TreeMap<>();
-    private Period monthBlock;
-    private Period totalBlock;
-
-    public Context(Supplement supplement) {
-      this.currentYearMonth = null;
-      this.monthBlock = Period.ZERO;
-      this.totalBlock = Period.ZERO;
-    }
-
-    public void process(Record record) {
-      YearMonth yearMonth = new YearMonth(record.date.getYear(),
-          record.date.getMonthOfYear());
-      if (currentYearMonth == null) {
-        currentYearMonth = yearMonth;
-      } else {
-        if (!yearMonth.equals(currentYearMonth)) {
-          System.out.println(currentYearMonth + " block: " + monthBlock
-              + "; total block: " + totalBlock);
-          monthBlock = Period.ZERO;
-          currentYearMonth = yearMonth;
-        }
-      }
-      monthBlock = monthBlock.plus(record.block);
-      if (!dailyBlockTime.containsKey(record.date)) {
-        dailyBlockTime.put(record.date, Period.ZERO);
-      }
-      dailyBlockTime.put(record.date, dailyBlockTime.get(record.date).plus(record.block));
-      totalBlock = totalBlock.plus(record.block);
-    }
-
-    public void resetTotalBlock() {
-      System.out.println("Total SIC: " + totalBlock);
-      totalBlock = Period.ZERO;
-    }
-
-    public void close() {
-      // for (LocalDate date : dailyBlockTime.keySet()) {
-      // System.out.println(date + "," + dailyBlockTime.get(date));
-      // }
-      if (currentYearMonth != null) {
-        System.out.println(currentYearMonth + " block: " + monthBlock);
-      }
-      System.out.println(totalBlock.toString());
-    }
-  }
-
   public void run(File input) throws Exception {
-    Supplement supplement = new Supplement(aircraftDatabase, airportDatabase);
-    Transcriber transcriber = new Transcriber(aircraftDatabase);
-    Context context = new Context(supplement);
-    Summary summary = new Summary();
-
     for (String line : Files.readLines(input, StandardCharsets.UTF_8)) {
       if (line.equals("quit")) {
         break;
       }
-      if (parseDirective(line, supplement, context)) {
+      if (parseDirective(line, supplement)) {
         // If we have both a schedule and calendar, iterate them.
         if (supplement.shouldIterate()) {
           for (Record record : supplement.getRecords()) {
-            context.process(record);
+            // context.process(record);
             summary.add(record);
             System.out.println(transcriber.transcribe(record));
           }
@@ -137,16 +87,16 @@ public class GenerateLogbook {
       }
       // Otherwise, we iterate each line of the transcription.
       Record record = supplement.buildRecord(SPLITTER.splitToList(line));
-      context.process(record);
       summary.add(record);
       System.out.println(transcriber.transcribe(record));
     }
+  }
 
-    context.close();
+  public void generate() {
     System.out.println(summary);
   }
 
-  private boolean parseDirective(String line, Supplement supplement, Context context)
+  private boolean parseDirective(String line, Supplement supplement)
       throws IOException {
     if (line.startsWith("#") || line.isEmpty()) {
       return true;
@@ -159,7 +109,6 @@ public class GenerateLogbook {
 
     if (line.startsWith("pic")) {
       supplement.beginPic();
-      context.resetTotalBlock();
       return true;
     }
     return false;

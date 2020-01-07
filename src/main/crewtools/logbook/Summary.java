@@ -112,7 +112,6 @@ public class Summary {
     keys.add("DATE");
     keys.add(isPic ? "PIC" : "SIC");
     keys.add(Integer.toString(utcDate.getYear()));
-    keys.add(Integer.toString(utcDate.getMonthOfYear()));
     root.add(keys, block);
   }
 
