@@ -70,6 +70,8 @@ public class AwardParser {
     LocalDate effectiveDate = null;
     List<AwardItem> awards = new ArrayList<>();
 
+    // Files.write(raw, new File("/tmp/raw.txt"), StandardCharsets.UTF_8);
+
     for (String line : raw.split("\\R")) {
       Matcher awardDateMatcher = AWARD_DATE.matcher(line);
       if (awardDate == null && awardDateMatcher.matches()) {
