@@ -118,6 +118,9 @@ public class WriteGridLinks {
                 .getOpenTimeUrl(domicile, rank, FlicaService.BID_CA_SBB, yearMonth)
                 .toString()
             : "SBB";
+        int firstComeBid = rank == Rank.CAPTAIN
+            ? FlicaService.BID_CA_FIRST_COME
+            : FlicaService.BID_FIRST_COME;
         writer.printf("  <td><a target=_blank href=\"%s\">reserve grid</a>,<br />\n"
             + "<a target=_blank href=\"%s\">reserve avail</a>,<br />\n"
             + "pot:&nbsp;" + sbbAnchor + "&nbsp;|&nbsp;"
@@ -125,13 +128,13 @@ public class WriteGridLinks {
             + "<a target=_blank href=\"%s\">lines</a>,<br />\n"
             + "<a target=_blank href=\"%s\">pairings</a>,<br />\n"
             + "<a target=_blank href=\"%s\">tradeboard</a></td>",
-            FlicaService.getReserveGridUrl(domicile, rank, FlicaService.BID_FIRST_COME,
+            FlicaService.getReserveGridUrl(domicile, rank, firstComeBid,
                 yearMonth, config.getAirlineId()),
             FlicaService.getReserveAvailabilityUrl(domicile, rank,
-                FlicaService.BID_FIRST_COME,
+                firstComeBid,
                 yearMonth),
             sbbUrl,
-            FlicaService.getOpenTimeUrl(domicile, rank, FlicaService.BID_FIRST_COME,
+            FlicaService.getOpenTimeUrl(domicile, rank, firstComeBid,
                 yearMonth),
             FlicaService.getAllLinesUrl(domicile, rank, FlicaService.BID_ROUND_ONE,
                 yearMonth),
