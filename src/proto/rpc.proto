@@ -138,6 +138,9 @@ message BidConfig {
 
   // Minimum number of days between trips.
   optional int32 minimum_number_of_days_between_trips = 31;
+
+  // Maximum number of trips to add per swap
+  optional int32 maximum_number_of_adds_per_swap = 32;
 }
 
 message ScoreAdjustment {

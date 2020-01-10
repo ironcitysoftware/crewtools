@@ -50,7 +50,7 @@ public class TaskFilter implements Predicate<Set<FlicaTaskWrapper>> {
 
     // Unlikely to pick up this many adds at once, and,
     // we don't want them, even if we can get them.
-    if (taskSet.size() > bidConfig.getMinimumNumberOfTrips()) {
+    if (taskSet.size() > bidConfig.getMaximumNumberOfAddsPerSwap()) {
       return false;
     }
 
