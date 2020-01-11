@@ -83,7 +83,11 @@ public class Solver {
     bidConfig.getRequiredDayOffList()
         .forEach(s -> builder.add(LocalDate.parse(s)));
     this.requiredDaysOff = builder.build();
-    this.scheduleFilter = new ScheduleFilter(schedule, clock, requiredDaysOff);
+    ImmutableSet.Builder<PairingKey> requiredDrops = ImmutableSet.builder();
+    bidConfig.getRequiredDropPairingKeyList()
+        .forEach(key -> requiredDrops.add(PairingKey.parse(key)));
+    this.scheduleFilter = new ScheduleFilter(
+        schedule, clock, requiredDaysOff, requiredDrops.build());
     this.taskFilter = new TaskFilter(bidConfig);
   }
 

@@ -38,23 +38,27 @@ public class ScheduleFilter implements Predicate<Set<PairingKey>> {
 
   private final Schedule schedule;
   private final Clock clock;
-  private final Set<LocalDate> requiredDaysOff;
-  private final Set<PairingKey> requiredDropsDueToOverlapWithRequiredDaysOff;
+  private final Set<PairingKey> requiredDrops;
 
-  public ScheduleFilter(Schedule schedule, Clock clock, Set<LocalDate> requiredDaysOff) {
+  public ScheduleFilter(Schedule schedule, Clock clock,
+      Set<LocalDate> requiredDaysOff, Set<PairingKey> requiredDropsFromConfig) {
     this.schedule = schedule;
     this.clock = clock;
-    this.requiredDaysOff = requiredDaysOff;
-    ImmutableSet.Builder<PairingKey> requiredDropsDueToOverlapWithRequiredDaysOff = ImmutableSet
+    ImmutableSet.Builder<PairingKey> requiredDrops = ImmutableSet
         .builder();
+
+    // Required drops due to overlap with days off.
     for (PairingKey key : schedule.getTrips().keySet()) {
       Set<LocalDate> workDays = schedule.getTrips().get(key).getDepartureDates();
       if (!Sets.intersection(workDays, requiredDaysOff).isEmpty()) {
-        requiredDropsDueToOverlapWithRequiredDaysOff.add(key);
+        requiredDrops.add(key);
       }
     }
-    this.requiredDropsDueToOverlapWithRequiredDaysOff = requiredDropsDueToOverlapWithRequiredDaysOff
-        .build();
+
+    // Required drops due to config.
+    requiredDrops.addAll(requiredDropsFromConfig);
+
+    this.requiredDrops = requiredDrops.build();
   }
 
   /** Returns true if this is a valid schedule subset. */
@@ -64,9 +68,8 @@ public class ScheduleFilter implements Predicate<Set<PairingKey>> {
     if (!tripSet.containsAll(schedule.getUndroppable(clock))) {
       return false;
     }
-    // The subset must not contain a required day off.
-    if (!Sets.intersection(tripSet,
-        requiredDropsDueToOverlapWithRequiredDaysOff).isEmpty()) {
+    // The subset must not contain a required drop.
+    if (!Sets.intersection(tripSet, requiredDrops).isEmpty()) {
       return false;
     }
 
