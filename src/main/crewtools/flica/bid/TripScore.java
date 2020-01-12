@@ -41,9 +41,9 @@ import crewtools.util.Period;
 public class TripScore implements Comparable<TripScore> {
   private final Logger logger = Logger.getLogger(TripScore.class.getName());
 
-  public static final int START_END_SCORE_FACTOR = 10;
-  public static final int START_HOUR_INCLUSIVE = 11;
-  public static final int END_HOUR_INCLUSIVE = 19;
+  public static final int START_END_SCORE_FACTOR = 100;
+  public static final LocalTime EARLIEST_START_LOCAL_TIME = new LocalTime(11, 00);
+  public static final LocalTime LATEST_END_LOCAL_TIME = new LocalTime(19, 19); // 7:19pm
   private static final int DEUCE_CANOE_FACTOR = 20;
   private static final int DESPISED_TURN_PENALITY = 10000;
 
@@ -157,7 +157,7 @@ public class TripScore implements Comparable<TripScore> {
         scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for initial DH");
       } else {
         LocalTime reportTime = firstSection.getStart().toLocalTime();
-        if (reportTime.getHourOfDay() >= START_HOUR_INCLUSIVE) {
+        if (!reportTime.isAfter(EARLIEST_START_LOCAL_TIME)) {
           startTimePoints += START_END_SCORE_FACTOR;
           goodPoints += START_END_SCORE_FACTOR;
           scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for good start time");
@@ -179,7 +179,7 @@ public class TripScore implements Comparable<TripScore> {
         scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for final DH");
       } else {
         LocalTime endTime = lastSection.getEnd().toLocalTime();
-        if (endTime.getHourOfDay() <= END_HOUR_INCLUSIVE) {
+        if (!endTime.isAfter(LATEST_END_LOCAL_TIME)) {
           endTimePoints += START_END_SCORE_FACTOR;
           goodPoints += START_END_SCORE_FACTOR;
           scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for good end time");
