@@ -114,6 +114,9 @@ public class Supplement {
       logger.fine("Read leg " + leg.getDepartureAirportCode() + "->"
           + leg.getArrivalAirportCode() + ", calendar " + flight.getDep() + "->"
           + flight.getArr());
+      logger.fine("Date/Number leg: " + leg.getDate() + "/"
+          + leg.getFlightNumber() + ", calendar: "
+          + flight.getActDepTime() + "/" + flight.getFlightNumber());
       if (leg.isDeadhead()) {
         Preconditions.checkState(entry.getFlight().getDH());
         continue;
@@ -146,7 +149,7 @@ public class Supplement {
       return true;
     }
     DateTime departureDateTime = calendarTimeFormat.parseDateTime(flight.getActDepTime());
-    return departureDateTime.getMonthOfYear() < legDate.getMonthOfYear();
+    return departureDateTime.toLocalDate().isBefore(legDate);
   }
 
   private final DateTimeFormatter calendarTimeFormat = DateTimeFormat
