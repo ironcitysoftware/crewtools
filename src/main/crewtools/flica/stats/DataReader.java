@@ -101,10 +101,12 @@ public class DataReader {
     return new File(getAwardFilename(yearMonth, awardDomicile, rank, round)).exists();
   }
 
+  private static YearMonth MAXIMUM_SENIORITY_LIST = YearMonth.parse("2023-12");
+
   public Map<YearMonth, SeniorityList> readSeniorityLists() throws Exception {
     Map<YearMonth, SeniorityList> lists = new TreeMap<>();
     for (YearMonth yearMonth = YearMonth.parse("2017-1");
-        !yearMonth.equals(YearMonth.parse("2019-12").plusMonths(1));
+        !yearMonth.equals(MAXIMUM_SENIORITY_LIST.plusMonths(1));
         yearMonth = yearMonth.plusMonths(1)) {
       File pdf = new File(getSeniorityFilename(yearMonth));
       if (!pdf.exists()) {
