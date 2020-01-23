@@ -55,6 +55,7 @@ import crewtools.flica.Proto.SeniorityList;
 import crewtools.flica.Proto.Status;
 import crewtools.flica.Proto.ThinLine;
 import crewtools.flica.Proto.ThinLineList;
+import crewtools.util.Calendar;
 
 public class SeniorityPredictor {
   private final Logger logger = Logger.getLogger(SeniorityPredictor.class.getName());
@@ -64,7 +65,7 @@ public class SeniorityPredictor {
   private final Rank rank;
   private final YearMonth startingYearMonth;
   private final int interestingEmployeeId;
-  private final Multimap<YearMonth, DatedBaseMove> moves;
+  private final Multimap<YearMonth, DatedBasedMove> moves;
   private final List<BaseList> lists;
   private final DataReader dataReader;
   private final Multimap<YearMonth, Integer> terminations;
@@ -91,14 +92,16 @@ public class SeniorityPredictor {
     this.lists = new ArrayList<>();
   }
 
-  private class DatedBaseMove {
-    public DatedBaseMove(BaseMove baseMove, LocalDate awardDate) {
+  private class DatedBasedMove {
+    public DatedBasedMove(BaseMove baseMove, LocalDate effectiveDate, LocalDate awardDate) {
       this.baseMove = baseMove;
-      this.localDate = awardDate;
+      this.effectiveDate = effectiveDate;
+      this.awardDate = awardDate;
     }
 
     public final BaseMove baseMove;
-    public final LocalDate localDate;
+    public final LocalDate effectiveDate;
+    public final LocalDate awardDate;
 
     @Override
     public int hashCode() {
@@ -107,10 +110,10 @@ public class SeniorityPredictor {
 
     @Override
     public boolean equals(Object o) {
-      if (o == null || !(o instanceof DatedBaseMove)) {
+      if (o == null || !(o instanceof DatedBasedMove)) {
         return false;
       }
-      DatedBaseMove that = (DatedBaseMove) o;
+      DatedBasedMove that = (DatedBasedMove) o;
       return baseMove.equals(that.baseMove);
     }
 
@@ -120,16 +123,16 @@ public class SeniorityPredictor {
     }
   }
 
-  private Multimap<YearMonth, DatedBaseMove> readCrewMoves(
+  private Multimap<YearMonth, DatedBasedMove> readCrewMoves(
       PeriodicAwards periodicAwards) {
-    Multimap<YearMonth, DatedBaseMove> result = ArrayListMultimap.create();
+    Multimap<YearMonth, DatedBasedMove> result = ArrayListMultimap.create();
     for (PeriodicAward award : periodicAwards.getPeriodicAwardList()) {
       LocalDate effective = LocalDate.parse(award.getEffectiveDate());
-      YearMonth yearMonth = new YearMonth(effective.getYear(),
-          effective.getMonthOfYear());
+      YearMonth yearMonth = Calendar.getAssociatedYearMonth(effective);
+      LocalDate awardDate = LocalDate.parse(award.getAwardDate());
       for (BaseMove baseMove : award.getBaseMoveList()) {
         result.put(yearMonth,
-            new DatedBaseMove(baseMove, LocalDate.parse(award.getEffectiveDate())));
+            new DatedBasedMove(baseMove, LocalDate.parse(award.getEffectiveDate()), awardDate));
       }
     }
     return result;
@@ -193,6 +196,7 @@ public class SeniorityPredictor {
     List<BaseList> colorize = new ArrayList<>();
     colorize.add(seniorityList);
     colorize.add(awardList);
+
     YearMonth maxYearMonth = Ordering.natural().max(moves.keySet());
     while (!currentYearMonth.isAfter(maxYearMonth)) {
       BaseList previousList = colorize.get(colorize.size() - 1);
@@ -203,7 +207,7 @@ public class SeniorityPredictor {
       colorize.add(currentList);
       logger.info("Applying base moves for " + currentYearMonth + " ("
           + moves.get(currentYearMonth).size() + ")");
-      for (DatedBaseMove baseMove : moves.get(currentYearMonth)) {
+      for (DatedBasedMove baseMove : moves.get(currentYearMonth)) {
         adjustBaseList(pilotsByEmployee, currentList, baseMove, currentYearMonth);
       }
       // TODO fix multiple award case.
@@ -309,9 +313,10 @@ public class SeniorityPredictor {
   }
 
   private void adjustBaseList(Map<Integer, CrewMember> pilotsByEmployee,
-      BaseList baseList, DatedBaseMove datedBaseMove, YearMonth yearMonth) {
-    if (datedBaseMove.baseMove.getFrom().equals(domicile)) {
-      for (int employeeId : datedBaseMove.baseMove.getEmployeeIdList()) {
+      BaseList baseList, DatedBasedMove dateBasedMove, YearMonth yearMonth) {
+    baseList.addAwardDate(dateBasedMove.awardDate);
+    if (dateBasedMove.baseMove.getFrom().equals(domicile)) {
+      for (int employeeId : dateBasedMove.baseMove.getEmployeeIdList()) {
         if (employeeId == interestingEmployeeId) {
           continue;
         }
@@ -321,12 +326,12 @@ public class SeniorityPredictor {
           if (!terminations.containsKey(yearMonth)
               || !terminations.get(yearMonth).contains(employeeId)) {
             logger.fine(String.format("%d from %s award is not in %s for %s",
-                employeeId, datedBaseMove.localDate, domicile, yearMonth));
+                employeeId, dateBasedMove.effectiveDate, domicile, yearMonth));
           }
         }
       }
-    } else if (datedBaseMove.baseMove.getTo().equals(domicile)) {
-      for (int employeeId : datedBaseMove.baseMove.getEmployeeIdList()) {
+    } else if (dateBasedMove.baseMove.getTo().equals(domicile)) {
+      for (int employeeId : dateBasedMove.baseMove.getEmployeeIdList()) {
         if (employeeId == interestingEmployeeId) {
           continue;
         }
@@ -340,7 +345,7 @@ public class SeniorityPredictor {
           }
         } else {
           logger.warning(String.format("%d from %s award is already in %s",
-              employeeId, datedBaseMove.localDate, domicile));
+              employeeId, dateBasedMove.effectiveDate, domicile));
         }
       }
     }

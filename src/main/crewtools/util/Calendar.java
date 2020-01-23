@@ -81,4 +81,14 @@ public class Calendar {
       return yearMonth.toLocalDate(1).dayOfMonth().withMaximumValue();
     }
   }
+
+  public static YearMonth getAssociatedYearMonth(LocalDate localDate) {
+    YearMonth result = new YearMonth(localDate.getYear(), localDate.getMonthOfYear());
+    if (localDate.getMonthOfYear() == 1 && localDate.getDayOfMonth() == 31) {
+      return result.plusMonths(1);
+    } else if (localDate.getMonthOfYear() == 3 && localDate.getDayOfMonth() == 1) {
+      return result.minusMonths(1);
+    }
+    return result;
+  }
 }

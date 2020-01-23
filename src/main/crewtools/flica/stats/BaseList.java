@@ -31,6 +31,7 @@ import java.util.TreeMap;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
 import com.google.common.base.Objects;
@@ -47,6 +48,7 @@ public class BaseList {
   private final YearMonth yearMonth;
   private final String header;
   private final LineInfo lineInfo;
+  private final Set<LocalDate> awardDates;
 
   private Map<Integer, Member> membersByEmployeeId = new TreeMap<>();
   private Map<Integer, Member> membersBySeniorityId = new TreeMap<>();
@@ -57,10 +59,15 @@ public class BaseList {
     this.yearMonth = yearMonth;
     this.header = header;
     this.lineInfo = lineInfo;
+    this.awardDates = new HashSet<>();
   }
 
   public LineInfo getLineInfo() {
     return lineInfo;
+  }
+
+  public void addAwardDate(LocalDate awardDate) {
+    awardDates.add(awardDate);
   }
 
   public static class Member {
@@ -136,7 +143,13 @@ public class BaseList {
   }
 
   public String getHeader() {
-    return header;
+    String result = header;
+    List<LocalDate> awardDates = new ArrayList<>(this.awardDates);
+    Collections.sort(awardDates);
+    for (LocalDate date : awardDates) {
+      result += "<br/>" + date + " award";
+    }
+    return result;
   }
 
   private Map<AwardType, Integer> determineMostJuniorAward() {
