@@ -121,6 +121,8 @@ public class LineParser {
       LocalDate cellDate = dates.get(dayOfMonth - 1);
       Element cell = tds.get(dayOfMonth);
       if (cell.text().equals(NBSP)
+          || cell.text().equals("- TA") // 2020 training built into lines.
+          || cell.text().equals("- TP") // 2020 training built into lines.
           || cell.text().equals("- TR")) { // 2020 training built into lines.
         currentPairing = null;
         continue;
@@ -157,6 +159,14 @@ public class LineParser {
             currentPairing.setDate(cellDate.toString());
           }
           currentPairing.addScheduleType(ScheduleType.LONG_CALL_RESERVE);
+          continue;
+        } else if (components.size() == 1
+            && components.get(0).equals("R3R3")
+            && currentPairing == null
+            && false) { // Feb 2020 mistake
+            currentPairing = builder.addThinPairingBuilder();
+            currentPairing.setDate(cellDate.toString());
+          currentPairing.addScheduleType(ScheduleType.SHORT_CALL_RESERVE);
           continue;
         } else if ((components.size() == 2
             && components.get(0).equals(DASH)
