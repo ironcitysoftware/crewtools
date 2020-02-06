@@ -34,7 +34,6 @@ import org.joda.time.format.DateTimeFormatter;
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.CachingFlicaService;
 import crewtools.flica.FlicaConnection;
-import crewtools.flica.FlicaService;
 import crewtools.flica.Proto;
 import crewtools.flica.Proto.CrewMember;
 import crewtools.flica.Proto.CrewPosition;
@@ -160,7 +159,7 @@ public class FindPairing {
 
   private List<PairingList> retrieveAllPairings(YearMonth yearMonth) throws Exception {
     FlicaConnection connection = new FlicaConnection(FlicaConfig.readConfig());
-    FlicaService service = new CachingFlicaService(connection);
+    CachingFlicaService service = new CachingFlicaService(connection);
     List<PairingList> result = new ArrayList<>();
     for (AwardDomicile awardDomicile : AwardDomicile.values()) {
       String raw = service.getAllPairings(awardDomicile, Rank.CAPTAIN, 1, yearMonth);
