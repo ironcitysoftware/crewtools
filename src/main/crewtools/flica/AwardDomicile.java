@@ -22,7 +22,7 @@ package crewtools.flica;
 public enum AwardDomicile {
  // ALL('*'),  // TODO
   CLT('L'),
-  CVG('V'),
+  // CVG('V'),
   DAY('D'),
   DCA('A'),
   TYS('T'),
