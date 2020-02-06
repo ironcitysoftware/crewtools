@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.joda.time.DateTimeConstants;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
@@ -178,7 +179,11 @@ public class MonthlyBidder {
 
         Proto.Section proto = trip.proto.getSection(i);
         if (datesInPeriod.contains(section.getDepartureDate())) {
-          dates[datesInPeriod.indexOf(section.getDepartureDate())] = '.';
+          boolean isWeekend = section.getDepartureDate()
+              .getDayOfWeek() == DateTimeConstants.SATURDAY
+              || section.getDepartureDate().getDayOfWeek() == DateTimeConstants.SUNDAY;
+          char glyph = isWeekend ? '!' : '.';
+          dates[datesInPeriod.indexOf(section.getDepartureDate())] = glyph;
         }
         if (proto.hasLayoverAirportCode()) {
           if (layover.length() > 2) {
