@@ -43,7 +43,8 @@ public class TripScore implements Comparable<TripScore> {
 
   public static final int START_END_SCORE_FACTOR = 100;
   public static final LocalTime EARLIEST_START_LOCAL_TIME = new LocalTime(11, 00);
-  public static final LocalTime LATEST_END_LOCAL_TIME = new LocalTime(19, 19); // 7:19pm
+  public static final LocalTime LATEST_END_LOCAL_TIME = new LocalTime(19, 34); // 7:19pm
+                                                                               // arrival
   private static final int DEUCE_CANOE_FACTOR = 20;
   private static final int DESPISED_TURN_PENALITY = 10000;
 
@@ -53,8 +54,6 @@ public class TripScore implements Comparable<TripScore> {
 
   private final Period favoriteOvernightPeriod;
   private final int numFavoriteOvernights;
-  private final int startTimePoints;
-  private final int endTimePoints;
   private final boolean hasEquipmentTwoHundredSegments;
   private final int numLegs;
   private final int points;
@@ -142,30 +141,23 @@ public class TripScore implements Comparable<TripScore> {
     }
 
     // more points are better.
-    int startTimePoints = 0;
-    int endTimePoints = 0;
     boolean hasEquipmentTwoHundredSegments = false;
     boolean arriveDayEarly = false;
     boolean leaveDayLate = false;
+    boolean mustCommuteStart = false;
+    boolean mustCommuteEnd = false;
 
     Section firstSection = trip.getFirstSection();
     if (firstSection != null) {
       if (firstSection.getInitialDeadheadToAirport() != null
           && firstSection.getInitialDeadheadToAirport().equals(
               config.getPreferredOriginAirportCode())) {
-        goodPoints += START_END_SCORE_FACTOR;
-        scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for initial DH");
+        // great, no commute.
       } else {
+        mustCommuteStart = true;
         LocalTime reportTime = firstSection.getStart().toLocalTime();
-        if (!reportTime.isAfter(EARLIEST_START_LOCAL_TIME)) {
-          startTimePoints += START_END_SCORE_FACTOR;
-          goodPoints += START_END_SCORE_FACTOR;
-          scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for good start time");
-        } else {
+        if (reportTime.isBefore(EARLIEST_START_LOCAL_TIME)) {
           arriveDayEarly = true;
-          badPoints += START_END_SCORE_FACTOR;
-          scoreExplanation
-              .add("-" + START_END_SCORE_FACTOR + " for bad start time (uncommutable)");
         }
       }
     }
@@ -175,21 +167,29 @@ public class TripScore implements Comparable<TripScore> {
       if (lastSection.getFinalDeadheadFromAirport() != null
           && lastSection.getFinalDeadheadFromAirport().equals(
               config.getPreferredOriginAirportCode())) {
-        goodPoints += START_END_SCORE_FACTOR;
-        scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for final DH");
+        // great, no commute.
       } else {
+        mustCommuteEnd = true;
         LocalTime endTime = lastSection.getEnd().toLocalTime();
-        if (!endTime.isAfter(LATEST_END_LOCAL_TIME)) {
-          endTimePoints += START_END_SCORE_FACTOR;
-          goodPoints += START_END_SCORE_FACTOR;
-          scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for good end time");
-        } else {
+        if (endTime.isAfter(LATEST_END_LOCAL_TIME)) {
           leaveDayLate = true;
-          badPoints += START_END_SCORE_FACTOR;
-          scoreExplanation
-              .add("-" + START_END_SCORE_FACTOR + " for bad end time (uncommutable)");
         }
       }
+    }
+
+    if (!mustCommuteStart && !mustCommuteEnd) {
+      goodPoints += START_END_SCORE_FACTOR;
+      scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for no commute");
+    } else if ((!mustCommuteStart || !arriveDayEarly)
+        && (!mustCommuteEnd || !leaveDayLate)) {
+      goodPoints += START_END_SCORE_FACTOR;
+      scoreExplanation.add("+" + START_END_SCORE_FACTOR + " for commutable");
+    } else {
+      badPoints += START_END_SCORE_FACTOR;
+      scoreExplanation.add(
+          String.format("-" + START_END_SCORE_FACTOR + " for uncommutable: "
+              + "arriveDayEarly:%s leaveDayLate:%s startDH:%s endDH:%s",
+              arriveDayEarly, leaveDayLate, !mustCommuteStart, !mustCommuteEnd));
     }
 
     for (Section section : trip.getSections()) {
@@ -202,8 +202,6 @@ public class TripScore implements Comparable<TripScore> {
       badPoints += numLegs * DEUCE_CANOE_FACTOR;
     }
 
-    this.startTimePoints = startTimePoints;
-    this.endTimePoints = endTimePoints;
     this.hasEquipmentTwoHundredSegments = hasEquipmentTwoHundredSegments;
 
     if (config.getEnableEfficiencyScore()
@@ -300,16 +298,6 @@ public class TripScore implements Comparable<TripScore> {
 
   public Period getFavoriteOvernightPeriod() {
     return favoriteOvernightPeriod;
-  }
-
-  /** Points are good.  The more points, the better. */
-  public int getStartTimePoints() {
-    return startTimePoints;
-  }
-
-  /** Points are good.  The more points, the better. */
-  public int getEndTimePoints() {
-    return endTimePoints;
   }
 
   public int getNumLegs() {

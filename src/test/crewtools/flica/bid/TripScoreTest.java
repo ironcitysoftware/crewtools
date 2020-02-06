@@ -63,33 +63,6 @@ public class TripScoreTest {
   }
 
   @Test
-  public void testStartTimePoints() throws ParseException {
-    Trip.Builder trip = Trip.newBuilder(SAMPLE_TRIP);
-    TripScore score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
-        BidConfig.getDefaultInstance());
-    assertEquals(0, score.getStartTimePoints());
-
-    trip.getSectionBuilder(0).setLocalDutyStartTime("1200");
-    score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
-        BidConfig.getDefaultInstance());
-    assertEquals(TripScore.START_END_SCORE_FACTOR, score.getStartTimePoints());
-  }
-
-  @Test
-  public void testEndTimePoints() throws ParseException {
-    Trip.Builder trip = Trip.newBuilder(SAMPLE_TRIP);
-    trip.getSectionBuilder(0).setLocalDutyEndTime("2330");
-    TripScore score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
-        BidConfig.getDefaultInstance());
-    assertEquals(0, score.getEndTimePoints());
-
-    trip.getSectionBuilder(0).setLocalDutyEndTime("0830");
-    score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
-        BidConfig.getDefaultInstance());
-    assertEquals(TripScore.START_END_SCORE_FACTOR, score.getEndTimePoints());
-  }
-
-  @Test
   public void testNumLegs() throws ParseException {
     Trip.Builder trip = Trip.newBuilder(SAMPLE_TRIP);
     TripScore score = new TripScore(new PairingAdapter().adaptTrip(trip.build()),
