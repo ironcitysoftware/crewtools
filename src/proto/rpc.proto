@@ -144,6 +144,12 @@ message BidConfig {
 
   // Required drops / forbidden pairing keys.  2018-1-1:L1234
   repeated string required_drop_pairing_key = 33;
+
+  repeated string loser_line = 34;
+
+  optional bool enable_trip_length_scoring = 35;
+
+  optional bool enable_weekend_work_scoring = 36;
 }
 
 message ScoreAdjustment {

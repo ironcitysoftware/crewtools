@@ -58,15 +58,27 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
     if (aOverrideIndex > -1 && bOverrideIndex > -1) {
       debug("override:left %d vs right %d", aOverrideIndex, bOverrideIndex);
       return Integer.compare(aOverrideIndex, bOverrideIndex);
-    }
-    if (aOverrideIndex > -1 && bOverrideIndex == -1) {
+    } else if (aOverrideIndex > -1 && bOverrideIndex == -1) {
       debug("override:left %d vs right %d", aOverrideIndex, bOverrideIndex);
       return -1;
-    }
-    if (aOverrideIndex == -1 && bOverrideIndex > -1) {
+    } else if (aOverrideIndex == -1 && bOverrideIndex > -1) {
       debug("override:left %d vs right %d", aOverrideIndex, bOverrideIndex);
       return +1;
     }
+
+    int aLoserIndex = bidConfig.getLoserLineList().indexOf(a.getLineName());
+    int bLoserIndex = bidConfig.getLoserLineList().indexOf(b.getLineName());
+    if (aLoserIndex > -1 && bLoserIndex > -1) {
+      debug("loser:left %d vs right %d", aLoserIndex, bLoserIndex);
+      return Integer.compare(aLoserIndex, bLoserIndex);
+    } else if (aLoserIndex > -1 && bLoserIndex == -1) {
+      debug("loser:left %d vs right %d", aLoserIndex, bLoserIndex);
+      return +1;
+    } else if (aLoserIndex == -1 && bLoserIndex > -1) {
+      debug("loser:left %d vs right %d", aLoserIndex, bLoserIndex);
+      return -1;
+    }
+
     int isReserve = new Boolean(a.hasReserve()).compareTo(b.hasReserve());
     if (isReserve != 0) {
       debug("reserve:left %s vs right %s", "" + a.hasReserve(), "" + b.hasReserve());
@@ -80,6 +92,16 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
         debug("desirable:left %s vs right %s", "" + a.isDesirableLine(),
             "" + b.isDesirableLine());
         return -isDesirable;
+      }
+    }
+
+    if (bidConfig.getEnableWeekendWorkScoring()) {
+      int weekendWork = new Integer(a.getNumWeekendWorkdays())
+          .compareTo(b.getNumWeekendWorkdays());
+      if (weekendWork != 0) {
+        debug("weekend work:left %d vs right %d", a.getNumWeekendWorkdays(),
+            b.getNumWeekendWorkdays());
+        return weekendWork;
       }
     }
 
@@ -107,7 +129,7 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
     // sort 5-days-in-a-row below 4-days-in-a-row
     int aMaxLength = Ordering.natural().max(a.getTripLengthToCount().keySet());
     int bMaxLength = Ordering.natural().max(b.getTripLengthToCount().keySet());
-    if (true) {
+    if (bidConfig.getEnableTripLengthScoring()) {
       if (aMaxLength > 4 || bMaxLength > 4) {
         if (aMaxLength != bMaxLength) {
           debug("maxLength left %d vs right %d", aMaxLength, bMaxLength);

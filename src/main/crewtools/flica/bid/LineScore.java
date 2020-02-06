@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import org.joda.time.DateTimeConstants;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
 
@@ -60,6 +61,7 @@ public class LineScore {
   private final Period minimumTripFavoriteOvernightPeriod;
   private final int scoreAdjustmentPoints;
   private final int numEquipmentTwoHundredSegments;
+  private final int numWeekendWorkdays;
   private final boolean hasReserve;
   private Map<Trip, Period> creditsInMonthMap = new HashMap<>();
   private Map<Integer, Integer> tripLengthToCount = new HashMap<>();
@@ -76,6 +78,7 @@ public class LineScore {
     Period allCredit = Period.ZERO;
     Period favoriteOvernightPeriod = Period.ZERO;
     int numFavoriteOvernights = 0;
+    int numWeekendWorkdays = 0;
 
     Set<LocalDate> daysObligated = new HashSet<>(); // Carry-ins or trips
     for (Trip trip : trips.values()) {
@@ -103,6 +106,10 @@ public class LineScore {
               .plus(section.getLayoverDuration());
           numFavoriteOvernights++;
         }
+        if (section.getDepartureDate().getDayOfWeek() == DateTimeConstants.SATURDAY
+            || section.getDepartureDate().getDayOfWeek() == DateTimeConstants.SUNDAY) {
+          numWeekendWorkdays++;
+        }
       }
       if (hasFavoriteOvernight) {
         favoriteOvernightCredit = favoriteOvernightCredit.plus(creditInMonth);
@@ -128,6 +135,7 @@ public class LineScore {
     this.numFavoriteOvernights = numFavoriteOvernights;
     this.minimumTripsThatMeetMinCredit = evaluateMinCredit(creditsInMonthMap);
     this.NHighestCreditsPlusCarryIn = evaluateNCredit(creditsInMonthMap);
+    this.numWeekendWorkdays = numWeekendWorkdays;
 
     Period minimumTripFavoriteOvernightPeriod = Period.ZERO;
     for (Trip trip : minimumTripsThatMeetMinCredit.keySet()) {
@@ -362,5 +370,9 @@ public class LineScore {
 
   public Map<Integer, Integer> getTripLengthToCount() {
     return tripLengthToCount;
+  }
+
+  public int getNumWeekendWorkdays() {
+    return numWeekendWorkdays;
   }
 }
