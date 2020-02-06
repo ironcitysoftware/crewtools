@@ -107,13 +107,20 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
     // sort 5-days-in-a-row below 4-days-in-a-row
     int aMaxLength = Ordering.natural().max(a.getTripLengthToCount().keySet());
     int bMaxLength = Ordering.natural().max(b.getTripLengthToCount().keySet());
-    if (aMaxLength > 4 || bMaxLength > 4) {
-      if (aMaxLength != bMaxLength) {
-        return Integer.compare(aMaxLength, bMaxLength);
-      } else {
-        return Integer.compare(
-            a.getTripLengthToCount().get(aMaxLength),
-            b.getTripLengthToCount().get(bMaxLength));
+    if (true) {
+      if (aMaxLength > 4 || bMaxLength > 4) {
+        if (aMaxLength != bMaxLength) {
+          debug("maxLength left %d vs right %d", aMaxLength, bMaxLength);
+          return Integer.compare(aMaxLength, bMaxLength);
+        } else {
+          debug("maxLength:%d count left %d vs count right %d",
+              aMaxLength,
+              a.getTripLengthToCount().get(aMaxLength),
+              b.getTripLengthToCount().get(bMaxLength));
+          return Integer.compare(
+              a.getTripLengthToCount().get(aMaxLength),
+              b.getTripLengthToCount().get(bMaxLength));
+        }
       }
     }
 
