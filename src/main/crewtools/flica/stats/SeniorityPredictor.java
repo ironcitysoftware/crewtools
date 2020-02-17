@@ -210,6 +210,8 @@ public class SeniorityPredictor {
       for (DatedBasedMove baseMove : moves.get(currentYearMonth)) {
         adjustBaseList(pilotsByEmployee, currentList, baseMove, currentYearMonth);
       }
+      currentList.removeUnnecessaryAwards();
+
       // TODO fix multiple award case.
       if (false && dataReader.doesAwardExist(currentYearMonth, awardDomicile, rank, 1)) {
         BaseList anotherAwardList = createBaseListFromAward(
@@ -395,12 +397,13 @@ public class SeniorityPredictor {
           Preconditions.checkState(lineFound, "Line not found: " + award.getLine());
         }
       }
+      // The numVars are award counts, which should be <= the original line counts.
+      Preconditions
+          .checkState(numRoundTwo + numLongCall + numShortCall <= roundTwoLineList
+              .get().getThinLineCount(), String.format("RD2:%d LCR:%d SCR:%d != %d",
+                  numRoundTwo, numLongCall, numShortCall,
+                  roundTwoLineList.get().getThinLineCount()));
     }
-    // The numVars are award counts, which should be <= the original line counts.
-    Preconditions.checkState(numRoundTwo + numLongCall + numShortCall <= roundTwoLineList
-        .get().getThinLineCount(), String.format("RD2:%d LCR:%d SCR:%d != %d",
-            numRoundTwo, numLongCall, numShortCall,
-            roundTwoLineList.get().getThinLineCount()));
     return new LineInfo(lines, numRoundOne, numRoundTwo, numLongCall);
   }
 }
