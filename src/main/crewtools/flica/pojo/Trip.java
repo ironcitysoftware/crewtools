@@ -93,7 +93,8 @@ public class Trip implements Comparable<Trip> {
       ScheduleType.SICK,
       ScheduleType.VACATION_START,
       ScheduleType.VACATION_END,
-      ScheduleType.VACATION);
+      ScheduleType.VACATION,
+      ScheduleType.JURY_DUTY);
 
   public boolean isDroppable() {
     if (proto.hasScheduleType()
@@ -219,7 +220,7 @@ public class Trip implements Comparable<Trip> {
   }
 
   /** Carry-in credit will override any trip credit for the specified day. */
-  public Period getCreditInMonth(List<Integer> vacationDays, YearMonth yearMonth,
+  public Period getCreditInMonth(Set<LocalDate> vacationDays, YearMonth yearMonth,
       Map<LocalDate, Period> carryInCredit) {
     Calendar calendar = new Calendar(yearMonth);
     Period credit = Period.ZERO;
@@ -240,7 +241,7 @@ public class Trip implements Comparable<Trip> {
       } else if (!calendar.isWithinPeriod(section.date)) {
         // This day of the trip is in a different bid period.
         continue;
-      } else if (vacationDays.contains(section.date.getDayOfMonth())) {
+      } else if (vacationDays.contains(section.date)) {
         // This day of the trip overlaps with vacation.
         continue;
       } else if (carryInCredit.containsKey(section.date)) {
@@ -263,7 +264,8 @@ public class Trip implements Comparable<Trip> {
       ScheduleType.SICK,
       ScheduleType.VACATION,
       ScheduleType.VACATION_START,
-      ScheduleType.VACATION_END);
+      ScheduleType.VACATION_END,
+      ScheduleType.JURY_DUTY);
 
   public DateTime getDutyStart() {
     if (!proto.hasScheduleType()) {

@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonth;
@@ -51,6 +53,7 @@ public class LineScoreDebug {
   private final DataReader dataReader;
   private final Map<PairingKey, Trip> pairings;
   private final Map<String, ThinLine> lines;
+  private final Set<LocalDate> vacationDays;
 
   public static void main(String args[]) throws Exception {
     if (args.length == 0) {
@@ -68,6 +71,8 @@ public class LineScoreDebug {
     this.dataReader = new DataReader();
     this.pairings = getAllPairings(yearMonth);
     this.lines = getAllLines(yearMonth);
+    this.vacationDays = bidConfig.getVacationDateList()
+        .stream().map(s -> LocalDate.parse(s)).collect(Collectors.toSet());
   }
 
   public void run(String args[]) throws Exception {
@@ -91,7 +96,8 @@ public class LineScoreDebug {
               "Pairing not found: " + key));
     }
     Map<LocalDate, Period> carryInCredit = ImmutableMap.of();
-    return new LineScore(lines.get(lineName), trips, bidConfig, carryInCredit);
+    return new LineScore(lines.get(lineName), trips, bidConfig, carryInCredit,
+        vacationDays);
   }
 
   private Map<PairingKey, Trip> getAllPairings(YearMonth yearMonth)

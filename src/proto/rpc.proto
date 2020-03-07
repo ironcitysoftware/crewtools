@@ -71,7 +71,8 @@ message BidConfig {
 
   // Scheduled vacation days.
   // TODO: read from schedule.
-  repeated int32 vacation_date = 4;
+  // eg 2020-4-1
+  repeated string vacation_date = 4;
 
   // Monthly bidding: lines will be disqualified from consideration
   // if any trips on that line span a desired day off.

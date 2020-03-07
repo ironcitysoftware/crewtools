@@ -26,7 +26,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.joda.time.DateTimeConstants;
 import org.joda.time.LocalDate;
@@ -104,6 +106,9 @@ public class MonthlyBidder {
     Map<LocalDate, Period> carryInCredit = priorMonthSchedule
         .getTripCreditInMonth(yearMonth);
 
+    Set<LocalDate> vacationDays = bidConfig.getVacationDateList()
+        .stream().map(s -> LocalDate.parse(s)).collect(Collectors.toSet());
+
     List<LineScore> lineScores = new ArrayList<>();
     for (ThinLine line : lines) {
       if (line.hasReserve()) {
@@ -117,7 +122,8 @@ public class MonthlyBidder {
             Preconditions.checkNotNull(pairings.get(key),
                 "Pairing not found: " + key));
       }
-      LineScore lineScore = new LineScore(line, trips, bidConfig, carryInCredit);
+      LineScore lineScore = new LineScore(line, trips, bidConfig, carryInCredit,
+          vacationDays);
       if (!cmdLine.desirableOnly() || lineScore.isDesirableLine()) {
         lineScores.add(lineScore);
       }

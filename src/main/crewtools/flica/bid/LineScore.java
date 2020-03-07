@@ -69,7 +69,8 @@ public class LineScore {
   public LineScore(ThinLine line,
       Map<PairingKey, Trip> trips,
       BidConfig bidConfig,
-      Map<LocalDate, Period> carryInCredit) {
+      Map<LocalDate, Period> carryInCredit,
+      Set<LocalDate> vacationDays) {
     this.line = line;
     this.trips = trips;
     this.bidConfig = bidConfig;
@@ -84,7 +85,7 @@ public class LineScore {
     for (Trip trip : trips.values()) {
       // credit of this trip, handling overlapping CI credit, vacation credit.
       Period creditInMonth = trip.getCreditInMonth(
-          bidConfig.getVacationDateList(),
+          vacationDays,
           YearMonth.parse(bidConfig.getYearMonth()),
           carryInCredit);
       creditsInMonthMap.put(trip, creditInMonth);
@@ -93,7 +94,7 @@ public class LineScore {
       boolean hasFavoriteOvernight = false;
       for (Section section : trip.getSections()) {
         daysObligated.add(section.getDepartureDate());
-        if (bidConfig.getVacationDateList().contains(section.date.getDayOfMonth())) {
+        if (vacationDays.contains(section.date)) {
           // This day will be dropped as it falls on vacation.
           continue;
         }
