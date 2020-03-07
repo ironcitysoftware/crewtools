@@ -44,6 +44,7 @@ message Pilot {
   optional bool check_airman = 9;
 }
 
+// Seniority list pilot status
 enum Status {
   ACTIVE = 1 [(flica_name)="ACT"];
   MEDICAL_LEAVE_STATUS = 2 [(flica_name)="MED"];
@@ -175,6 +176,8 @@ enum ScheduleType {
 
   SICK_2 = 33 [(flica_name)="SIC"];
   IGNORE = 34 [(flica_name)="IGN"];
+
+  JURY_DUTY = 35 [(flica_name)="JUR"];
 }
 
 // Next ID 21
