@@ -207,6 +207,7 @@ enum LegType {
   UPGRADE = 21 [(flica_name)="UPG"];
   TAXI_2 = 22 [(flica_name)="TAXI"];
   SDH = 23;
+  CRV = 24;
 }
 
 message Leg {
