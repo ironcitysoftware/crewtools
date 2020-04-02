@@ -59,18 +59,28 @@ public class TripScore implements Comparable<TripScore> {
   private final int points;
   private final List<String> scoreExplanation = new ArrayList<>();
   private final Trip trip;
+  private final Set<LocalDate> vacationDays;
 
-  public TripScore(Trip trip, BidConfig config) {
+  public TripScore(Trip trip, BidConfig bidConfig) {
+    this.trip = trip;
     int goodPoints = 0;
     int badPoints = 0;
 
     Period favoriteOvernightPeriod = Period.ZERO;
     int numFavoriteOvernights = 0;
 
+    vacationDays = bidConfig.getVacationDateList()
+        .stream().map(s -> LocalDate.parse(s)).collect(Collectors.toSet());
+
     int numLegs = 0;
+    int numSections = 0;
     for (Section section : trip.getSections()) {
+      if (onVacation(section)) {
+        continue;
+      }
+      numSections++;
       if (section.hasLayoverAirportCode()
-          && config.getFavoriteOvernightList()
+          && bidConfig.getFavoriteOvernightList()
               .contains(section.getLayoverAirportCode())) {
         favoriteOvernightPeriod = favoriteOvernightPeriod
             .plus(section.getLayoverDuration());
@@ -83,8 +93,15 @@ public class TripScore implements Comparable<TripScore> {
     this.numFavoriteOvernights = numFavoriteOvernights;
     this.numLegs = numLegs;
 
-    if (config.getEnableDingPartialTrips()) {
-      switch (trip.getSections().size()) {
+    if (numSections == 0) {
+      this.points = 0;
+      this.hasEquipmentTwoHundredSegments = false;
+      return;
+    }
+
+
+    if (bidConfig.getEnableDingPartialTrips()) {
+      switch (numSections) {
         case 4:
         case 3:
           break;
@@ -111,12 +128,15 @@ public class TripScore implements Comparable<TripScore> {
 
     // favorite turns
     for (Section section : trip.getSections()) {
+      if (onVacation(section)) {
+        continue;
+      }
       for (String airportCode : section.getAllTurnAirports()) {
-        if (config.getFavoriteTurnList().contains(airportCode)) {
+        if (bidConfig.getFavoriteTurnList().contains(airportCode)) {
           goodPoints++;
           scoreExplanation.add("+1 for a turn to " + airportCode);
         }
-        if (config.getDespisedTurnList().contains(airportCode)) {
+        if (bidConfig.getDespisedTurnList().contains(airportCode)) {
           badPoints += DESPISED_TURN_PENALITY;
           scoreExplanation
               .add("-" + DESPISED_TURN_PENALITY + " for a turn to " + airportCode);
@@ -127,6 +147,9 @@ public class TripScore implements Comparable<TripScore> {
     // numLegs
     for (int i = 0; i < trip.getSections().size(); i++) {
       Section section = trip.getSections().get(i);
+      if (onVacation(section)) {
+        continue;
+      }
       boolean isFirstOrLast = i == 0 || i == trip.getNumSections() - 1;
       int idealNumLegs = isFirstOrLast
           ? IDEAL_NUMBER_OF_LEGS_FIRST_OR_LAST_DAY
@@ -147,11 +170,36 @@ public class TripScore implements Comparable<TripScore> {
     boolean mustCommuteStart = false;
     boolean mustCommuteEnd = false;
 
-    Section firstSection = trip.getFirstSection();
+    List<Section> sections = trip.getSections();
+    Section firstSection = null;
+    Section lastSection = null;
+    boolean firstTruncatedDueToVacation = false;
+    boolean lastTruncatedDueToVacation = false;
+    for (int i = 0; i < sections.size(); ++i) {
+      if (onVacation(sections.get(i))) {
+        firstTruncatedDueToVacation = true;
+        continue;
+      } else {
+        firstSection = sections.get(i);
+        break;
+      }
+    }
+    for (int i = sections.size() - 1; i >= 0; --i) {
+      if (onVacation(sections.get(i))) {
+        lastTruncatedDueToVacation = true;
+        continue;
+      } else {
+        lastSection = sections.get(i);
+        break;
+      }
+    }
+
     if (firstSection != null) {
-      if (firstSection.getInitialDeadheadToAirport() != null
+      if (firstTruncatedDueToVacation) {
+        // great, no commute.
+      } else if (firstSection.getInitialDeadheadToAirport() != null
           && firstSection.getInitialDeadheadToAirport().equals(
-              config.getPreferredOriginAirportCode())) {
+              bidConfig.getPreferredOriginAirportCode())) {
         // great, no commute.
       } else {
         mustCommuteStart = true;
@@ -162,11 +210,12 @@ public class TripScore implements Comparable<TripScore> {
       }
     }
 
-    Section lastSection = trip.getLastSection();
     if (lastSection != null) {
-      if (lastSection.getFinalDeadheadFromAirport() != null
+      if (lastTruncatedDueToVacation) {
+        // great, no commute.
+      } else if (lastSection.getFinalDeadheadFromAirport() != null
           && lastSection.getFinalDeadheadFromAirport().equals(
-              config.getPreferredOriginAirportCode())) {
+              bidConfig.getPreferredOriginAirportCode())) {
         // great, no commute.
       } else {
         mustCommuteEnd = true;
@@ -193,6 +242,9 @@ public class TripScore implements Comparable<TripScore> {
     }
 
     for (Section section : trip.getSections()) {
+      if (onVacation(section)) {
+        continue;
+      }
       if (section.isEquipmentTwoHundred()) {
         hasEquipmentTwoHundredSegments = true;
       }
@@ -204,7 +256,7 @@ public class TripScore implements Comparable<TripScore> {
 
     this.hasEquipmentTwoHundredSegments = hasEquipmentTwoHundredSegments;
 
-    if (config.getEnableEfficiencyScore()
+    if (bidConfig.getEnableEfficiencyScore()
         && trip.credit.isMoreThan(Period.ZERO)) {
       // 0.0 is no flying when away from home.
       // 1.0 is flying every minute away from home.
@@ -216,7 +268,7 @@ public class TripScore implements Comparable<TripScore> {
       goodPoints += factor;
     }
 
-    for (ScoreAdjustment scoreAdjustment : config.getScoreAdjustmentList()) {
+    for (ScoreAdjustment scoreAdjustment : bidConfig.getScoreAdjustmentList()) {
       int adjustment = scoreAdjustment.getScoreAdjustment();
       if (scoreAdjustment.getCrewEmployeeIdCount() > 0
           && trip.containsCrewmember(scoreAdjustment.getCrewEmployeeIdList())) {
@@ -261,8 +313,11 @@ public class TripScore implements Comparable<TripScore> {
     }
 
     this.points = goodPoints - badPoints;
-    this.trip = trip;
     scoreExplanation.add("Final score: " + points);
+  }
+
+  private boolean onVacation(Section section) {
+    return vacationDays.contains(section.date);
   }
 
   //@formatter:off
