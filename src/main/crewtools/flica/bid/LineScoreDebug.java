@@ -78,6 +78,7 @@ public class LineScoreDebug {
   public void run(String args[]) throws Exception {
     LineScore left = getLineScore(args[0]);
     LineScore right = getLineScore(args[1]);
+    System.out.println("left=" + args[0] + "    right=" + args[1]);
     MonthlyBidStrategy strategy = new MonthlyBidStrategy(bidConfig);
     List<String> explanation = new ArrayList<>();
     strategy.setDebug(explanation);

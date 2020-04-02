@@ -150,7 +150,7 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
     String aTrips = "";
     for (Trip trip : a.getMinimumTrips()) {
       TripScore tripScore = new TripScore(trip, bidConfig);
-      debug("Scoring trip %s", trip.getPairingName());
+      debug("Scoring left trip %s", trip.getPairingName());
       for (String explanation : tripScore.getScoreExplanation()) {
         debug("   %s", explanation);
       }
@@ -168,7 +168,7 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
     String bTrips = "";
     for (Trip trip : b.getMinimumTrips()) {
       TripScore tripScore = new TripScore(trip, bidConfig);
-      debug("Scoring trip %s", trip.getPairingName());
+      debug("Scoring right trip %s", trip.getPairingName());
       for (String explanation : tripScore.getScoreExplanation()) {
         debug("   %s", explanation);
       }
