@@ -50,11 +50,11 @@ public class FindPairing {
   private final Logger logger = Logger.getLogger(FindPairing.class.getName());
 
   public static void main(String args[]) throws Exception {
-    if (args.length != 3) {
-      System.err.println("findPairing 2019-12-25 CLT .");
+    if (args.length != 3 && args.length != 4) {
+      System.err.println("findPairing 2020-12-1 CLT . [2020-11]");
       System.exit(-1);
     }
-    new FindPairing(args[0], args[1], args[2]).run();
+    new FindPairing(args[0], args[1], args[2], args.length < 4 ? null : args[3]).run();
   }
 
   private final DataReader dataReader;
@@ -62,19 +62,21 @@ public class FindPairing {
   private final String origin;
   private final String destination;
   private final PairingAdapter pairingAdapter;
+  private final YearMonth yearMonth;
 
-  public FindPairing(String date, String origin, String destination) throws IOException {
+  public FindPairing(String date, String origin, String destination, String yearMonth)
+      throws IOException {
     this.dataReader = new DataReader();
     this.date = date.equals(".") ? null : LocalDate.parse(date);
     this.origin = origin;
     this.destination = destination;
     this.pairingAdapter = new PairingAdapter();
+    this.yearMonth = yearMonth == null
+        ? new YearMonth(this.date.getYear(), this.date.getMonthOfYear())
+        : YearMonth.parse(yearMonth);
   }
 
   private void run() throws Exception {
-    YearMonth yearMonth = date == null
-        ? YearMonth.parse("2019-12")
-        : new YearMonth(date.getYear(), date.getMonthOfYear());
     List<PairingList> pairingLists = retrieveAllPairings(yearMonth);
 
     List<Result> results = new ArrayList<>();
