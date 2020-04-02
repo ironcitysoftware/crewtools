@@ -160,7 +160,12 @@ public class FlicaService {
         // To view November opentime we need 014.049, not 014.048
         monthsBetween++;
       } else {
-        // But to view Feburary SBB (round code 3) we need 013.051, not 013.052
+        if (round == BID_ROUND_ONE) {
+          if (!yearMonth.isBefore(YearMonth.parse("2020-04"))) {
+            // April rebid due to COVID-19
+            monthsBetween++;
+          }
+        }
       }
       yearMonthCode = JAN_2017_CODE + monthsBetween;
     }
