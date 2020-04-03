@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
+import org.joda.time.YearMonth;
 import org.junit.Test;
 
 import crewtools.flica.Proto;
@@ -39,7 +40,7 @@ public class LegTest {
         .setArrivalLocalTime("0115")
         .build();
     DateTime duty = new DateTime(2018, 5, 1, 23, 30, 0);
-    Leg leg = new Leg(protoLeg, duty, 0);
+    Leg leg = new Leg(protoLeg, duty, 0, new YearMonth(2018, 5));
 
     assertEquals(new LocalDate(2018, 5, 1), leg.getDate());
     assertEquals(new DateTime(2018, 5, 2, 0, 15, 0), leg.getDepartureTime());
