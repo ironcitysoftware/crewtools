@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Iron City Software LLC
+ * Copyright 2020 Iron City Software LLC
  *
  * This file is part of CrewTools.
  *
@@ -21,6 +21,7 @@ package crewtools.wx;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.joda.time.DateTime;
@@ -28,6 +29,7 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.collect.ImmutableSet;
 
 public class ParsedTaf {
   public DateTime issued;
@@ -117,5 +119,17 @@ public class ParsedTaf {
         .add("validTo", validTo)
         .add("forecast", forecast)
         .toString();
+  }
+
+  public ParsedMetar getConditionsFor(TafPeriod tafPeriod) {
+    return forecast.get(tafPeriod);
+  }
+
+  public Set<TafPeriod> getTafPeriodsAt(DateTime dateTime) {
+    return forecast
+        .keySet()
+        .stream()
+        .filter(tp -> tp.interval.contains(dateTime))
+        .collect(ImmutableSet.toImmutableSet());
   }
 }

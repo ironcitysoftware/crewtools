@@ -45,7 +45,7 @@ import crewtools.flica.parser.ParseUtils;
 import crewtools.flica.pojo.Leg;
 import crewtools.flica.pojo.Schedule;
 import crewtools.util.AircraftDatabase;
-import crewtools.util.AirportDatabase;
+import crewtools.util.AirportTimezoneDatabase;
 import crewtools.util.Period;
 
 public class Supplement {
@@ -54,7 +54,7 @@ public class Supplement {
   private final DateTimeFormatter inputTimeFormat = DateTimeFormat
       .forPattern("HHmm");
   private final AircraftDatabase aircraftDatabase;
-  private final AirportDatabase airportDatabase;
+  private final AirportTimezoneDatabase airportDatabase;
   private final Set<String> ignoredMagicFlightNumbers;
 
   private Iterator<Leg> legs;
@@ -65,7 +65,7 @@ public class Supplement {
 
   public Supplement(
       AircraftDatabase aircraftDatabase,
-      AirportDatabase airportDatabase) {
+      AirportTimezoneDatabase airportDatabase) {
     this.aircraftDatabase = aircraftDatabase;
     this.airportDatabase = airportDatabase;
     this.ignoredMagicFlightNumbers = populateIgnoredMagicFlightNumbers();

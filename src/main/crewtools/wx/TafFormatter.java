@@ -34,7 +34,7 @@ public class TafFormatter {
   private MetarFormatter metarFormatter = new MetarFormatter();
   private final Joiner joiner = Joiner.on(' ');
 
-  public String[] format(ParsedTaf taf) {
+  public List<String> format(ParsedTaf taf) {
     List<String> result = new ArrayList<>();
     List<String> firstLine = new ArrayList<>();
     firstLine.add("TAF");
@@ -62,7 +62,7 @@ public class TafFormatter {
         result.add(format(true, period, taf.forecast.get(period)));
       }
     }
-    return result.toArray(new String[result.size()]);
+    return result;
   }
 
   private String format(boolean includeTime, TafPeriod period, ParsedMetar forecast) {

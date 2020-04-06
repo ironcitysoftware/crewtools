@@ -1,0 +1,57 @@
+// Copyright 2020 Iron City Software LLC
+//
+// This file is part of CrewTools.
+//
+// CrewTools is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// CrewTools is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with CrewTools.  If not, see <http://www.gnu.org/licenses/>.
+
+syntax = "proto2";
+
+package crewtools_rpc;
+
+option java_package = "crewtools.airport";
+option java_outer_classname = "Proto";
+
+message AirportList {
+  repeated Airport airport = 1;
+}
+
+message Airport {
+  optional string icao_id = 1;
+  optional string faa_id = 2;
+  optional string variation = 3;
+  repeated Approach approach = 4;
+}
+
+enum ApproachName {
+  ILS = 1;
+  LOC = 2;
+  RNAV_GPS = 3;
+  VOR = 4;
+}
+
+message Approach {
+  // runway will not be present for, eg VOR-A
+  optional int32 runway = 1;
+  optional ApproachName name = 2;
+  optional int32 minimum_altitude = 3;
+  // C and D are the same.
+  optional Visibility visibility = 4;
+  optional Visibility c_visibility = 5;
+  optional Visibility d_visibility = 6;
+}
+
+message Visibility {
+  optional string statute_mile = 1;
+  optional int32 rvr = 4;
+}

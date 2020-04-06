@@ -22,33 +22,32 @@ package crewtools.util;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
+import org.joda.time.DateTimeZone;
+
+import com.google.common.base.Splitter;
 import com.google.common.io.Files;
-import com.google.protobuf.TextFormat;
 
-import crewtools.airport.Proto.Airport;
-import crewtools.airport.Proto.AirportList;
+public class AirportTimezoneDatabase {
+  private static final File AIRPORT_TIMEZONE_DATABASE = new File(
+      "data/airport-timezone.txt");
 
-public class AirportDatabase {
-  private static final File AIRPORT_DATABASE = new File(
-      "data/airport.txt");
+  private static final Splitter SPLITTER = Splitter.on(',');
 
-  private final Map<String, Airport> airports;
+  private final Map<String, DateTimeZone> zoneMap = new HashMap<>();
 
-  public AirportDatabase() throws IOException {
-    AirportList.Builder builder = AirportList.newBuilder();
-    TextFormat.getParser().merge(
-        Files.toString(AIRPORT_DATABASE, StandardCharsets.UTF_8), builder);
-    ImmutableMap.Builder<String, Airport> mapBuilder = ImmutableMap.builder();
-    for (Airport airport : builder.build().getAirportList()) {
-      mapBuilder.put(airport.getFaaId(), airport);
+  public AirportTimezoneDatabase() throws IOException {
+    for (String line : Files.readLines(AIRPORT_TIMEZONE_DATABASE, StandardCharsets.UTF_8)) {
+      // Expect LGA,America/New_York
+      List<String> components = SPLITTER.splitToList(line);
+      zoneMap.put(components.get(0), DateTimeZone.forID(components.get(1)));
     }
-    airports = mapBuilder.build();
   }
 
-  public Airport getAirport(String faaId) {
-    return airports.get(faaId);
+  public DateTimeZone getZone(String faaId) {
+    return zoneMap.get(faaId);
   }
 }

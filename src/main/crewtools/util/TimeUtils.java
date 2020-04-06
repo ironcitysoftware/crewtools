@@ -30,7 +30,7 @@ import org.joda.time.format.DateTimeFormatter;
 public class TimeUtils {
   public TimeUtils() {
     try {
-      this.airportDatabase = new AirportDatabase();
+      this.airportDatabase = new AirportTimezoneDatabase();
     } catch (IOException ioe) {
       throw new IllegalStateException(ioe);
     }
@@ -48,7 +48,7 @@ public class TimeUtils {
     return LocalTime.parse(protoHhColonMmField, HH_COLON_MM_LOCALTIME);
   }
 
-  private final AirportDatabase airportDatabase;
+  private final AirportTimezoneDatabase airportDatabase;
 
   public DateTime getDateTime(LocalDate date, LocalTime time, String station) {
     return date.toDateTime(time, airportDatabase.getZone(station));

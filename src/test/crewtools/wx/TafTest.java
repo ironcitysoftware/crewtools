@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Iron City Software LLC
+ * Copyright 2020 Iron City Software LLC
  *
  * This file is part of CrewTools.
  *
@@ -19,12 +19,11 @@
 
 package crewtools.wx;
 
-import static org.junit.Assert.assertArrayEquals;
-
 import java.util.List;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 import org.joda.time.tz.DateTimeZoneBuilder;
 
 import com.google.common.base.Joiner;
@@ -37,10 +36,11 @@ public class TafTest extends TestCase {
   final TafFormatter formatter = new TafFormatter();
   final Joiner joiner = Joiner.on('\n');
 
-  final DateTime nowUtc = new DateTime(DateTimeZone.UTC)
+  final LocalDate nowUtc = new DateTime(DateTimeZone.UTC)
       .withYear(2013)
       .withMonthOfYear(8)
-      .withDayOfMonth(1);
+      .withDayOfMonth(1)
+      .toLocalDate();
 
   // PST all year long.
   final DateTimeZone zone = new DateTimeZoneBuilder()
@@ -63,15 +63,15 @@ public class TafTest extends TestCase {
         "FM250600 25010KT 4SM -SHRA OVC050 ",
         "TEMPO 2508/2511 2SM -SHRA OVC030");
     ParsedTaf taf = new TafParser(nowUtc, txt).parse();
-    assertArrayEquals(
+    assertEquals(
         joiner.join(formatter.format(taf)),
-        new String[] {
+        joiner.join(
             "TAF KXXX 241732Z 2418/2600 11006KT 4SM -SHRA BKN030",
             "FM242300 22006KT 3SM -SHRA OVC030",
             "PROB30 2504/2506 VRB20G35KT 1SM TSRA BKN015",
             "FM250600 25010KT 4SM -SHRA OVC050",
-            "TEMPO 2508/2511 2SM -SHRA OVC030" },
-        formatter.format(taf));
+            "TEMPO 2508/2511 2SM -SHRA OVC030"),
+        joiner.join(formatter.format(taf)));
   }
 
   public void testAtl() {
@@ -83,17 +83,16 @@ public class TafTest extends TestCase {
         "FM230300 25003KT P6SM SKC ",
         "FM230900 30003KT P6SM SKC");
     ParsedTaf taf = new TafParser(nowUtc, txt).parse();
-    assertArrayEquals(
+    assertEquals(
         joiner.join(formatter.format(taf)),
-        new String[] {
+        joiner.join(
             "TAF KXXX 220540Z 2206/2312 03006KT P6SM SKC",
             "FM221200 05005KT P6SM SKC",
             "FM221600 09006KT P6SM SKC",
             "FM222000 15006KT P6SM SKC",
             "FM230300 25003KT P6SM SKC",
-            "FM230900 30003KT P6SM SKC"
-        },
-        formatter.format(taf));
+            "FM230900 30003KT P6SM SKC"),
+        joiner.join(formatter.format(taf)));
   }
 
   public void testIssued() {
@@ -111,10 +110,9 @@ public class TafTest extends TestCase {
     List<String> txt = ImmutableList.of(
         "TAF EDDF 101100Z 1012/1118 25007KT 9999 SCT040");
     ParsedTaf taf = new TafParser(nowUtc, txt).parse();
-    assertArrayEquals(
+    assertEquals(
         joiner.join(formatter.format(taf)),
-        new String[] {
-            "TAF KXXX 101100Z 1012/1118 25007KT 9999 SCT040" },
-        formatter.format(taf));
+        "TAF KXXX 101100Z 1012/1118 25007KT P6SM SCT040",
+        joiner.join(formatter.format(taf)));
   }
 }

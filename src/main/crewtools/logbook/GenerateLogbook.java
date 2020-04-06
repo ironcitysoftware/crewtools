@@ -32,7 +32,7 @@ import crewtools.crewmobile.CalendarEntryIterator;
 import crewtools.crewmobile.Proto.CalendarDataFeed;
 import crewtools.flica.adapters.ScheduleAdapter;
 import crewtools.util.AircraftDatabase;
-import crewtools.util.AirportDatabase;
+import crewtools.util.AirportTimezoneDatabase;
 import crewtools.util.FileUtils;
 
 public class GenerateLogbook {
@@ -51,7 +51,7 @@ public class GenerateLogbook {
   }
 
   private final AircraftDatabase aircraftDatabase;
-  private final AirportDatabase airportDatabase;
+  private final AirportTimezoneDatabase airportDatabase;
   private final File inputDirectory;
   private final Supplement supplement;
   private final Transcriber transcriber;
@@ -59,7 +59,7 @@ public class GenerateLogbook {
 
   public GenerateLogbook(File inputDirectory) throws IOException {
     this.aircraftDatabase = new AircraftDatabase();
-    this.airportDatabase = new AirportDatabase();
+    this.airportDatabase = new AirportTimezoneDatabase();
     this.inputDirectory = inputDirectory;
     this.supplement = new Supplement(aircraftDatabase, airportDatabase);
     this.transcriber = new Transcriber(aircraftDatabase);

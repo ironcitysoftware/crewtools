@@ -32,6 +32,9 @@
   <property name="crewmobile-proto" location="src/proto/crewmobile.proto" relative="yes" />
   <property name="crewmobile-proto.java" location="src/main/crewtools/crewmobile/Proto.java" />
 
+  <property name="airport-proto" location="src/proto/airport.proto" relative="yes" />
+  <property name="airport-proto.java" location="src/main/crewtools/legal/Proto.java" />
+
   <path id="main-classpath">
     <path location="lib/gson-2.8.0.jar" />
     <path location="lib/guava-21.0.jar" />
@@ -65,6 +68,7 @@
     <uptodate property="build-aa-proto.notrequired" srcfile="${aa-proto}" targetfile="${aa-proto.java}" />
     <uptodate property="build-rpc-proto.notrequired" srcfile="${rpc-proto}" targetfile="${rpc-proto.java}" />
     <uptodate property="build-crewmobile-proto.notrequired" srcfile="${crewmobile-proto}" targetfile="${crewmobile-proto.java}" />
+    <uptodate property="build-airport-proto.notrequired" srcfile="${legal-proto}" targetfile="${legal-proto.java}" />
   </target>
 
 <!--
@@ -112,7 +116,18 @@
     </exec>
   </target>
 
-  <target name="build" depends="build-flica-proto,build-aa-proto,build-rpc-proto,build-crewmobile-proto">
+  <target name="build-airport-proto" depends="checkprotoforchanges"
+          unless="build-airport-proto.notrequired" >
+    <mkdir dir="${bin}" />
+    <exec executable="protoc" failonerror="true">
+      <arg value="-I/opt/protobuf-2.6.1/src" />
+      <arg value="-Isrc/proto" />
+      <arg value="${airport-proto}" />
+      <arg value="--java_out=src/main" />
+    </exec>
+  </target>
+
+  <target name="build" depends="build-flica-proto,build-aa-proto,build-rpc-proto,build-crewmobile-proto,build-airport-proto">
     <mkdir dir="${bin}" />
     <javac srcdir="src/main" includes="**" destdir="${bin}" includeantruntime="false" debug="true" >
       <classpath>
@@ -147,6 +162,7 @@
     <delete file="${aa-proto.java}" />
     <delete file="${rpc-proto.java}" />
     <delete file="${crewmobile-proto.java}" />
+    <delete file="${airport-proto.java}" />
   </target>
 
   <target name="jar">

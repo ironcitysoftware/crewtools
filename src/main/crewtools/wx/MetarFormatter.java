@@ -34,61 +34,19 @@ public class MetarFormatter {
 
   public String formatConditions(ParsedMetar metar) {
     String wind = null;
-    if (metar.windSpecified) {
-      wind = formatWind(metar.windVariable, metar.windFrom, metar.windVelocity,
-          metar.windGusts, metar.windVaryFrom, metar.windVaryTo);
+    if (metar.wind != null) {
+      wind = metar.wind.toString();
     }
-    String visibility = formatVisibility(metar.isVisibilityGreaterThanSix,
-        metar.visibilityWhole, metar.visNum, metar.visDen,
-        metar.visibilityMeters); // RVR
+    String visibility = metar.visibility.toString();
+    if (metar.rvr != null) {
+      visibility += " " + metar.rvr;
+    }
     String weather = weatherJoiner.join(metar.weather);
     if (weather.isEmpty()) {
       weather = null;
     }
     String ceiling = formatCeiling(metar.ceiling);
     return spaceJoiner.join(wind, visibility, weather, ceiling);
-  }
-
-  private String formatWind(boolean isVariable, Integer from, int velocity,
-      int gusts, int varyFrom, int varyTo) {
-    String result;
-    if (isVariable) {
-      result = "VRB";
-    } else {
-      result = String.format("%03d", from);
-    }
-    result += String.format("%02d", velocity);
-    if (gusts > 0) {
-      result += String.format("G%d", gusts);
-    }
-    result += "KT";
-    if (varyFrom > 0 && varyTo > 0) {
-      result += String.format(" %dV%d", varyFrom, varyTo);
-    }
-    return result;
-  }
-
-  private String formatVisibility(boolean isGreaterThanSix,
-      int whole, int num, int den, int meters) {
-    if (isGreaterThanSix) {
-      return "P6SM";
-    }
-    if (whole == 0 && num > 0 && den == 0) {
-      return String.format("%dSM", num);
-    }
-    if (whole > 0 && num == 0 && den == 0) {
-      return String.format("%dSM", whole);
-    }
-    if (whole > 0 && num > 0 && den > 0) {
-      return String.format("%d %d/%dSM", whole, num, den);
-    }
-    if (whole == 0 && num > 0 && den > 0) {
-      return String.format("%d/%dSM", num, den);
-    }
-    if (meters > 0) {
-      return String.format("%04d", meters);
-    }
-    return null;
   }
 
   private String formatCeiling(Map<Integer, String> ceiling) {

@@ -25,8 +25,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.YearMonth;
 
 import com.google.common.primitives.Ints;
+
+import crewtools.util.CompoundFraction;
 
 // http://www.caa.co.uk/docs/33/CAP746.PDF
 public class MetarParser {
@@ -96,12 +100,11 @@ public class MetarParser {
   private final ParsedMetar result = new ParsedMetar();
 
   private final Iterator<String> tokens;
-  private final DateTime baseDateTime;
-  private int index = 0;
+  private final YearMonth yearMonthUtc;
 
-  public MetarParser(Iterator<String> tokens, DateTime baseDateTime) {
+  public MetarParser(YearMonth yearMonthUtc, Iterator<String> tokens) {
     this.tokens = tokens;
-    this.baseDateTime = baseDateTime;
+    this.yearMonthUtc = yearMonthUtc;
   }
 
   public ParsedMetar parse() {
@@ -115,6 +118,7 @@ public class MetarParser {
       if (str.equals("NIL")) {
         return result;
       }
+      result.airportId = str;
 
       result.isValid = true;  //premature?
 
@@ -122,7 +126,10 @@ public class MetarParser {
       Matcher timeMatcher = KRTime.matcher(str);
       if (timeMatcher.matches()) {
         //time issued
-        result.issued = baseDateTime
+        result.issued = new DateTime()
+            .withZone(DateTimeZone.UTC)
+            .withYear(yearMonthUtc.getYear())
+            .withMonthOfYear(yearMonthUtc.getMonthOfYear())
             .withDayOfMonth(Ints.tryParse(timeMatcher.group(RTime_Date)))
             .withHourOfDay(Ints.tryParse(timeMatcher.group(RTime_Hour)))
             .withMinuteOfHour(Ints.tryParse(timeMatcher.group(RTime_Minute)))
@@ -142,41 +149,59 @@ public class MetarParser {
       }
 
       //wind
+      Integer windFromDegrees = null;
+      boolean windIsVariable = false;
+      Integer windVelocity = null;
+      Integer windGusts = null;
+      boolean isWindSpecified = false;
       Matcher windMatcher = KRWind.matcher(str);
       if (windMatcher.matches()) {
-        result.windSpecified = true;
+        isWindSpecified = true;
         String whence = windMatcher.group(RWind_Whence);
         if (whence.equals("VRB")) {
-          result.windVariable = true;
+          windIsVariable = true;
         } else {
-          result.windFrom = Ints.tryParse(whence);
+          windFromDegrees = Ints.tryParse(whence);
         }
-        result.windVelocity = Ints.tryParse(windMatcher.group(RWind_Vel));
+        windVelocity = Ints.tryParse(windMatcher.group(RWind_Vel));
         String gust = windMatcher.group(RWind_Gust);
         if (gust != null) {
-          result.windGusts = Ints.tryParse(gust);
+          windGusts = Ints.tryParse(gust);
         }
         if (!tokens.hasNext())
           return result;
         str = tokens.next();
       }
 
+      Integer windVaryFrom = null;
+      Integer windVaryTo = null;
       //wind varying
       Matcher windVaryMatcher = KRWindVary.matcher(str);
       if (windVaryMatcher.matches()) {
-        result.windSpecified = true;
-        result.windVaryFrom = Ints.tryParse(windVaryMatcher.group(RWindVary_From));
-        result.windVaryTo = Ints.tryParse(windVaryMatcher.group(RWindVary_To));
+        isWindSpecified = true;
+        windVaryFrom = Ints.tryParse(windVaryMatcher.group(RWindVary_From));
+        windVaryTo = Ints.tryParse(windVaryMatcher.group(RWindVary_To));
         if (!tokens.hasNext())
           return result;
         str = tokens.next();
+      }
+
+      if (isWindSpecified) {
+        result.wind = new Wind(windFromDegrees, windIsVariable, windVelocity,
+            windGusts, windVaryFrom, windVaryTo);
       }
 
       //military visibility in meters
       Matcher visibilityMetersMatcher = KRMilitaryVisibility.matcher(str);
       if (visibilityMetersMatcher.matches()) {
-        result.visibilityMeters = Ints.tryParse(visibilityMetersMatcher.group(1));
+        int visibilityMeters = Ints.tryParse(visibilityMetersMatcher.group(1));
         //http://www.lewis.army.mil/1ws/ftl-wx/taf.htm#Vis
+
+        if (visibilityMeters == 9999) {
+          result.visibility = Visibility.greaterThanSixMiles();
+        } else {
+          throw new IllegalStateException("handle meter visibility");
+        }
         if (!tokens.hasNext())
           return result;
         str = tokens.next();
@@ -185,14 +210,17 @@ public class MetarParser {
         //visibility
         if (str.equals("P6SM")) {
           //this is more for TAF support
-          result.isVisibilityGreaterThanSix = true;
+          result.visibility = Visibility.greaterThanSixMiles();
           if (!tokens.hasNext())
             return result;
           str = tokens.next();
         } else {
+          Integer whole = null;
+          Integer numerator = null;
+          Integer denominator = null;
           Matcher wholeVisibilityMatcher = KRWholeVis.matcher(str);
           if (wholeVisibilityMatcher.matches()) {
-            result.visibilityWhole = Ints
+            whole = Ints
                 .tryParse(wholeVisibilityMatcher.group(RWholeVis_Num));
             if (!tokens.hasNext()) {
               return result;
@@ -201,15 +229,18 @@ public class MetarParser {
           }
           Matcher visibilityFractionMatcher = KRVis.matcher(str);
           if (visibilityFractionMatcher.matches()) {
-            result.visNum = Ints.tryParse(visibilityFractionMatcher.group(RVis_Top));
+            numerator = Ints.tryParse(visibilityFractionMatcher.group(RVis_Top));
             String den = visibilityFractionMatcher.group(RVis_Divisor);
             if (den != null) {
-              result.visDen = Ints.tryParse(den);
+              denominator = Ints.tryParse(den);
             }
             if (!tokens.hasNext())
               return result;
             str = tokens.next();
           }
+          CompoundFraction compoundFraction = new CompoundFraction(whole, numerator,
+              denominator);
+          result.visibility = Visibility.statuteMile(compoundFraction);
         }
       }
 
@@ -217,7 +248,7 @@ public class MetarParser {
       Matcher rvrMatcher = KRRVR.matcher(str);
       if (!str.equals("RVRNO") && // MCEntire does this
           rvrMatcher.matches()) {
-        result.rvr = Ints.tryParse(rvrMatcher.group(1));
+        result.rvr = Visibility.rvr(Ints.tryParse(rvrMatcher.group(1)));
         if (!tokens.hasNext())
           return result;
         str = tokens.next();
@@ -233,7 +264,7 @@ public class MetarParser {
 
       // Europe
       if (str.equals("CAVOK")) {
-        result.isVisibilityGreaterThanSix = true;
+        result.visibility = Visibility.greaterThanSixMiles();
         if (!tokens.hasNext())
           return result;
         str = tokens.next();
@@ -286,7 +317,6 @@ public class MetarParser {
           }
           if (ceiling > -1) {
             result.ceiling.put(ceiling, cover);
-            break;
           }
         }
         if (!tokens.hasNext())
@@ -310,13 +340,12 @@ public class MetarParser {
       //temp dew
       Matcher tempDewMatcher = KRTempDew.matcher(str);
       if (tempDewMatcher.matches()) {
-        int sign = tempDewMatcher.group(RTempSign) == null ? 1 : -1;
-        int t = Ints.tryParse(tempDewMatcher.group(RTemp));
+        int temperatureSign = tempDewMatcher.group(RTempSign) == null ? 1 : -1;
+        result.temperature = temperatureSign * Ints.tryParse(tempDewMatcher.group(RTemp));
+        int dewpointSign = tempDewMatcher.group(RDewSign) == null ? 1 : -1;
+        result.dewpoint = dewpointSign * Ints.tryParse(tempDewMatcher.group(RDew));
+        result.temperatureDewpointSpecified = true;
 
-        // TODO use...
-
-        sign = tempDewMatcher.group(RDewSign) == null ? 1 : -1;
-        int d = Ints.tryParse(tempDewMatcher.group(RDew));
         if (!tokens.hasNext())
           return result;
         str = tokens.next();

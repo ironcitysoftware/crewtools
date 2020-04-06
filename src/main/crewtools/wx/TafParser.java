@@ -30,7 +30,9 @@ import java.util.regex.Pattern;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
+import org.joda.time.LocalDate;
 import org.joda.time.Period;
+import org.joda.time.YearMonth;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
@@ -68,15 +70,15 @@ public class TafParser {
   private static final Pattern KRProb = Pattern.compile("^PROB(\\d{2})$");
   private static final int RProb_Percent = 1;
 
-  private final DateTime nowUtc;
+  private final LocalDate validDateUtc;
   private final List<String> lines;
 
   private final ParsedTaf result = new ParsedTaf();
 
   private final Splitter splitter = Splitter.on(' ').omitEmptyStrings().trimResults();
 
-  public TafParser(DateTime nowUtc, List<String> lines) {
-    this.nowUtc = nowUtc;
+  public TafParser(LocalDate validDateUtc, List<String> lines) {
+    this.validDateUtc = validDateUtc;
     this.lines = lines;
   }
 
@@ -113,8 +115,8 @@ public class TafParser {
       // Issued time 31 May but current date is 1 June
       int issueDayOfMonth = Ints.tryParse(issuedMatcher.group(RTime_Date));
       boolean issuedInPreviousMonth = Math
-          .abs(issueDayOfMonth - nowUtc.getDayOfMonth()) > 2;
-      result.issued = new DateTime(nowUtc)
+          .abs(issueDayOfMonth - validDateUtc.getDayOfMonth()) > 2;
+      result.issued = validDateUtc.toDateTimeAtStartOfDay(DateTimeZone.UTC)
           .withDayOfMonth(Ints.tryParse(issuedMatcher.group(RTime_Date)))
           .withHourOfDay(Ints.tryParse(issuedMatcher.group(RTime_Hour)))
           .withMinuteOfHour(Ints.tryParse(issuedMatcher.group(RTime_Minute)))
@@ -132,7 +134,7 @@ public class TafParser {
     }
 
     result.validFrom = setDayAndHour(
-        nowUtc,
+        validDateUtc.toDateTimeAtStartOfDay(DateTimeZone.UTC),
         validMatcher.group(RValid_FromDate),
         validMatcher.group(RValid_FromHour))
         .withMinuteOfHour(0)
@@ -210,8 +212,9 @@ public class TafParser {
     List<String> copy = new ArrayList<>(tokens);
     copy.add(0, "KXYZ");
     copy.add(1, "200000Z");
-    MetarParser metarParser = new MetarParser(copy.iterator(),
-        new DateTime(DateTimeZone.UTC));
+    MetarParser metarParser = new MetarParser(
+        new YearMonth(validDateUtc.getYear(), validDateUtc.getMonthOfYear()),
+        copy.iterator());
     return metarParser.parse();
   }
 

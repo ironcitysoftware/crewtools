@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Iron City Software LLC
+ * Copyright 2020 Iron City Software LLC
  *
  * This file is part of CrewTools.
  *
@@ -30,24 +30,20 @@ import org.joda.time.DateTime;
 import com.google.common.base.MoreObjects;
 
 public class ParsedMetar {
-  int rvr;
-  boolean isVisibilityGreaterThanSix = false;
-  int visibilityMeters;
-  int visibilityWhole;
-  int visNum;
-  int visDen;
+  // TODO: can have both?
+  public Visibility rvr;
+  public Visibility visibility;
 
-  int windVaryFrom;
-  int windVaryTo;
-  int windFrom;
-  int windVelocity;
-  int windGusts;
-  boolean windVariable;
-  boolean windSpecified;
+  int temperature;
+  int dewpoint;
+  boolean temperatureDewpointSpecified;
+
+  public Wind wind;
 
   public DateTime issued;
   public boolean isAutomated = false;
   public boolean isValid = false;
+  public String airportId;
 
   public List<String> weather = new ArrayList<>();
   public Map<Integer, String> ceiling = new TreeMap<>();
@@ -56,18 +52,12 @@ public class ParsedMetar {
   public int hashCode() {
     return Objects.hash(
         rvr,
-        isVisibilityGreaterThanSix,
-        visibilityMeters,
-        visibilityWhole,
-        visNum,
-        visDen,
+        visibility,
+        temperature,
+        dewpoint,
+        temperatureDewpointSpecified,
         ceiling,
-        windVaryFrom,
-        windVaryTo,
-        windFrom,
-        windVelocity,
-        windGusts,
-        windSpecified,
+        wind,
         issued,
         isAutomated,
         isValid,
@@ -81,18 +71,12 @@ public class ParsedMetar {
     }
     ParsedMetar that = (ParsedMetar) o;
     return Objects.equals(rvr, that.rvr)
-        && Objects.equals(isVisibilityGreaterThanSix, that.isVisibilityGreaterThanSix)
-        && Objects.equals(visibilityMeters, that.visibilityMeters)
-        && Objects.equals(visibilityWhole, that.visibilityWhole)
-        && Objects.equals(visNum, that.visNum)
-        && Objects.equals(visDen, that.visDen)
+        && Objects.equals(visibility, that.visibility)
+        && Objects.equals(temperature, that.temperature)
+        && Objects.equals(dewpoint, that.dewpoint)
+        && Objects.equals(temperatureDewpointSpecified, that.temperatureDewpointSpecified)
         && Objects.equals(ceiling, that.ceiling)
-        && Objects.equals(windVaryFrom, that.windVaryFrom)
-        && Objects.equals(windVaryTo, that.windVaryTo)
-        && Objects.equals(windFrom, that.windFrom)
-        && Objects.equals(windVelocity, that.windVelocity)
-        && Objects.equals(windGusts, that.windGusts)
-        && Objects.equals(windSpecified, that.windSpecified)
+        && Objects.equals(wind, that.wind)
         && Objects.equals(issued, that.issued)
         && Objects.equals(isAutomated, that.isAutomated)
         && Objects.equals(isValid, that.isValid)
@@ -103,18 +87,12 @@ public class ParsedMetar {
   public String toString() {
     return MoreObjects.toStringHelper(this)
         .add("rvr", rvr)
-        .add("P6SM", isVisibilityGreaterThanSix)
-        .add("visMeters", visibilityMeters)
-        .add("visWhole", visibilityWhole)
-        .add("visNum", visNum)
-        .add("visDen", visDen)
+        .add("visibility", visibility)
+        .add("temperature", temperature)
+        .add("dewpont", dewpoint)
+        .add("temperatureDewpointSpecified", temperatureDewpointSpecified)
         .add("ceiling", ceiling)
-        .add("windVaryFrom", windVaryFrom)
-        .add("windVaryTo", windVaryTo)
-        .add("windFrom", windFrom)
-        .add("windVelocity", windVelocity)
-        .add("windGusts", windGusts)
-        .add("windSpecified", windSpecified)
+        .add("wind", wind)
         .add("issued", issued)
         .add("auto", isAutomated)
         .add("isValid", isValid)
