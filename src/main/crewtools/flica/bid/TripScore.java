@@ -40,6 +40,7 @@ import crewtools.util.Period;
 public class TripScore implements Comparable<TripScore> {
   private final Logger logger = Logger.getLogger(TripScore.class.getName());
 
+  private static final int FAVORITE_OVERNIGHT_FACTOR = 4;
   private static final int DEUCE_CANOE_FACTOR = 20;
   private static final int DESPISED_TURN_PENALITY = 10000;
 
@@ -109,9 +110,10 @@ public class TripScore implements Comparable<TripScore> {
       }
     }
 
-    goodPoints += numFavoriteOvernights * 3;
+    goodPoints += numFavoriteOvernights * FAVORITE_OVERNIGHT_FACTOR;
     if (numFavoriteOvernights > 0) {
-      scoreExplanation.add("+" + numFavoriteOvernights * 3 + " for favorite overnights");
+      scoreExplanation.add("+" + numFavoriteOvernights * FAVORITE_OVERNIGHT_FACTOR
+          + " for favorite overnights");
     }
 
     // goodPoints += (favoriteOvernightPeriod.getHours() / 6);
