@@ -214,6 +214,15 @@ public class PairingAdapter {
 
       if (!isNextSectionSameDate(protoTrip, sectionIndex)) {
         currentDate = currentDate.plusDays(1);
+        int nextSectionDayOfMonth = getNextSectionDayOfMonth(protoTrip, sectionIndex);
+        // There is a skip of a day.
+        if (currentDate.plusDays(1).getDayOfMonth() == nextSectionDayOfMonth) {
+          currentDate = currentDate.plusDays(1);
+        }
+        Preconditions.checkState(nextSectionDayOfMonth == -1
+            || currentDate.getDayOfMonth() == nextSectionDayOfMonth,
+            "Expected section date " + currentDate + ", but its day of month is "
+                + nextSectionDayOfMonth + " for " + protoTrip.getPairingName());
       }
     }
     verifyPeriod("trip block", tripStats.block, Period.fromText(protoTrip.getBlockDuration()));
@@ -247,6 +256,19 @@ public class PairingAdapter {
     }
     return trip.getSection(sectionIndex).getLeg(0).getDayOfMonth() ==
         trip.getSection(sectionIndex + 1).getLeg(0).getDayOfMonth();
+  }
+
+  int getNextSectionDayOfMonth(Proto.Trip trip, int sectionIndex) {
+    if (sectionIndex == trip.getSectionCount() - 1) {
+      return -1; // Last section, doesn't really matter.
+    }
+    if (trip.getSection(sectionIndex).getLegCount() == 0
+        || trip.getSection(sectionIndex + 1).getLegCount() == 0) {
+      logger.warning(
+          "isNextSectionSameDate is indeterminate due to there not being any legs");
+      return -1; // maybe, maybe not...
+    }
+    return trip.getSection(sectionIndex + 1).getLeg(0).getDayOfMonth();
   }
 
   void verifyPeriod(String description, Period calculatedValue, Period protoValue) {
