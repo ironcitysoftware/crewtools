@@ -178,6 +178,7 @@ enum ScheduleType {
   IGNORE = 34 [(flica_name)="IGN"];
 
   JURY_DUTY = 35 [(flica_name)="JUR"];
+  PAID_TIME_OFF = 36 [(flica_name)="PTO"];
 }
 
 // Next ID 21

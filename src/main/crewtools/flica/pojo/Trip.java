@@ -94,7 +94,8 @@ public class Trip implements Comparable<Trip> {
       ScheduleType.VACATION_START,
       ScheduleType.VACATION_END,
       ScheduleType.VACATION,
-      ScheduleType.JURY_DUTY);
+      ScheduleType.JURY_DUTY,
+      ScheduleType.PAID_TIME_OFF);
 
   public boolean isDroppable() {
     if (proto.hasScheduleType()
@@ -265,7 +266,8 @@ public class Trip implements Comparable<Trip> {
       ScheduleType.VACATION,
       ScheduleType.VACATION_START,
       ScheduleType.VACATION_END,
-      ScheduleType.JURY_DUTY);
+      ScheduleType.JURY_DUTY,
+      ScheduleType.PAID_TIME_OFF);
 
   public DateTime getDutyStart() {
     if (!proto.hasScheduleType()) {
