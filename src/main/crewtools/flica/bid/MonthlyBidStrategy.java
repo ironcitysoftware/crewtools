@@ -110,7 +110,8 @@ public class MonthlyBidStrategy implements Comparator<LineScore> {
     int bHighest = new Integer(
         b.getNHighestCreditsPlusCarryIn().compareTo(minimumCredit));
     if (aHighest >= 0 ^ bHighest >= 0) {
-      debug("highestCredit:left %d vs right %d", aHighest, bHighest);
+      debug("NHighestCreditGreaterThanMinimumCredit:left %d vs right %d", aHighest,
+          bHighest);
       return (aHighest >= 0) ? -1 : 1;
     }
 
