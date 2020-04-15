@@ -166,7 +166,7 @@ public class Supplement {
         flight.getArr()), "Arrival " + diff);
     Preconditions.checkState(leg.getDepartureTime().toLocalTime().equals(
         calendarTimeFormat.parseDateTime(flight.getActDepTime()).toLocalTime()),
-        "Departure time " + diff);
+        "Departure time (leg " + leg.getDepartureTime().toLocalTime() + ") " + diff);
     Preconditions.checkState(leg.getArrivalTime().toLocalTime().equals(
         calendarTimeFormat.parseDateTime(flight.getActArrTime()).toLocalTime()),
         "Arrival time " + diff);

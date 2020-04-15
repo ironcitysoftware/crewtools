@@ -232,6 +232,9 @@ message FlightTeam {
   optional bool self = 11;
   optional int32 sort_order = 12;
   optional CrewLocation crew_location = 13;
+  optional string flight_number = 14;
+  optional string departure_station = 15;
+  optional string departure_time = 16;
 }
 
 message CrewLocation {
