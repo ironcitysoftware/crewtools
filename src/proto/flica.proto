@@ -61,6 +61,7 @@ enum Status {
   TER = 13 [(flica_name)="TER"]; // ?
   TERM = 14 [(flica_name)="TERM"];
   INST = 15 [(flica_name)="INST"];
+  ENHANCED_LEAVE_OF_ABSENCE = 16 [(flica_name)="ELA"];
 }
 
 message Award {
@@ -179,6 +180,8 @@ enum ScheduleType {
 
   JURY_DUTY = 35 [(flica_name)="JUR"];
   PAID_TIME_OFF = 36 [(flica_name)="PTO"];
+
+  SHORT_TERM_LEAVE = 37 [(flica_name)="STL"];
 }
 
 // Next ID 21

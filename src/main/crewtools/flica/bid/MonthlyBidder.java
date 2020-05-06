@@ -245,7 +245,12 @@ public class MonthlyBidder {
           }
           if (override.hasOperates()) {
             protoTrip = Proto.Trip.newBuilder(protoTrip).setOperates(
-                override.getOperates()).build();
+                override.getOperates())
+// TODO fix the need for this..
+//                .addDayOfWeek(DayOfWeek.SUNDAY)
+//                .addDayOfWeek(DayOfWeek.THURSDAY)
+//                .addDayOfWeek(DayOfWeek.FRIDAY)
+                .build();
           }
           if (override.hasDayOfWeek()) {
             protoTrip = Proto.Trip.newBuilder(protoTrip).addDayOfWeek(

@@ -28,8 +28,7 @@ import org.joda.time.Period;
 
 import com.google.common.collect.ImmutableSet;
 
-import crewtools.airport.Proto.Airport;
-import crewtools.airport.Proto.Approach;
+import crewtools.legal.pojo.Airport;
 import crewtools.util.AirportDatabase;
 import crewtools.wx.ParsedMetar;
 import crewtools.wx.ParsedTaf;
@@ -38,7 +37,6 @@ import crewtools.wx.Visibility;
 import crewtools.wx.VisibilityComparator;
 import crewtools.wx.WeatherVisitor;
 import crewtools.wx.Wind;
-import crewtools.wx.WindCalculator;
 
 public class Validator {
   // TODO: document that this assumption is true.
@@ -48,12 +46,11 @@ public class Validator {
   private final ValidationContext context;
   private final Airport arrivalAirport;
   private final Result result = new Result();
-  private final WindCalculator windCalculator = new WindCalculator();
 
   public Validator(ValidationContext context) throws IOException {
     this.airportDatabase = new AirportDatabase();
     this.context = context;
-    this.arrivalAirport = airportDatabase.getAirport(context.arrivalFaaId);
+    this.arrivalAirport = new Airport(airportDatabase.getAirport(context.arrivalFaaId));
   }
 
   public void validate() throws Exception {
@@ -76,7 +73,8 @@ public class Validator {
     visitWeather(context.arrivalMetar, context.arrivalTaf, context.arrivalEta, wv);
     Set<Wind> winds = wv.getWinds();
 
-    Set<Visibility> suitableApproachMinimums = getSuitableApproachMinimums(winds);
+    Set<Visibility> suitableApproachMinimums = arrivalAirport.getSuitableApproachMinimums(
+        winds, context.categoryDAircraft, context.arrivalRunwayConditionCode, result);
     if (suitableApproachMinimums.isEmpty()) {
       result.addError("No suitable arrival approach minimums");
       return;
@@ -118,81 +116,6 @@ public class Validator {
     // if conditional drops 1/2 of cat i vis but main body is legal, exemption 17347
   }
 
-  private Set<Visibility> getSuitableApproachMinimums(Set<Wind> winds) {
-    ImmutableSet.Builder<Visibility> builder = ImmutableSet.builder();
-    for (Approach approach : arrivalAirport.getApproachList()) {
-      if (!approach.hasRunway()) {
-        addApproachVisibility(approach, context.categoryDAircraft, builder);
-      } else {
-        if (isRunwaySuitable(approach.getRunway(), arrivalAirport.getVariation(), winds,
-            context.arrivalRunwayConditionCode)) {
-          addApproachVisibility(approach, context.categoryDAircraft, builder);
-        }
-      }
-    }
-    return builder.build();
-  }
-
-  private boolean isRunwaySuitable(int runwayNumber, String variation, Set<Wind> winds,
-      int conditionCode) {
-    // POH 3.12.3
-    if (conditionCode == 0) {
-      result.addFact(
-          String.format("Excluding runway %02d due to condition code 0", runwayNumber));
-      return false;
-    }
-    // if any wind exceeds a limit, the runway is not suitable.
-    // TODO: variation
-    // TODO: collect measurements into worst xwind, worst tailwind, etc.?
-    WindCalculator.Result worstSteadyWind = null;
-    WindCalculator.Result worstGustyWind = null;
-    for (Wind wind : winds) {
-      WindCalculator.Result steadyWind = windCalculator.calculateExcludingGusts(wind,
-          runwayNumber);
-      worstSteadyWind = steadyWind.maximize(worstSteadyWind);
-      WindCalculator.Result gustyWind = windCalculator.calculateExcludingGusts(wind,
-          runwayNumber);
-      worstGustyWind = gustyWind.maximize(worstGustyWind);
-    }
-    result.addFact(
-        String.format("Runway %02d worst steady wind %s", runwayNumber, worstSteadyWind));
-    result.addFact(
-        String.format("Runway %02d worst gusty wind %s", runwayNumber, worstGustyWind));
-    switch (conditionCode) {
-      case 6:
-      case 5:
-        return worstSteadyWind.getCrosswindVelocity() <= 27 &&
-            worstSteadyWind.getHeadwindVelocity() >= -10;
-      case 4:
-        return worstGustyWind.getCrosswindVelocity() <= 27 &&
-            worstGustyWind.getHeadwindVelocity() >= -10;
-      case 3:
-        return worstGustyWind.getCrosswindVelocity() <= 15 &&
-            worstGustyWind.getHeadwindVelocity() >= -5;
-      case 2:
-        return worstGustyWind.getCrosswindVelocity() <= 10 &&
-            worstGustyWind.getHeadwindVelocity() >= -5;
-      case 1:
-        return worstGustyWind.getCrosswindVelocity() <= 10 &&
-            worstGustyWind.getHeadwindVelocity() >= 0;
-      default:
-        throw new IllegalArgumentException("Unknown RCC " + conditionCode);
-    }
-
-    // TODO: CAT II prohibited when braking action less than medium
-    // TODO: CAT II limitations
-  }
-
-  private void addApproachVisibility(Approach approach,
-      boolean categoryD, ImmutableSet.Builder<Visibility> builder) {
-    if (approach.hasVisibility()) {
-      builder.add(Visibility.fromProto(approach.getVisibility()));
-    } else if (categoryD && approach.hasDVisibility()) {
-      builder.add(Visibility.fromProto(approach.getDVisibility()));
-    } else if (!categoryD && approach.hasCVisibility()) {
-      builder.add(Visibility.fromProto(approach.getCVisibility()));
-    }
-  }
 
   private void visitWeather(ParsedMetar metar, ParsedTaf taf,
       DateTime eta, WeatherVisitor visitor) {
