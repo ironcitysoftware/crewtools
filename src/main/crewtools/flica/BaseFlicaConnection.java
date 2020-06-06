@@ -72,7 +72,8 @@ public class BaseFlicaConnection implements Closeable {
     this.username = username;
     this.password = password;
     this.httpclient = new OkHttpClient().newBuilder()
-        // .addNetworkInterceptor(new LoggingInterceptor())
+//        .addNetworkInterceptor(
+//            new LoggingInterceptor())
         .followRedirects(false)
         .followSslRedirects(false)
         .cookieJar(cookieJar)
@@ -84,8 +85,6 @@ public class BaseFlicaConnection implements Closeable {
     RequestBody form = new FormBody.Builder()
         .add("UserId", username)
         .add("Password", password)
-        .add("Cookies", "1")
-        .add("PCookies", "1")
         .build();
     Request request = new Request.Builder()
         .url(FLICA_LOGIN_URL)

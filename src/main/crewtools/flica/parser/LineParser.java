@@ -132,6 +132,9 @@ public class LineParser {
       if (cellText.equals("0500 SCR0500 SCR  ")) {
         cellText = "0500 SCR";
       }
+      if (cellText.equals("1300 SCR1300 SCR  ")) {
+        cellText = "1300 SCR";
+      }
 
       List<String> components = SPACE_SPLITTER.omitEmptyStrings().trimResults()
           .splitToList(cellText);
