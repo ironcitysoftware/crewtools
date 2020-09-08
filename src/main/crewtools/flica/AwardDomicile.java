@@ -25,9 +25,9 @@ public enum AwardDomicile {
   // CVG('V'),
   DAY('D'),
   DCA('A'),
-  TYS('T'),
-  PHL('H'),
-  ORF('F');
+  // TYS('T'),
+  PHL('H');
+  // ORF('F');
 
   private final char awardId;
   AwardDomicile(Character awardId) {
