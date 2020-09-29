@@ -155,7 +155,9 @@ public class LineParser {
         isFirstDayOfPairing = true;
       } else {
         boolean isLongCallReserve =
-            (components.size() == 1 && components.get(0).equals("R1LCR")) // sic
+            (components.size() == 1 && (
+                components.get(0).equals("R1LCR")
+                || components.get(0).equals("LCRLCR"))) // sic
             || (components.size() == 2
                 && components.get(0).equals(DASH)
                 && (components.get(1).equals("LCR")
