@@ -62,6 +62,8 @@ enum Status {
   TERM = 14 [(flica_name)="TERM"];
   INST = 15 [(flica_name)="INST"];
   ENHANCED_LEAVE_OF_ABSENCE = 16 [(flica_name)="ELA"];
+  FURLOUGH_STATUS = 17 [(flica_name)="FUR"];
+  LTRN = 18 [(flica_name)="LTRN"];
 }
 
 message Award {

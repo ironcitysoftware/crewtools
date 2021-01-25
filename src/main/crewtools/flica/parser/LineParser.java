@@ -131,16 +131,17 @@ public class LineParser {
       String cellText = cell.text();
       if (cellText.equals("0500 SCR0500 SCR  ")) {
         cellText = "0500 SCR";
-      }
-      if (cellText.equals("1300 SCR1300 SCR  ")) {
+      } else if (cellText.equals("1300 SCR1300 SCR  ")) {
         cellText = "1300 SCR";
+      } else if (cellText.equals("0900 SCR0900 SCR  ")) {
+        cellText = "0900 SCR";
       }
 
       List<String> components = SPACE_SPLITTER.omitEmptyStrings().trimResults()
           .splitToList(cellText);
       logger.fine(components.toString());
       // "-, GSP" normally. "-" if this is a day of rest in the line.
-      // also 0500, SCR or -, LCR or -, R2 or just 'R'
+      // also "0500, SCR" or "-, LCR" or "-, R2" or just 'R'
       // Have also seen -, R3 and -, R1.
       if (components.size() != 1 && components.size() != 2) {
         throw new ParseException("Expected 1 or 2 components in [" + cellText + "]");
@@ -157,7 +158,8 @@ public class LineParser {
         boolean isLongCallReserve =
             (components.size() == 1 && (
                 components.get(0).equals("R1LCR")
-                || components.get(0).equals("LCRLCR"))) // sic
+                || components.get(0).equals("LCRLCR")
+                || components.get(0).equals("LCR1"))) // sic
             || (components.size() == 2
                 && components.get(0).equals(DASH)
                 && (components.get(1).equals("LCR")
@@ -211,17 +213,34 @@ public class LineParser {
           continue;
         } else if ((components.size() == 1 && components.get(0).equals("0500SCR"))
             || (components.size() == 2 && components.get(1).equals("SCR"))) {
-          // Short call reserve has 0500 SCR on the first day.
+          // This stanza is the normal case.
+          // Short call reserve has xx00 SCR on the first day.
           if (currentPairing != null
               && (currentPairing.getScheduleTypeCount() == 0 ||
-                  !currentPairing.getScheduleType(0)
-                      .equals(ScheduleType.SHORT_CALL_RESERVE))) {
-              currentPairing.addScheduleType(ScheduleType.SHORT_CALL_RESERVE);
+              !currentPairing.getScheduleType(0)
+                  .equals(ScheduleType.SHORT_CALL_RESERVE))) {
+            currentPairing.addScheduleType(ScheduleType.SHORT_CALL_RESERVE);
           } else {
             currentPairing = builder.addThinPairingBuilder();
             currentPairing.setDate(cellDate.toString());
             currentPairing.addScheduleType(ScheduleType.SHORT_CALL_RESERVE);
             currentPairing.setLocalReserveStartTime(components.get(0));
+          }
+          continue;
+        } else if (components.size() == 2
+            && components.get(0).equals("SCR")
+            && components.get(1).equals("1100")) {
+          // backward, should be time then reserve type.
+          if (currentPairing != null
+              && (currentPairing.getScheduleTypeCount() == 0 ||
+              !currentPairing.getScheduleType(0)
+                  .equals(ScheduleType.SHORT_CALL_RESERVE))) {
+            currentPairing.addScheduleType(ScheduleType.SHORT_CALL_RESERVE);
+          } else {
+            currentPairing = builder.addThinPairingBuilder();
+            currentPairing.setDate(cellDate.toString());
+            currentPairing.addScheduleType(ScheduleType.SHORT_CALL_RESERVE);
+            currentPairing.setLocalReserveStartTime(components.get(1));
           }
           continue;
         } else if (components.size() == 2

@@ -1,3 +1,4 @@
 bin
 .settings
 **/Proto.java
+.idea
