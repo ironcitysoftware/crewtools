@@ -242,12 +242,13 @@ public class SeniorityPredictor {
       YearMonth yearMonth,
       Map<Integer, CrewMember> pilotsBySeniority,
       LineInfo lineInfo) {
+    CrewPosition position = rank == Rank.CAPTAIN ? CrewPosition.CA : CrewPosition.FO;
     BaseList result = new BaseList(yearMonth, "SYSSEN", lineInfo);
     for (int seniorityId : pilotsBySeniority.keySet()) {
       CrewMember pilot = pilotsBySeniority.get(seniorityId);
       if (pilot.getEmployeeId() != interestingEmployeeId
           && (!pilot.getDomicile().equals(domicile)
-              || !pilot.getCrewPosition().equals(CrewPosition.CA))) {
+              || !pilot.getCrewPosition().equals(position))) {
         continue;
       }
       if (pilot.getStatus().equals(Status.ACTIVE)
