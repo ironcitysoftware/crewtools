@@ -377,5 +377,7 @@ message PeriodicAward {
 message BaseMove {
   repeated int32 employee_id = 1;
   optional Domicile from = 2;
+  optional Rank from_rank = 4;
   optional Domicile to = 3;
+  optional Rank to_rank = 5;
 }
