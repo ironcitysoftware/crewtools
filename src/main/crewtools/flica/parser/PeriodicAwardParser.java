@@ -93,7 +93,7 @@ public class PeriodicAwardParser {
     return builder.build();
   }
 
-  // 273 Harris, Ryan 25060 PHL-CRJ-CA CLT-CRJ-CA
+  // 273 Doe, John 25160 DCA-CRJ-CA CLT-CRJ-CA
   private Pattern BASE_MOVE_PATTERN = Pattern.compile("(\\d+) ([^0-9]+?) (\\d+)"
       + " (CLT|PHL|DAY|DCA|NH1)-CRJ-(CA|FO)"
       + " (CLT|PHL|DAY|DCA|NH1)-CRJ-(CA|FO)");
