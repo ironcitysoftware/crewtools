@@ -50,10 +50,10 @@ public class BaseList {
   private final LineInfo lineInfo;
   private final Set<LocalDate> awardDates;
 
-  private Map<Integer, Member> membersByEmployeeId = new TreeMap<>();
-  private Map<Integer, Member> membersBySeniorityId = new TreeMap<>();
-  private Map<Member, AwardType> awardOverrides = new HashMap<>();
-  private Map<Integer, String> cssClassesByEmployeeId = new HashMap<>();
+  private final Map<Integer, Member> membersByEmployeeId = new TreeMap<>();
+  private final Map<Integer, Member> membersBySeniorityId = new TreeMap<>();
+  private final Map<Member, AwardType> awardOverrides = new HashMap<>();
+  private final Map<Integer, String> cssClassesByEmployeeId = new HashMap<>();
 
   public BaseList(YearMonth yearMonth, String header, LineInfo lineInfo) {
     this.yearMonth = yearMonth;
@@ -92,7 +92,7 @@ public class BaseList {
 
     @Override
     public boolean equals(Object o) {
-      if (o == null || !(o instanceof Member)) {
+      if (!(o instanceof Member)) {
         return false;
       }
       Member that = (Member) o;
@@ -162,6 +162,8 @@ public class BaseList {
         continue;
       }
       juniorSeniorityIds.put(awardOverrides.get(member), member.seniorityId);
+      // TODO: why does jSI not have all the award types for
+      // a predicted month?
     }
     return juniorSeniorityIds;
   }
@@ -183,8 +185,11 @@ public class BaseList {
         continue;
       }
       AwardType previousAwardType = AwardType.values()[awardType.ordinal() - 1];
-      if (member.seniorityId > juniorSeniorityIds.get(previousAwardType)) {
-        removeTheseAwards.add(member);
+      if (juniorSeniorityIds.containsKey(previousAwardType)) {
+        if (member.seniorityId > juniorSeniorityIds.get(previousAwardType)) {
+          removeTheseAwards.add(member);
+        } else {
+        }
       }
     }
     return removeTheseAwards;
@@ -270,7 +275,7 @@ public class BaseList {
 
   @Override
   public boolean equals(Object o) {
-    if (o == null || !(o instanceof BaseList)) {
+    if (!(o instanceof BaseList)) {
       return false;
     }
     BaseList that = (BaseList) o;

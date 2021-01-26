@@ -19,25 +19,10 @@
 
 package crewtools.flica.stats;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import org.joda.time.LocalDate;
-import org.joda.time.YearMonth;
-
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
-
 import crewtools.flica.AwardDomicile;
 import crewtools.flica.FlicaService;
 import crewtools.flica.Proto.Award;
@@ -56,6 +41,19 @@ import crewtools.flica.Proto.Status;
 import crewtools.flica.Proto.ThinLine;
 import crewtools.flica.Proto.ThinLineList;
 import crewtools.util.Calendar;
+import org.joda.time.LocalDate;
+import org.joda.time.YearMonth;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class SeniorityPredictor {
   private final Logger logger = Logger.getLogger(SeniorityPredictor.class.getName());
@@ -70,11 +68,11 @@ public class SeniorityPredictor {
   private final DataReader dataReader;
   private final Multimap<YearMonth, Integer> terminations;
 
-  public static void main(String args[]) throws Exception {
+  public static void main(String[] args) throws Exception {
     new SeniorityPredictor(args).run();
   }
 
-  public SeniorityPredictor(String args[]) throws IOException {
+  public SeniorityPredictor(String[] args) throws IOException {
     if (args.length != 4) {
       System.err.println("SeniorityPredictor BASE CAPTAIN|FIRST_OFFICER "
           + "2019-01 00000");
@@ -92,7 +90,7 @@ public class SeniorityPredictor {
     this.lists = new ArrayList<>();
   }
 
-  private class DatedBasedMove {
+  private static class DatedBasedMove {
     public DatedBasedMove(BaseMove baseMove, LocalDate effectiveDate, LocalDate awardDate) {
       this.baseMove = baseMove;
       this.effectiveDate = effectiveDate;
@@ -110,7 +108,7 @@ public class SeniorityPredictor {
 
     @Override
     public boolean equals(Object o) {
-      if (o == null || !(o instanceof DatedBasedMove)) {
+      if (!(o instanceof DatedBasedMove)) {
         return false;
       }
       DatedBasedMove that = (DatedBasedMove) o;
@@ -164,8 +162,8 @@ public class SeniorityPredictor {
         startingYearMonth, awardDomicile, rank, FlicaService.BID_ROUND_ONE);
     ThinLineList roundOneLines = dataReader.readLines(
         startingYearMonth, awardDomicile, rank, FlicaService.BID_ROUND_ONE);
-    Optional<DomicileAward> roundTwoAward = Optional.absent();
-    Optional<ThinLineList> roundTwoLines = Optional.absent();
+    Optional<DomicileAward> roundTwoAward = Optional.empty();
+    Optional<ThinLineList> roundTwoLines = Optional.empty();
     try {
       roundTwoAward = Optional.of(dataReader.readAwards(
           startingYearMonth, awardDomicile, rank, FlicaService.BID_ROUND_TWO));
@@ -319,6 +317,7 @@ public class SeniorityPredictor {
       BaseList baseList, DatedBasedMove dateBasedMove, YearMonth yearMonth) {
     baseList.addAwardDate(dateBasedMove.awardDate);
     if (dateBasedMove.baseMove.getFrom().equals(domicile)) {
+      // Rank doesn't matter.  The pilot is leaving the seat-domicile pair.
       for (int employeeId : dateBasedMove.baseMove.getEmployeeIdList()) {
         if (employeeId == interestingEmployeeId) {
           continue;
@@ -333,7 +332,8 @@ public class SeniorityPredictor {
           }
         }
       }
-    } else if (dateBasedMove.baseMove.getTo().equals(domicile)) {
+    } else if (dateBasedMove.baseMove.getTo().equals(domicile)
+        && dateBasedMove.baseMove.getToRank().equals(rank)) {
       for (int employeeId : dateBasedMove.baseMove.getEmployeeIdList()) {
         if (employeeId == interestingEmployeeId) {
           continue;
